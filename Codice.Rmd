@@ -1,0 +1,89 @@
+---
+title: "F1 analysis"
+author: "CORES"
+date: "2025-12-28"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+Caricamento e modifiche al dataset
+```{r}
+rm(list=ls())
+S <-  read.csv("C:/Users/feder/Documents/datasets/Computazionale/F1/data/Telemetria_Completa_2025.csv",header = T,stringsAsFactors = T)
+library(tidyverse)
+S <- as_tibble(S)
+levels(S$Brake) <- c(0,1)
+S$Brake <- as.character(S$Brake)
+S$Brake <- as.numeric(S$Brake)
+S <- S %>% filter(DRS != 0)
+S <- S %>% filter(Brake != 1 &(Round == 1 | Round == 2)) %>% select(-Brake)
+S$DRS <- ifelse(S$DRS >11,1,0)
+S_new <- S %>% select(-GP_Name,-Date,-SessionTime)
+S_new$Throttle <- ifelse(S_new$Throttle > 100,100,S_new$Throttle)
+```
+Le variabili Brake e DRS sono state reinterpretate come una dummy, nello specifico nel caso di frenata brake è pari a 1 mentre per quanto riguarda il drs la variabile DRS è pari a 1 quando è aperto
+
+```{r}
+S_no_l <- S_new %>% select(-Driver,-Round,-X,-Y,-Z)
+S_no_l_S <- S_no_l %>% mutate(across(Speed:Distance,~ as.vector(scale(.))))
+
+```
+
+
+
+```{r}
+S_new %>% 
+  group_by(Round, Driver) %>% 
+  summarize(across(Speed:Distance, mean, .names = "mean_{.col}"), .groups = "drop")
+```
+
+```{r}
+summary(S_no_l_S)
+```
+```{r}
+diag(cov(S_no_l_S))
+```
+
+```{r}
+corr <- cor(S_no_l_S)
+library(ggcorrplot)
+ggcorrplot(corr,hc.order = T, type="lower", lab=T)
+```
+
+```{r}
+PCA <- princomp(S_no_l_S)
+summary(PCA)
+PCA$loadings
+```
+
+```{r}
+S_pca <- S_no_l_S %>% select(Speed,RPM,Throttle)
+```
+
+
+
+```{r}
+library(ggplot2)
+library(GGally)
+ggpairs(S_pca)
+plot(S_no_l_S)
+```
+
+
+
+
+
+
+```{r}
+library(mclust)
+clust <- Mclust(S_pca)
+summary(clust)
+plot(clust,what="classification")
+plot(clust,what="uncertainty")
+plot(clust,what="BIC")
+clust$BIC
+```
+
+
