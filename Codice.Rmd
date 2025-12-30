@@ -74,6 +74,7 @@ S_pca <- S_no_l_S %>% select(-Speed,-DRS,-Throttle,-Gear)
 library(ggplot2)
 library(GGally)
 ggpairs(S_pca)
+
 ```
 
 
@@ -144,7 +145,7 @@ pp <- function(data,GP=1,pilot=1){
 
 pilot=c(1,4,5,6,7,10,12,14,16,18,22,23,27,30,31,43,44,55,63,81,87)
 GP= c(1:24)
-res <- pp(data=Se,GP=GP)
+res <- pp(data=Se,GP=GP,)
 ```
 
 
@@ -252,7 +253,7 @@ pil <- function(data,pilot=1){
     library(mclust)
     clust <- Mclust(S_no_l[[as.character(k)]])
     S_no_l[[as.character(k)]]$cluss <- clust$classification
-    cat(paste("Modello per Gp",i,"e pilota",k,clust$modelName,"con BIC pari a",clust$bic,"e",clust$G,"gruppi"),"\n")}
+    cat(paste("Modello pilota",k,clust$modelName,"con BIC pari a",clust$bic,"e",clust$G,"gruppi"),"\n")}
   for(k in pilot){
     plot(Ss[[as.character(k)]]$X,
          Ss[[as.character(k)]]$Y,
@@ -265,4 +266,11 @@ pil <- function(data,pilot=1){
 pilot <- c(1,4,5,6,7,10,12,14,16,18,22,23,27,30,31,43,44,55,63,81,87)
 resu <- pil(Se,pilot=c(1,4))
 ```
+
+
+
+
+
+
+
 
