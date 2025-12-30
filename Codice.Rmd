@@ -120,7 +120,7 @@ pp <- function(data,GP=1,pilot=1){
     S_no_l[[as.character(i)]] <- list()
     Ss[[as.character(i)]] <- list()
     for (k in pilot){
-    S_no_l[[as.character(i)]][[as.character(k)]] <- S_new %>% filter(GP == i & Driver== k) %>% select(-GP,-Driver,-X,-Y,-Z,-Distance)
+    S_no_l[[as.character(i)]][[as.character(k)]] <- S_new %>% filter(GP == i & Driver== k) %>% select(-GP,-Driver,-X,-Y,-Z,-Distance,-GP_Name)
     Ss[[as.character(i)]][[as.character(k)]] <- S_new %>% filter(GP == i & Driver== k) %>% select(-GP,-Driver)
     library(mclust)
     clust <- Mclust(S_no_l[[as.character(i)]][[as.character(k)]])
@@ -165,11 +165,12 @@ piste <- function(data,GP=1){
   S_no_l <- list()
   Ss <- list()
   for (i in GP){
-    S_no_l[[as.character(i)]] <- S_new %>% filter(GP == i) %>% select(-GP,-Driver,-X,-Y,-Z,-Distance)
+    S_no_l[[as.character(i)]] <- S_new %>% filter(GP == i) %>% select(-GP,-Driver,-X,-Y,-Z,-Distance,-GP_Name)
     Ss[[as.character(i)]] <- S_new %>% filter(GP == i) %>% select(-GP,-Driver)
     library(mclust)
     clust <- Mclust(S_no_l[[as.character(i)]])
     S_no_l[[as.character(i)]]$cluss <- clust$classification
+    plot(clust,what="classification",main=paste("Classificazione per GP",i))
     cat(paste("Modello per Gp",i,clust$modelName,"con BIC pari a",clust$bic,"e",clust$G,"gruppi"),"\n")}
     for (i in GP){
     plot(Ss[[as.character(i)]]$X,
@@ -225,5 +226,43 @@ pilot_names <- c(
   "81" = "Piastri",
   "87" = "Bearman"      
 )
+```
+
+
+
+```{r}
+pil <- function(data,pilot=1){
+  library(tidyverse)
+  S <- as_tibble(Se)
+  levels(S$Brake) <- c(0,1)
+  S$Brake <- as.character(S$Brake)
+  S$Brake <- as.numeric(S$Brake)
+  S <- S %>% filter(DRS != 0)
+  S$DRS <- ifelse(S$DRS >11,1,0)
+  S_new <- S %>% select(-Round,-Date,-SessionTime)
+  S_new$Throttle <- ifelse(S_new$Throttle > 100,100,S_new$Throttle)
+  S_new$GP <- as.factor(S_new$GP_Name)
+  GP_names <- levels(S_new$GP)
+  S_new$GP <- as.numeric(S_new$GP_Name)
+  S_no_l <- list()
+  Ss <- list()
+    for (k in pilot){
+    S_no_l[[as.character(k)]] <- S_new %>% filter(Driver== k) %>% select(-GP,-Driver,-X,-Y,-Z,-Distance,-GP_Name)
+    Ss[[as.character(k)]] <- S_new %>% filter(Driver== k) %>% select(-GP,-Driver)
+    library(mclust)
+    clust <- Mclust(S_no_l[[as.character(k)]])
+    S_no_l[[as.character(k)]]$cluss <- clust$classification
+    cat(paste("Modello per Gp",i,"e pilota",k,clust$modelName,"con BIC pari a",clust$bic,"e",clust$G,"gruppi"),"\n")}
+  for(k in pilot){
+    plot(Ss[[as.character(k)]]$X,
+         Ss[[as.character(k)]]$Y,
+         col=S_no_l[[as.character(k)]]$cluss,main=paste("Pilota",k,"In GP",i)
+         )}
+  
+  return(S_no_l)
+  
+}
+pilot <- c(1,4,5,6,7,10,12,14,16,18,22,23,27,30,31,43,44,55,63,81,87)
+resu <- pil(Se,pilot=c(1,4))
 ```
 
