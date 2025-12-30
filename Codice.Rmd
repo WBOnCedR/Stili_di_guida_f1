@@ -19,17 +19,21 @@ S$Brake <- as.character(S$Brake)
 S$Brake <- as.numeric(S$Brake)
 S <- S %>% filter(DRS != 0)
 S$DRS <- ifelse(S$DRS >11,1,0)
-S_new <- S %>% select(-GP_Name,-Date,-SessionTime)
+S_new <- S %>% select(-Round,-Date,-SessionTime)
 S_new$Throttle <- ifelse(S_new$Throttle > 100,100,S_new$Throttle)
-S_new1 <- S_new %>% filter(Round == 1)
+S_new$GP <- as.factor(S_new$GP_Name)
+GP_names <- levels(S_new$GP)
+S_new$GP <- as.numeric(S_new$GP_Name)
+S_new1 <- S_new %>% filter(GP == 1 & Driver == 5)
+
 ```
 Le variabili Brake e DRS sono state reinterpretate come una dummy, nello specifico nel caso di frenata brake è pari a 1 mentre per quanto riguarda il drs la variabile DRS è pari a 1 quando è aperto
 
 ```{r}
 library(scales)
-S_no_l <- S_new1 %>% select(-Driver,-Round)
-S_no_l_S <- S_new %>% group_by(Round) %>% mutate(across(X:Distance, ~ rescale(.,to = c(0, 1)))) %>%
-  ungroup() %>% select(-Round,-Driver)
+S_no_l <- S_new1 %>% select(-Driver,-GP)
+S_no_l_S <- S_new %>% group_by(GP) %>% mutate(across(X:Distance, ~ rescale(.,to = c(0, 1)))) %>%
+  ungroup() %>% select(-GP,-Driver)
 
 ```
 Normalizziamo la variabile distance ed X,Y,Z per riuscire a generalizzare per ogni tracciato 
@@ -37,7 +41,7 @@ Normalizziamo la variabile distance ed X,Y,Z per riuscire a generalizzare per og
 
 ```{r}
 S_new %>% 
-  group_by(Round, Driver) %>% 
+  group_by(GP, Driver) %>% 
   summarize(across(Speed:Distance, mean, .names = "mean_{.col}"), .groups = "drop")
 ```
 
@@ -79,9 +83,10 @@ ggpairs(S_pca)
 
 ```{r}
 library(mclust)
-clust <- Mclust(S_no_l)
+S_no_l_c <- S_no_l %>% select(-X,-Y,-Z,-Distance)
+clust <- Mclust(S_no_l_c)
 summary(clust)
-plot(clust,what="classification",X,Y)
+plot(clust,what="classification")
 plot(clust,what="uncertainty")
 plot(clust,what="BIC")
 clust$BIC
@@ -96,37 +101,129 @@ plot(S_no_l$X,S_no_l$Y,col=S_no_l$cluss)
 ```{r}
 rm(list=ls())
 Se <-  read.csv("C:/Users/feder/Documents/datasets/Computazionale/F1/data/Telemetria_Completa_2025.csv",header = T,stringsAsFactors = T)
-piste <- function(data,GP){
+pp <- function(data,GP=1,pilot=1){
   library(tidyverse)
-  S <- as_tibble(data)
+  S <- as_tibble(Se)
   levels(S$Brake) <- c(0,1)
   S$Brake <- as.character(S$Brake)
   S$Brake <- as.numeric(S$Brake)
   S <- S %>% filter(DRS != 0)
   S$DRS <- ifelse(S$DRS >11,1,0)
-  S_new <- S %>% select(-GP_Name,-Date,-SessionTime)
+  S_new <- S %>% select(-Round,-Date,-SessionTime)
   S_new$Throttle <- ifelse(S_new$Throttle > 100,100,S_new$Throttle)
+  S_new$GP <- as.factor(S_new$GP_Name)
+  GP_names <- levels(S_new$GP)
+  S_new$GP <- as.numeric(S_new$GP_Name)
   S_no_l <- list()
-  p <- vector()
+  Ss <- list()
   for (i in GP){
-    S_no_l[[i]] <- S_new %>% filter(Round == i) %>% select(-Round,-Driver)
+    S_no_l[[as.character(i)]] <- list()
+    Ss[[as.character(i)]] <- list()
+    for (k in pilot){
+    S_no_l[[as.character(i)]][[as.character(k)]] <- S_new %>% filter(GP == i & Driver== k) %>% select(-GP,-Driver,-X,-Y,-Z,-Distance)
+    Ss[[as.character(i)]][[as.character(k)]] <- S_new %>% filter(GP == i & Driver== k) %>% select(-GP,-Driver)
     library(mclust)
-    clust <- Mclust(S_no_l[[i]])
-    S_no_l[[i]]$cluss <- clust$classification
-    cat(paste("Modello per Gp",i,clust$modelName,"con BIC pari a",clust$bic,"e",clust$G,"gruppi"),"\n")
+    clust <- Mclust(S_no_l[[as.character(i)]][[as.character(k)]])
+    S_no_l[[as.character(i)]][[as.character(k)]]$cluss <- clust$classification
+    cat(paste("Modello per Gp",i,"e pilota",k,clust$modelName,"con BIC pari a",clust$bic,"e",clust$G,"gruppi"),"\n")}
   }
-  n <- length(GP)
-  n_cols <- ceiling(sqrt(n))       # Arrotonda per eccesso la radice quadrata
-  n_rows <- ceiling(n / n_cols)    # Calcola le righe necessarie
+  if(length(GP) > 4){
+  par(mfrow=c(1,length(GP)))}
+  else {par(mfrow=c(1,1))}
+  for(k in pilot){
+    for (i in GP){
+    plot(Ss[[as.character(i)]][[as.character(k)]]$X,
+         Ss[[as.character(i)]][[as.character(k)]]$Y,
+         col=S_no_l[[as.character(i)]][[as.character(k)]]$cluss,main=paste("Pilota",k,"In GP",i)
+         )}}
   
-  # Imposta la finestra grafica
-  par(mfrow = c(n_rows, n_cols))
-  for (i in GP){
-    plot(S_no_l[[i]]$X,S_no_l[[i]]$Y,col=S_no_l[[i]]$cluss)}
   return(S_no_l)
- 
+  
+
 }
 
-res <- piste(data=Se,GP=c(1:24))
+pilot=c(1,4,5,6,7,10,12,14,16,18,22,23,27,30,31,43,44,55,63,81,87)
+GP= c(1:24)
+res <- pp(data=Se,GP=GP)
+```
+
+
+```{r}
+piste <- function(data,GP=1){
+  library(tidyverse)
+  S <- as_tibble(Se)
+  levels(S$Brake) <- c(0,1)
+  S$Brake <- as.character(S$Brake)
+  S$Brake <- as.numeric(S$Brake)
+  S <- S %>% filter(DRS != 0)
+  S$DRS <- ifelse(S$DRS >11,1,0)
+  S_new <- S %>% select(-Round,-Date,-SessionTime)
+  S_new$Throttle <- ifelse(S_new$Throttle > 100,100,S_new$Throttle)
+  S_new$GP <- as.factor(S_new$GP_Name)
+  GP_names <- levels(S_new$GP)
+  S_new$GP <- as.numeric(S_new$GP_Name)
+  S_no_l <- list()
+  Ss <- list()
+  for (i in GP){
+    S_no_l[[as.character(i)]] <- S_new %>% filter(GP == i) %>% select(-GP,-Driver,-X,-Y,-Z,-Distance)
+    Ss[[as.character(i)]] <- S_new %>% filter(GP == i) %>% select(-GP,-Driver)
+    library(mclust)
+    clust <- Mclust(S_no_l[[as.character(i)]])
+    S_no_l[[as.character(i)]]$cluss <- clust$classification
+    cat(paste("Modello per Gp",i,clust$modelName,"con BIC pari a",clust$bic,"e",clust$G,"gruppi"),"\n")}
+    for (i in GP){
+    plot(Ss[[as.character(i)]]$X,
+         Ss[[as.character(i)]]$Y,
+         col=S_no_l[[as.character(i)]]$cluss,main=paste("GP",i)
+         )}
+  
+  return(S_no_l)
+  
+
+}
+
+GP= c(1:24)
+ress <- piste(data=Se,GP=GP)
+
+```
+
+
+
+
+```{r}
+S_n <- S_new %>% 
+  group_by(GP,Driver) %>% filter(GP==17) %>%              
+  summarize(
+    n(),.groups = "drop")       
+pilot=c(1,4,5,6,7,10,12,14,16,18,22,23,27,30,31,43,44,55,63,81,87)
+S_n$Driver
+```
+
+Manca russel in Miami
+
+```{r}
+pilot_names <- c(
+  "1"  = "Verstappen",
+  "4"  = "Norris",
+  "5"  = "Bortoleto",   
+  "6"  = "Hadjar",      
+  "7"  = "Doohan",     
+  "10" = "Gasly",
+  "12" = "Antonelli",   
+  "14" = "Alonso",
+  "16" = "Leclerc",
+  "18" = "Stroll",
+  "22" = "Tsunoda",
+  "23" = "Albon",
+  "27" = "Hulkenberg",
+  "30" = "Lawson",      
+  "31" = "Ocon",        
+  "43" = "Colapinto",   
+  "44" = "Hamilton",
+  "55" = "Sainz",       
+  "63" = "Russell",
+  "81" = "Piastri",
+  "87" = "Bearman"      
+)
 ```
 
