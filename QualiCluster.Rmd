@@ -1,0 +1,131 @@
+---
+title: "QualiCluster"
+author: "Pietro Riva"
+date: "2025-12-30"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+Working set up
+
+```{r}
+setwd("C:/Users/feder/Documents/datasets/Computazionale/F1")
+
+library(tidyverse)
+library(ggplot2)
+library(dplyr)
+library(RColorBrewer)
+
+```
+
+# F1 : Telemetrie qualifiche
+
+Il seguente studio si pone l'obiettivo di individuare dei possibili stili di guida attraverso il clustering model based.
+
+## Espolarazione dataset
+
+Si va ora ad esplorare il dataset in maniera tale da poter capire quali variabili possano essere indicative per individuare uno **stile di guida** per ciascun pilota.
+
+```{r}
+tel <- readRDS("C:/Users/feder/Documents/datasets/Computazionale/F1/data/dataset_completo_best_tel.rds")
+head(tel)
+```
+
+```{r}
+str(tel)
+```
+
+Le variabili presenti per ciascuna telemetria sono :
+
+-   GP, pilota : Identificativi gara e pilota
+-   time : Tempo dal via [s]
+-   distance : Distanza percorsa [m]
+-   rel_distance : Distanza normalizzata [0-1]
+-   rpm : Giri motore [rpm]
+-   speed : Velocità [km/h]
+-   gear : Marcia [1-8]
+-   throttle : Acceleratore [0-100%]
+-   brake : Freno [0/1]
+-   drs : DRS attivo [0/1]
+-   acc_x : G longitudinale (+ accel, - freno)
+-   acc_y : G laterale (+ destra, - sinistra)/
+-   acc_z : G verticale
+-   x, y, z : Coordinate spaziali [m]
+
+Anzi tutto per ricercare un potenziale stile di guida bisogna individuare, a partire da queste variabili grezze, quelle che sono, in primo luogo, concettualmente legato al concetto di stile di guida. Con questo si fa riferimento a variabili quali: 
+
+- throttle : utilizzo dell'accelleratore (brusco,graduale,intervallato, ...) 
+- brake : utilizzo del freno 
+- acc_x : tipologie di frenate (prevalentemente brusche/secche, più gestite, ...)
+- acc_y : tipologia di guida (accellerazioni in generale molto polarizzate potrebbero indicare una guida molto nervosa per esempio ...)
+
+Le variabili posizionali quali
+
+-   time
+-   rel_distance
+-   x, y, z
+
+possono tornare utili per dare un riferimento alle rilevazioni.
+
+```{r}
+tel.guida <- tel %>%
+  select(GP, pilota, throttle, brake, acc_x, acc_y, time, rel_distance, x,y,z)
+```
+Si raccolgono ora le prime statistiche riassuntive delle variabili per valutare in che modo si possano definire delle variabili associate a un potenziale stile di guida.
+
+```{r}
+tel.guida_summary <- tel.guida %>% 
+  group_by(GP, pilota) %>%
+  summarise(across(
+    where(is.numeric), 
+    list(mean = ~mean(.x, na.rm = TRUE),
+         sd = ~sd(.x, na.rm = TRUE),
+         max = ~max(.x, na.rm = TRUE),
+         IQR = ~ IQR(.x, na.rm=TRUE)),
+    .names = "{.col}_{.fn}"
+  ))
+```
+
+
+```{r}
+
+piloti_unici <- sort(unique(tel.guida_summary$pilota))
+
+
+n_piloti <- length(piloti_unici)
+colori_piloti <- setNames(
+  colorRampPalette(brewer.pal(12, "Paired"))(n_piloti),
+  piloti_unici
+)
+
+
+gp_list <- unique(tel.guida_summary$GP)
+
+for (gp in gp_list) {
+  
+  dati_gp <- tel.guida_summary %>% filter(GP == gp)
+  
+  p <- ggplot(dati_gp, aes(x = acc_x_mean, y = acc_y_mean, color = pilota)) +
+    geom_point(size = 5, alpha = 0.8) +
+    geom_text(aes(label = pilota), hjust = -0.2, vjust = 0.5, size = 4, fontface = "bold") +
+    scale_color_manual(values = colori_piloti) +
+    labs(
+      title = paste("Stile di Guida -", gp),
+      x = "Accelerazione Longitudinale Media [G]",
+      y = "Accelerazione Laterale Media [G]",
+      color = "Pilota"
+    ) +
+    theme_minimal(base_size = 14) +
+    theme(
+      plot.title = element_text(hjust = 0.5, face = "bold", size = 16),
+      legend.position = "right"
+    )
+  
+  print(p)
+}
+
+```
+
