@@ -12,12 +12,15 @@ knitr::opts_chunk$set(echo = TRUE)
 Working set up
 
 ```{r}
+rm(list=ls())
 setwd("C:/Users/feder/Documents/datasets/Computazionale/F1")
 
 library(tidyverse)
 library(ggplot2)
 library(dplyr)
 library(RColorBrewer)
+library(scales)
+library(ggcorrplot)
 
 ```
 
@@ -71,8 +74,28 @@ Le variabili posizionali quali
 possono tornare utili per dare un riferimento alle rilevazioni.
 
 ```{r}
-tel.guida <- tel %>%
-  select(GP, pilota, throttle, brake, acc_x, acc_y, time, rel_distance, x,y,z)
+
+tel_resc <- tel  %>% 
+  group_by(GP) %>% 
+  mutate(across(c(acc_x,acc_y), ~ rescale(.,to = c(-1, 1)))) %>%
+  ungroup()
+
+tel.guida <- tel_resc %>%
+  
+  select(GP, pilota, throttle, brake, acc_x, acc_y, time, rel_distance, x,y,z) %>% 
+  
+  arrange(GP,pilota,time) %>%
+  
+  group_by(GP,pilota) %>%
+  
+  mutate(
+    across(
+      c(acc_x,acc_y,rel_distance),
+      list(diff = ~(.x - lag(.x,n = 1,default = 0))), 
+      .names = "{.col}_{.fn}"))  %>% 
+  ungroup()
+  
+
 ```
 Si raccolgono ora le prime statistiche riassuntive delle variabili per valutare in che modo si possano definire delle variabili associate a un potenziale stile di guida.
 
@@ -83,10 +106,10 @@ tel.guida_summary <- tel.guida %>%
     where(is.numeric), 
     list(mean = ~mean(.x, na.rm = TRUE),
          sd = ~sd(.x, na.rm = TRUE),
-         max = ~max(.x, na.rm = TRUE),
          IQR = ~ IQR(.x, na.rm=TRUE)),
+    
     .names = "{.col}_{.fn}"
-  ))
+  ),.groups = "drop") 
 ```
 
 
@@ -96,9 +119,38 @@ piloti_unici <- sort(unique(tel.guida_summary$pilota))
 
 
 n_piloti <- length(piloti_unici)
-colori_piloti <- setNames(
-  colorRampPalette(brewer.pal(12, "Paired"))(n_piloti),
-  piloti_unici
+#colori_piloti <- setNames(
+#  colorRampPalette(brewer.pal(12, "Paired"))(n_piloti),
+#  piloti_unici
+#)
+
+# Codici HEX approssimativi delle livree
+# 1. Mappa: Associa ogni sigla pilota alla sua Scuderia (Griglia 2025)
+pilota_team_map <- c(
+  "LEC" = "Ferrari",      "HAM" = "Ferrari",
+  "VER" = "Red Bull",     "HAD" = "Red Bull",
+  "NOR" = "McLaren",      "PIA" = "McLaren",
+  "RUS" = "Mercedes",     "ANT" = "Mercedes",
+  "ALO" = "Aston Martin", "STR" = "Aston Martin",
+  "GAS" = "Alpine",       "DOO" = "Alpine",
+  "ALB" = "Williams",     "SAI" = "Williams",  "COL" = "Williams",
+  "TSU" = "RB",           "LAW" = "RB",
+  "HUL" = "Sauber",       "BOR" = "Sauber",
+  "OCO" = "Haas",         "BEA" = "Haas"
+)
+
+# 2. Colori: Associa i colori ai nomi delle Scuderie
+colori_team <- c(
+  "Ferrari"      = "#E80020",
+  "Red Bull"     = "#0600EF",
+  "McLaren"      = "#FF8000",
+  "Mercedes"     = "#00D2BE",
+  "Aston Martin" = "#229971",
+  "Alpine"       = "#0090FF",
+  "Williams"     = "#64C4FF",
+  "RB"           = "#6692FF",
+  "Sauber"       = "#52E252",
+  "Haas"         = "#B6BABD"
 )
 
 
@@ -106,26 +158,71 @@ gp_list <- unique(tel.guida_summary$GP)
 
 for (gp in gp_list) {
   
-  dati_gp <- tel.guida_summary %>% filter(GP == gp)
+  # 1. Filtra i dati
+  dati_gp <- tel.guida_summary %>% 
+    filter(GP == gp) %>%
+    
+    mutate(Team = pilota_team_map[pilota]) 
   
-  p <- ggplot(dati_gp, aes(x = acc_x_mean, y = acc_y_mean, color = pilota)) +
-    geom_point(size = 5, alpha = 0.8) +
+
+  p <- ggplot(dati_gp, aes(x = acc_x_mean, y = acc_y_mean)) + 
+    
+  
+    geom_point(aes(color = Team), size = 5, alpha = 0.8) +
+    
+  
     geom_text(aes(label = pilota), hjust = -0.2, vjust = 0.5, size = 4, fontface = "bold") +
-    scale_color_manual(values = colori_piloti) +
+    
+
+    scale_color_manual(values = colori_team) +
+    
     labs(
       title = paste("Stile di Guida -", gp),
       x = "Accelerazione Longitudinale Media [G]",
       y = "Accelerazione Laterale Media [G]",
-      color = "Pilota"
+      color = "Scuderia"
     ) +
+    
     theme_minimal(base_size = 14) +
     theme(
       plot.title = element_text(hjust = 0.5, face = "bold", size = 16),
-      legend.position = "right"
+      legend.position = "right",
+      legend.text = element_text(size = 10)
     )
   
   print(p)
 }
+
+```
+
+
+
+
+```{r}
+tel_num <- tel.guida_summary %>% 
+  
+  ungroup() %>% 
+  
+  select(where(is.numeric)) %>% 
+  
+  filter(if_all(everything(), is.finite))
+
+
+PCA <- princomp(tel_num)
+summary(PCA)
+PCA$loadings
+```
+
+
+
+```{r}
+library(mclust)
+clust <- Mclust(tel_num)
+summary(clust)
+tel_num$clust <- clust$classification
+tel_num1 <- tel.guida_summary %>% filter(gp=="Abu Dhabi Grand Prix")
+
+plot(tel.guida_summary$acc_x_mean,tel.guida_summary$acc_y_mean,col=tel_num$clust,pch=16)
 
 ```
 
