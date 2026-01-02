@@ -1,0 +1,139 @@
+\documentclass[a4paper, 11pt]{article}
+
+% --- IMPOSTAZIONI DI PAGINA (CRUCIALE PER LE 6 PAGINE) ---
+% Margini ridotti a 2cm per guadagnare spazio vitale
+\usepackage[left=2cm, right=2cm, top=2cm, bottom=2cm]{geometry}
+
+% --- LINGUA E CODIFICA ---
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[italian]{babel}     % Traduce "Figure", "Table", ecc.
+\usepackage{microtype}          % Migliora la spaziatura e la sillabazione (aspetto più professionale)
+
+% --- MATEMATICA E TABELLE ---
+\usepackage{amsmath, amssymb}   % Simboli matematici
+\usepackage{booktabs}           % Per tabelle professionali (senza linee verticali)
+\usepackage{array}
+
+% --- GRAFICI E IMMAGINI ---
+\usepackage{graphicx}
+\usepackage{subcaption}         % Fondamentale per mettere grafici affiancati (Fig 1a, 1b)
+\usepackage{float}              % Per usare [H] e bloccare le immagini dove vuoi tu
+\usepackage[colorlinks=true,      % Attiva i colori invece dei riquadri
+linkcolor=black,      % Colore link interni (es. Indice, Figure) - meglio black per stampare
+urlcolor=blue,        % Colore link web (es. il tuo dataset)
+citecolor=black       % Colore citazioni bibliografiche
+]{hyperref}% Per link cliccabili (es. fonte dataset) senza rettangoli rossi
+
+% --- CONFIGURAZIONE CODICE R (PER APPENDICE) ---
+\usepackage{listings}
+\usepackage{xcolor}
+\usepackage{lmodern}
+
+\definecolor{codegreen}{rgb}{0,0.6,0}
+\definecolor{codegray}{rgb}{0.5,0.5,0.5}
+\definecolor{codepurple}{rgb}{0.58,0,0.82}
+\definecolor{backcolour}{rgb}{0.95,0.95,0.92}
+
+\lstset{ 
+	language=R,
+	backgroundcolor=\color{backcolour},   
+	commentstyle=\color{codegreen},
+	keywordstyle=\color{blue},
+	numberstyle=\tiny\color{codegray},
+	stringstyle=\color{codepurple},
+	basicstyle=\footnotesize\ttfamily, % Font piccolo monospaziato
+	breakatwhitespace=false,         
+	breaklines=true,                 % Va a capo se la riga è troppo lunga
+	captionpos=b,                    
+	keepspaces=true,                 
+	numbers=left,                    % Numeri di riga a sinistra
+	numbersep=5pt,                  
+	showspaces=false,                
+	showstringspaces=false,
+	showtabs=false,                  
+	tabsize=2,
+	frame=single                     % Cornice attorno al codice
+}
+
+% --- INIZIO DEL DOCUMENTO ---
+\begin{document}
+	
+	% --- INTESTAZIONE COMPATTA (Custom Header) ---
+	% Non uso \maketitle standard perché occupa mezza pagina inutile.
+	\begin{center}
+		% Nome del gruppo (evocativo come richiesto)
+		{\Large \textbf{GRUPPO: CORES}} \\ 
+		\vspace{0.2cm}
+		% Titolo del corso e Report
+		{\large \textsc{Computational Statistics -- Final Report}} \\
+		\vspace{0.1cm}
+		% Membri del gruppo
+		\small
+		\begin{tabular}{c c c c}
+			Maccianti Federico & Rapacioli Nicola & Riva Pietro \\
+			(909656) & (915439) & (908813) 
+		\end{tabular}
+	\end{center}
+	
+	\hrule % Linea orizzontale di separazione
+	\vspace{0.5cm}
+	
+	% --- QUI INIZIA IL TUO TESTO ---
+	
+	\section{Introduzione}
+	Il presente report analizza un dataset ottenuto tramite il repository \href{https://github.com/TracingInsights/2025.git}{TracingInsights}.
+	Lo studio si concentra sui dati di telemetria relativi alle sessioni di qualifica della stagione di Formula 1 2025, selezionando per ciascun pilota il singolo giro migliore.
+	
+	Il dataset originale include le seguenti variabili: identificativi (GP, pilota), tempo dal via [$\mathrm{s}$], distanza percorsa [$\mathrm{m}$], regime motore (RPM), velocità [$\mathrm{km/h}$], marcia [$1\text{--}8$], uso del freno [$0/1$], uso dell'acceleratore [$0\text{--}100\%$], DRS [$0/1$], accelerazioni (longitudinale, laterale, verticale) [$\mathrm{m/s^2}$] e coordinate spaziali ($x, y, z$) [$\mathrm{m}$].
+	
+	L'obiettivo è identificare l'esistenza di stili di guida distintivi tra i piloti. A tal fine, l'analisi è stata ristretta alle sole variabili cinematiche e di input ritenute discriminanti: regime motore, velocità, uso di freno e acceleratore, accelerazione longitudinale e laterale.
+	
+	\section{Analisi Esplorativa}
+	Come si evince dalla Figura \ref{fig:istogrammi_iniziali}, la distribuzione \dots
+	
+	% Esempio placeholder per due grafici affiancati (risparmio spazio)
+	\begin{figure}[ht]
+		\centering
+		\begin{subfigure}[b]{0.45\textwidth}
+			% \includegraphics[width=\textwidth]{tuo_grafico_1.pdf}
+			\rule{\textwidth}{3cm} % Rimuovi questa riga e usa includegraphics
+			\caption{Distribuzione Variabile X}
+		\end{subfigure}
+		\hfill
+		\begin{subfigure}[b]{0.45\textwidth}
+			% \includegraphics[width=\textwidth]{tuo_grafico_2.pdf}
+			\rule{\textwidth}{3cm} % Rimuovi questa riga e usa includegraphics
+			\caption{Scatterplot X vs Y}
+		\end{subfigure}
+		\caption{Analisi esplorativa iniziale delle variabili principali.}
+		\label{fig:istogrammi_iniziali}
+	\end{figure}
+	
+	\section{Modellazione}
+	Abbiamo applicato un modello di regressione lineare:
+	\begin{equation}
+		Y_i = \beta_0 + \beta_1 X_{1i} + \epsilon_i
+	\end{equation}
+	
+	% --- CHIUSURA DOCUMENTO E APPENDICE ---
+	
+	% \newpage % Scommenta se vuoi l'appendice in pagina nuova
+	\appendix
+	\section{Codice R Commentato}
+	Di seguito riportiamo lo script utilizzato per l'analisi.
+	
+	% Se hai il file .R nella stessa cartella:
+	% \lstinputlisting[language=R]{analisi_script.R}
+	
+	% Se vuoi incollare il codice qui:
+	\begin{lstlisting}
+		# Caricamento librerie
+		library(ggplot2)
+		data <- read.csv("dataset.csv")
+		
+		# Analisi preliminare
+		summary(data)
+	\end{lstlisting}
+	
+\end{document}
