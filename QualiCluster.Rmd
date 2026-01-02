@@ -13,7 +13,8 @@ Working set up
 
 ```{r}
 rm(list=ls())
-setwd("C:/Users/feder/Documents/datasets/Computazionale/F1")
+setwd("C:/Users/4erre/Documents/PERSONALE/SCUOLA/A.A._2025-2026/Statistica_computazionale/Progetto")
+options(warn = -1) 
 
 library(tidyverse)
 library(ggplot2)
@@ -35,7 +36,7 @@ Il seguente studio si pone l'obiettivo di individuare dei possibili stili di gui
 Si va ora ad esplorare il dataset in maniera tale da poter capire quali variabili possano essere indicative per individuare uno **stile di guida** per ciascun pilota.
 
 ```{r}
-tel <- readRDS("C:/Users/feder/Documents/datasets/Computazionale/F1/data/dataset_completo_best_tel.rds")
+tel <- readRDS("C:/Users/4erre/Documents/PERSONALE/SCUOLA/A.A._2025-2026/Statistica_computazionale/Progetto/formula1/data/dataset_completo_best_tel.rds")
 head(tel)
 ```
 
@@ -119,25 +120,112 @@ tel.guida <- tel.guida %>%
   select(-time)
 ```
 
-Si raccolgono ora le prime statistiche riassuntive delle variabili per valutare in che modo si possano definire delle variabili associate a un potenziale stile di guida.
+Si raccolgono ora le prime statistiche riassuntive delle variabili per valutare in che modo si possano definire delle variabili associate a un potenziale stile di guida, in particolare :
+
+- Per le variabili *throttle* ,*acc_x*, *acc_y*, *brake*
+ - Media;
+ - Deviazione standard;
+ - Massimo;
+ - Minimo;
 
 ```{r}
 tel.guida_summary <- tel.guida %>% 
   group_by(GP, pilota) %>%
-  summarise(across(
-    c(throttle,acc_x,acc_y,brakes), 
-    list(mean = ~mean(.x, na.rm = TRUE),
-         sd = ~sd(.x, na.rm = TRUE)),
-    .names = "{.col}_{.fn}"
-  ),across(contains("lag"), ) 
-  
-  
-  ,.groups = "drop")
+  {
+    lag_cols <- names(.) %>% .[str_detect(., "lag")]
+    
+    summarise(.,
+      across(
+        c(throttle, acc_x, acc_y, brake), 
+        list(
+          mean = ~round(mean(.x, na.rm = TRUE), 4),
+          sd = ~round(sd(.x, na.rm = TRUE), 4),
+          max = ~round(max(.x, na.rm = TRUE), 4),
+          min = ~round(min(.x, na.rm = TRUE), 4)
+        ),
+        .names = "{.col}_{.fn}"
+      ),
+    
+      across(
+        all_of(lag_cols),
+        ~round(mean(.x[.x > 0], na.rm = TRUE), 4),
+        .names = "{.col}_mean_pos"
+      ),
+      
+      across(
+        all_of(lag_cols),
+        ~round(mean(.x[.x <= 0], na.rm = TRUE), 4),
+        .names = "{.col}_mean_neg"
+      ),
+      
+      across(
+        all_of(lag_cols),
+        ~round(sd(.x[.x > 0], na.rm = TRUE), 4),
+        .names = "{.col}_sd_pos"
+      ),
+      
+      across(
+        all_of(lag_cols),
+        ~round(sd(.x[.x <= 0], na.rm = TRUE), 4),
+        .names = "{.col}_sd_neg"
+      ),
+      
+      .groups = "drop"
+    )
+  }
 ```
 
 ```{r}
+colSums(is.na(tel.guida_summary))
+```
+```{r}
+tel.guida_summary[!complete.cases(tel.guida_summary), ]
+```
+L'unico record che presenta degli `NaN` nelle statistiche riassuntive è Russel al *Miami Grand Prix*.
 
-piloti_unici <- sort(unique(tel.guida_summary$pilota))
+```{r}
+tel.guida %>%
+  filter((pilota == "RUS") & (GP == "Miami Grand Prix"))
+```
+Da questa tabella si può vedere che ci sono stati probabilmente dei problemi con i sensori di telemetria durante la qualifica. Si procede quindi a rimuovere il record. Si rimuovono inoltre le statistiche `brake_min` e `brake_max` in quanto trattandosi di una variabile dicotomica non sono per nulla indicative.
+
+```{r}
+tel.guida <- tel.guida %>%
+  filter((pilota != "RUS") & (GP != "Miami Grand Prix"))
+tel.guida_summary <- tel.guida_summary %>%
+  filter(complete.cases(.)) %>%
+  select(-brake_max, -brake_min)
+```
+
+
+### PCA
+
+```{r}
+PCA <- princomp(tel.guida_summary %>%
+                  select(where(is.numeric)))
+summary(PCA)
+```
+
+Vediamo quali sono le variabili che decrivono le prime due componenti.
+
+```{r}
+sort(round(PCA$loadings[,1],4),decreasing = T)
+```
+
+```{r}
+sort(round(PCA$loadings[,2],4),decreasing = T)
+```
+```{r}
+tel.sum.pca <- as.tibble(round(PCA$scores[,c(1,2)],4))
+tel.sum.pca <- tel.sum.pca %>%
+  mutate(pilota = tel.guida_summary$pilota,
+         GP = tel.guida_summary$GP)
+```
+
+
+```{r}
+
+piloti_unici <- sort(unique(tel.sum.pca$pilota))
 
 
 n_piloti <- length(piloti_unici)
@@ -150,20 +238,20 @@ colori_piloti <- setNames(
 )
 
 
-gp_list <- unique(tel.guida_summary$GP)
+gp_list <- unique(tel.sum.pca$GP)
 
 for (gp in gp_list) {
   
-  dati_gp <- tel.guida_summary %>% filter(GP == gp)
+  dati_gp <- tel.sum.pca %>% filter(GP == gp)
   
-  p <- ggplot(dati_gp, aes(x = acc_x_mean, y = acc_y_mean, color = pilota)) +
+  p <- ggplot(dati_gp, aes(x = Comp.1, y = Comp.2, color = pilota)) +
     geom_point(size = 5, alpha = 0.8) +
     geom_text(aes(label = pilota), hjust = -0.2, vjust = 0.5, size = 4, fontface = "bold") +
     scale_color_manual(values = colori_piloti) +
     labs(
       title = paste("Stile di Guida -", gp),
-      x = "Accelerazione Longitudinale Media [G]",
-      y = "Accelerazione Laterale Media [G]",
+      x = "Magnitudo accellerazione laterale [G]",
+      y = "Irruenza accelleraizione",
       color = "Pilota"
     ) +
     theme_minimal(base_size = 14) +
@@ -178,15 +266,73 @@ for (gp in gp_list) {
 
 ```
 
+## Clustering
+
 ```{r}
-clust <- Mclust(tel.guida_summary %>% select(-GP,-pilota))
-summary(clust)
-tel_num$clust <- clust$classification
-tel_num1 <- tel.guida_summary %>% filter(gp=="Abu Dhabi Grand Prix")
-plot(clust,what="BIC")
-plot(tel.guida_summary$acc_x_mean,tel.guida_summary$acc_y_mean,col=tel_num$clust,pch=16)
-plot(tel.guida_summary$acc_x_mean,tel.guida_summary$throttle_mean,col=tel_num$clust,pch=16)
-plot(tel.guida_summary$brake_mean,tel.guida_summary$acc_x_mean,col=tel_num$clust,pch=16)
-plot(tel.guida_summary$acc_y_mean,tel.guida_summary$throttle_mean,col=tel_num$clust,pch=16)
-clust$BIC
+relevant <- c("GP", "pilota", "acc_y_lag3_sd_pos", "acc_y_lag2_sd_pos", "acc_y_lag1_sd_pos", 
+              "acc_y_lag3_mean_pos", "acc_y_lag2_mean_pos", "acc_y_lag1_mean_pos",
+              "throttle_lag3_sd_pos", "throttle_lag2_sd_pos", "throttle_lag1_sd_pos", 
+              "throttle_lag3_mean_pos", "throttle_lag2_mean_pos", "throttle_lag1_mean_pos")
+
+tel.clust <- tel.guida_summary %>%
+  select(all_of(relevant)) %>%
+  filter(
+    if_all(where(is.numeric), ~between(.x, 
+                                   quantile(.x, 0.25, na.rm = TRUE) - 1.5 * IQR(.x, na.rm = TRUE),
+                                   quantile(.x, 0.75, na.rm = TRUE) + 1.5 * IQR(.x, na.rm = TRUE)))
+  )
+
 ```
+
+
+
+```{r}
+clust <- Mclust(tel.clust %>% select(-GP, -pilota))
+summary(clust)
+plot(clust, what="classification")
+plot(clust, what="uncertainty")
+```
+```{r}
+tel.clust["class"] <- clust$classification
+```
+
+```{r}
+summary <- tel.clust %>%
+  select(-GP,-pilota)%>%
+  group_by(class) %>%
+  summarize(
+    across(everything(),
+    list(
+      mean = ~mean(.x, na.rm=T)
+  )), .groups = "drop"
+  )
+```
+
+
+```{r}
+gp_list <- unique(tel.clust$GP)
+
+for (gp in gp_list) {
+  
+  dati_gp <- tel.clust %>% filter(GP == gp)
+  
+  p <- ggplot(dati_gp, aes(x = Comp.1, y = Comp.2, color = pilota)) +
+    geom_point(size = 5, alpha = 0.8) +
+    geom_text(aes(label = pilota), hjust = -0.2, vjust = 0.5, size = 4, fontface = "bold") +
+    scale_color_manual(values = colori_piloti) +
+    labs(
+      title = paste("Stile di Guida -", gp),
+      x = "Magnitudo accellerazione laterale [G]",
+      y = "Irruenza accelleraizione",
+      color = "Pilota"
+    ) +
+    theme_minimal(base_size = 14) +
+    theme(
+      plot.title = element_text(hjust = 0.5, face = "bold", size = 16),
+      legend.position = "right"
+    )
+  
+  print(p)
+}
+```
+
