@@ -82,7 +82,7 @@ tel_resc <- tel  %>%
 
 tel.guida <- tel_resc %>%
   
-  select(GP, pilota, throttle, brake, acc_x, acc_y, time, rel_distance, x,y,z) %>% 
+  select(GP, pilota,speed,rpm, throttle, brake,time, acc_x, acc_y,x,y,z) %>% 
   
   arrange(GP,pilota,time) %>%
   
@@ -90,10 +90,10 @@ tel.guida <- tel_resc %>%
   
   mutate(
     across(
-      c(acc_x,acc_y,rel_distance),
+      c(acc_x,acc_y),
       list(diff = ~(.x - lag(.x,n = 1,default = 0))), 
       .names = "{.col}_{.fn}"))  %>% 
-  ungroup()
+  ungroup() %>% select(-time)
   
 
 ```
@@ -203,9 +203,7 @@ tel_num <- tel.guida_summary %>%
   
   ungroup() %>% 
   
-  select(where(is.numeric)) %>% 
-  
-  filter(if_all(everything(), is.finite))
+  select(where(is.numeric))
 
 
 PCA <- princomp(tel_num)
@@ -221,8 +219,11 @@ clust <- Mclust(tel_num)
 summary(clust)
 tel_num$clust <- clust$classification
 tel_num1 <- tel.guida_summary %>% filter(gp=="Abu Dhabi Grand Prix")
-
+plot(clust,what="BIC")
 plot(tel.guida_summary$acc_x_mean,tel.guida_summary$acc_y_mean,col=tel_num$clust,pch=16)
-
+plot(tel.guida_summary$acc_x_mean,tel.guida_summary$throttle_mean,col=tel_num$clust,pch=16)
+plot(tel.guida_summary$brake_mean,tel.guida_summary$acc_x_mean,col=tel_num$clust,pch=16)
+plot(tel.guida_summary$acc_y_mean,tel.guida_summary$throttle_mean,col=tel_num$clust,pch=16)
+clust$BIC
 ```
 
