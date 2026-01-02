@@ -29,6 +29,7 @@ citecolor=black       % Colore citazioni bibliografiche
 \usepackage{listings}
 \usepackage{xcolor}
 \usepackage{lmodern}
+\usepackage{enumitem}
 
 \definecolor{codegreen}{rgb}{0,0.6,0}
 \definecolor{codegray}{rgb}{0.5,0.5,0.5}
@@ -66,36 +67,55 @@ citecolor=black       % Colore citazioni bibliografiche
 		{\Large \textbf{GRUPPO: CORES}} \\ 
 		\vspace{0.2cm}
 		% Titolo del corso e Report
-		{\large \textsc{Computational Statistics -- Final Report}} \\
+		{\large \textsc{Statistica computazionale -- Report Finale}} \\
 		\vspace{0.1cm}
 		% Membri del gruppo
 		\small
-		\begin{tabular}{c c c c}
+		\begin{tabular}{c c c}
 			Maccianti Federico & Rapacioli Nicola & Riva Pietro \\
 			(909656) & (915439) & (908813) 
 		\end{tabular}
 	\end{center}
 	
-	\hrule % Linea orizzontale di separazione
+	\hrule
 	\vspace{0.5cm}
 	
-	% --- QUI INIZIA IL TUO TESTO ---
 	
 	\section{Introduzione}
 	Il presente report analizza un dataset ottenuto tramite il repository \href{https://github.com/TracingInsights/2025.git}{TracingInsights}.
 	Lo studio si concentra sui dati di telemetria relativi alle sessioni di qualifica della stagione di Formula 1 2025, selezionando per ciascun pilota il singolo giro migliore.
 	
-	Il dataset originale include le seguenti variabili: identificativi (GP, pilota), tempo dal via [$\mathrm{s}$], distanza percorsa [$\mathrm{m}$], regime motore (RPM), velocità [$\mathrm{km/h}$], marcia [$1\text{--}8$], uso del freno [$0/1$], uso dell'acceleratore [$0\text{--}100\%$], DRS [$0/1$], accelerazioni (longitudinale, laterale, verticale) [$\mathrm{m/s^2}$] e coordinate spaziali ($x, y, z$) [$\mathrm{m}$].
+	Il dataset originale include le seguenti variabili:
+	\begin{center}
+		\begin{tabular}{lll}
+			\hline
+			\textbf{Variabile} & \textbf{Unità} & \textbf{Tipo} \\
+			\hline
+			Gran premio            & --                 & \texttt{character} \\
+			Pilota                 & --                 & \texttt{character} \\
+			Tempo dal via          & $\mathrm{s}$        & \texttt{numeric} \\
+			Distanza percorsa      & $\mathrm{m}$        & \texttt{numeric} \\
+			Distanza relativa      & $0$--$1$            & \texttt{numeric} \\
+			Velocità               & $\mathrm{km/h}$     & \texttt{numeric} \\
+			Regime motore          & RPM                & \texttt{numeric} \\
+			Marcia                 & $1$--$8$            & \texttt{numeric} \\
+			Freno                  & $0/1$               & \texttt{factor} \\
+			Acceleratore           & $0$--$100\,\%$      & \texttt{numeric} \\
+			DRS                    & $0/1$               & \texttt{factor} \\
+			Accelerazioni          & $\mathrm{m/s^2}$    & \texttt{numeric} \\
+			Coordinate spaziali    & $\mathrm{m}$        & \texttt{numeric} \\
+			\hline
+		\end{tabular}
+	\end{center}
+	Le variabili binarie sono codificate come $0$ (non attivo) e $1$ (attivo).
 	
-	L'obiettivo dell'analisi è identificare l'esistenza di stili di guida distintivi tra i piloti.
+	L’obiettivo del presente report è analizzare il dataset descritto, al fine di caratterizzare il comportamento dei piloti durante il giro di gara attraverso le principali variabili telemetriche disponibili.
 	
 	\section{Analisi Esplorativa}
 	\subsection{Considerazioni sulle variabili}
-	Un potenziale stile di guida sicuramente non è dovuto a variabili spaziali o a variabili temporali
-	
-	
-	
-	
+	Poiché lo stile di guida non è riconducibile a variabili di tipo posizionale, le coordinate spaziali e le misure di distanza, sia assolute sia relative, vengono escluse dall’analisi.
+	In questa fase preliminare, lo stile di guida viene descritto attraverso variabili dinamiche quali l’utilizzo dell’acceleratore e del freno e le accelerazioni longitudinale e laterale, che consentono di caratterizzare rispettivamente le modalità di decelerazione in ingresso curva e l’intensità con cui la curva viene affrontata.
+	In modo tale da poter confrontare tra i vari gran premi le variabili di accelerazione laterale e longitudinale vengono riscalate nell'intervallo $[-1,1]$
 	Come si evince dalla Figura \ref{fig:istogrammi_iniziali}, la distribuzione \dots
 	
 	% Esempio placeholder per due grafici affiancati (risparmio spazio)
