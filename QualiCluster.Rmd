@@ -60,12 +60,12 @@ Le variabili presenti per ciascuna telemetria sono :
 -   acc_z : G verticale
 -   x, y, z : Coordinate spaziali [m]
 
-Anzi tutto per ricercare un potenziale stile di guida bisogna individuare, a partire da queste variabili grezze, quelle che sono, in primo luogo, concettualmente legato al concetto di stile di guida. Con questo si fa riferimento a variabili quali: 
+Anzi tutto per ricercare un potenziale stile di guida bisogna individuare, a partire da queste variabili grezze, quelle che sono, in primo luogo, concettualmente legato al concetto di stile di guida. Con questo si fa riferimento a variabili quali:
 
-- throttle : utilizzo dell'accelleratore (brusco,graduale,intervallato, ...) 
-- brake : utilizzo del freno 
-- acc_x : tipologie di frenate (prevalentemente brusche/secche, più gestite, ...)
-- acc_y : tipologia di guida (accellerazioni in generale molto polarizzate potrebbero indicare una guida molto nervosa per esempio ...)
+-   throttle : utilizzo dell'accelleratore (brusco,graduale,intervallato, ...)
+-   brake : utilizzo del freno
+-   acc_x : tipologie di frenate (prevalentemente brusche/secche, più gestite, ...)
+-   acc_y : tipologia di guida (accellerazioni in generale molto polarizzate potrebbero indicare una guida molto nervosa per esempio ...)
 
 Le variabili posizionali quali
 
@@ -75,29 +75,29 @@ Le variabili posizionali quali
 
 possono tornare utili per dare un riferimento alle rilevazioni.
 
+Si riscalano le variabili di accelerazione al fine di peter equiparare i diversi tracciati tra loro
+
 ```{r}
 
-tel_resc <- tel  %>% 
+tel.guida <- tel  %>% 
   group_by(GP) %>% 
-  mutate(across(c(acc_x,acc_y), ~ rescale(.,to = c(-1, 1)))) %>%
+  mutate(across(c(acc_x,acc_y), ~ abs(rescale(.,to = c(-1, 1))))) %>% 
   ungroup()
 
 ```
 
+Si creano le seguenti variabili:
 
-Visualizzazione delle correlazioni tra le variabili eliminando le variabili spaziali e temporali
+-   **lag1**
+-   **lag2**
+-   **lag3**
 
-```{r}
-tel.num <- tel_resc %>% select(where(is.numeric)) %>% select(-time,-x,-y,-z,-distance,-rel_distance)
-corr <- cor(tel.num)
-ggcorrplot(corr,hc.order = T, type="lower", lab=T)
-```
-Le correlazioni confermano le ipotesi che l'accelerazione è utile al fine di capire lo stile gi guida in quanto fortemente correlata con brake e throttle inlotre c'è anche una correlazione forte tra speed ed gear, risulta più informativa la variabile speed quindi si sceglie di eliminare alcune variabili come gear throttle e brake 
+Per calcolare la variazione percentuale delle variabili *throttle*,*acc_x*,*acc_y* che da un indicazione del.......
 
 ```{r}
-tel.guida <- tel_resc %>%
+tel.guida <- tel.guida %>%
   
-  select(GP, pilota,speed,rpm,time, acc_x, acc_y) %>% 
+  select(GP,pilota,throttle,brake,acc_x,acc_y,time) %>% 
   
   arrange(GP,pilota,time) %>%
   
@@ -105,30 +105,19 @@ tel.guida <- tel_resc %>%
   
   mutate(
     across(
-      c(speed,rpm, acc_x,acc_y),
-      list(diff = ~(.x - lag(.x,n = 1,default = 0))), 
-      .names = "{.col}_{.fn}"))  %>% 
-  ungroup() %>% select(-time)
-```
-
-
-Una prima analisi delle componenti principali per comprendere quali variabili influiscono più sulla varianza
-```{r}
-tel_num <- tel.num %>% 
-  
+      c(throttle, acc_x, acc_y),
+      list(
+        # La tilde (~) va all'inizio per dire "questa è una funzione"
+        lag1 = ~round(ifelse(lag(.x, n = 1) == 0, (.x - 0.01) /0.01, (.x - lag(.x, n = 1)) / lag(.x, n = 1 )),4),
+        lag2 = ~round( ifelse(lag(.x, n = 2) == 0, (.x - 0.01) /0.01, (.x - lag(.x, n = 2 )) / lag(.x, n = 2)),4),
+        lag3 = ~round( ifelse(lag(.x, n = 3) == 0, (.x - 0.01) /0.01, (.x - lag(.x, n = 3 )) / lag(.x, n = 3 )),4)
+      ),
+      .names = "{.col}_{.fn}"
+    )
+  )  %>% 
   ungroup() %>% 
-  
-  select(rpm,speed,drs,acc_x,acc_y,acc_z)
-  
-
-PCA <- princomp(tel_num)
-summary(PCA)
-PCA$loadings
+  select(-time)
 ```
-
-
-
-
 
 Si raccolgono ora le prime statistiche riassuntive delle variabili per valutare in che modo si possano definire delle variabili associate a un potenziale stile di guida.
 
@@ -136,20 +125,15 @@ Si raccolgono ora le prime statistiche riassuntive delle variabili per valutare 
 tel.guida_summary <- tel.guida %>% 
   group_by(GP, pilota) %>%
   summarise(across(
-    where(is.numeric), 
+    c(throttle,acc_x,acc_y,brakes), 
     list(mean = ~mean(.x, na.rm = TRUE),
-         sd = ~sd(.x, na.rm = TRUE),
-         IQR = ~ IQR(.x, na.rm=TRUE)),
-    
+         sd = ~sd(.x, na.rm = TRUE)),
     .names = "{.col}_{.fn}"
-  ),.groups = "drop") 
+  ),across(contains("lag"), ) 
+  
+  
+  ,.groups = "drop")
 ```
-
-
-
-
-
-
 
 ```{r}
 
@@ -157,38 +141,12 @@ piloti_unici <- sort(unique(tel.guida_summary$pilota))
 
 
 n_piloti <- length(piloti_unici)
-#colori_piloti <- setNames(
-#  colorRampPalette(brewer.pal(12, "Paired"))(n_piloti),
-#  piloti_unici
-#)
-
-# Codici HEX approssimativi delle livree
-# 1. Mappa: Associa ogni sigla pilota alla sua Scuderia (Griglia 2025)
-pilota_team_map <- c(
-  "LEC" = "Ferrari",      "HAM" = "Ferrari",
-  "VER" = "Red Bull",     "HAD" = "Red Bull",
-  "NOR" = "McLaren",      "PIA" = "McLaren",
-  "RUS" = "Mercedes",     "ANT" = "Mercedes",
-  "ALO" = "Aston Martin", "STR" = "Aston Martin",
-  "GAS" = "Alpine",       "DOO" = "Alpine",
-  "ALB" = "Williams",     "SAI" = "Williams",  "COL" = "Williams",
-  "TSU" = "RB",           "LAW" = "RB",
-  "HUL" = "Sauber",       "BOR" = "Sauber",
-  "OCO" = "Haas",         "BEA" = "Haas"
-)
-
-# 2. Colori: Associa i colori ai nomi delle Scuderie
-colori_team <- c(
-  "Ferrari"      = "#E80020",
-  "Red Bull"     = "#0600EF",
-  "McLaren"      = "#FF8000",
-  "Mercedes"     = "#00D2BE",
-  "Aston Martin" = "#229971",
-  "Alpine"       = "#0090FF",
-  "Williams"     = "#64C4FF",
-  "RB"           = "#6692FF",
-  "Sauber"       = "#52E252",
-  "Haas"         = "#B6BABD"
+colori_piloti <- setNames(
+  c("#E41A1C", "#377EB8", "#4DAF4A", "#984EA3", "#FF7F00",
+    "#FFFF33", "#A65628", "#F781BF", "#66C2A5", "#FC8D62",
+    "#8DA0CB", "#E78AC3", "#A6D854", "#FFD92F", "#E5C494",
+    "#1B9E77", "#D95F02", "#7570B3", "#E7298A", "#66A61E")[1:length(piloti_unici)],
+  piloti_unici
 )
 
 
@@ -196,47 +154,29 @@ gp_list <- unique(tel.guida_summary$GP)
 
 for (gp in gp_list) {
   
-  # 1. Filtra i dati
-  dati_gp <- tel.guida_summary %>% 
-    filter(GP == gp) %>%
-    
-    mutate(Team = pilota_team_map[pilota]) 
+  dati_gp <- tel.guida_summary %>% filter(GP == gp)
   
-
-  p <- ggplot(dati_gp, aes(x = acc_x_mean, y = acc_y_mean)) + 
-    
-  
-    geom_point(aes(color = Team), size = 5, alpha = 0.8) +
-    
-  
+  p <- ggplot(dati_gp, aes(x = acc_x_mean, y = acc_y_mean, color = pilota)) +
+    geom_point(size = 5, alpha = 0.8) +
     geom_text(aes(label = pilota), hjust = -0.2, vjust = 0.5, size = 4, fontface = "bold") +
-    
-
-    scale_color_manual(values = colori_team) +
-    
+    scale_color_manual(values = colori_piloti) +
     labs(
       title = paste("Stile di Guida -", gp),
       x = "Accelerazione Longitudinale Media [G]",
       y = "Accelerazione Laterale Media [G]",
-      color = "Scuderia"
+      color = "Pilota"
     ) +
-    
     theme_minimal(base_size = 14) +
     theme(
       plot.title = element_text(hjust = 0.5, face = "bold", size = 16),
-      legend.position = "right",
-      legend.text = element_text(size = 10)
+      legend.position = "right"
     )
   
   print(p)
 }
 
+
 ```
-
-
-
-
-
 
 ```{r}
 clust <- Mclust(tel.guida_summary %>% select(-GP,-pilota))
@@ -250,4 +190,3 @@ plot(tel.guida_summary$brake_mean,tel.guida_summary$acc_x_mean,col=tel_num$clust
 plot(tel.guida_summary$acc_y_mean,tel.guida_summary$throttle_mean,col=tel_num$clust,pch=16)
 clust$BIC
 ```
-
