@@ -21,6 +21,8 @@ library(dplyr)
 library(RColorBrewer)
 library(scales)
 library(ggcorrplot)
+library(mclust)
+
 
 ```
 
@@ -80,9 +82,22 @@ tel_resc <- tel  %>%
   mutate(across(c(acc_x,acc_y), ~ rescale(.,to = c(-1, 1)))) %>%
   ungroup()
 
+```
+
+
+Visualizzazione delle correlazioni tra le variabili eliminando le variabili spaziali e temporali
+
+```{r}
+tel.num <- tel_resc %>% select(where(is.numeric)) %>% select(-time,-x,-y,-z,-distance,-rel_distance)
+corr <- cor(tel.num)
+ggcorrplot(corr,hc.order = T, type="lower", lab=T)
+```
+Le correlazioni confermano le ipotesi che l'accelerazione è utile al fine di capire lo stile gi guida in quanto fortemente correlata con brake e throttle inlotre c'è anche una correlazione forte tra speed ed gear, risulta più informativa la variabile speed quindi si sceglie di eliminare alcune variabili come gear throttle e brake 
+
+```{r}
 tel.guida <- tel_resc %>%
   
-  select(GP, pilota,speed,rpm, throttle, brake,time, acc_x, acc_y,x,y,z) %>% 
+  select(GP, pilota,speed,rpm,time, acc_x, acc_y) %>% 
   
   arrange(GP,pilota,time) %>%
   
@@ -90,13 +105,31 @@ tel.guida <- tel_resc %>%
   
   mutate(
     across(
-      c(acc_x,acc_y),
+      c(speed,rpm, acc_x,acc_y),
       list(diff = ~(.x - lag(.x,n = 1,default = 0))), 
       .names = "{.col}_{.fn}"))  %>% 
   ungroup() %>% select(-time)
+```
+
+
+Una prima analisi delle componenti principali per comprendere quali variabili influiscono più sulla varianza
+```{r}
+tel_num <- tel.num %>% 
+  
+  ungroup() %>% 
+  
+  select(rpm,speed,drs,acc_x,acc_y,acc_z)
   
 
+PCA <- princomp(tel_num)
+summary(PCA)
+PCA$loadings
 ```
+
+
+
+
+
 Si raccolgono ora le prime statistiche riassuntive delle variabili per valutare in che modo si possano definire delle variabili associate a un potenziale stile di guida.
 
 ```{r}
@@ -111,6 +144,11 @@ tel.guida_summary <- tel.guida %>%
     .names = "{.col}_{.fn}"
   ),.groups = "drop") 
 ```
+
+
+
+
+
 
 
 ```{r}
@@ -198,24 +236,10 @@ for (gp in gp_list) {
 
 
 
-```{r}
-tel_num <- tel.guida_summary %>% 
-  
-  ungroup() %>% 
-  
-  select(where(is.numeric))
-
-
-PCA <- princomp(tel_num)
-summary(PCA)
-PCA$loadings
-```
-
 
 
 ```{r}
-library(mclust)
-clust <- Mclust(tel_num)
+clust <- Mclust(tel.guida_summary %>% select(-GP,-pilota))
 summary(clust)
 tel_num$clust <- clust$classification
 tel_num1 <- tel.guida_summary %>% filter(gp=="Abu Dhabi Grand Prix")
