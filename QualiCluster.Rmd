@@ -13,7 +13,7 @@ Working set up
 
 ```{r}
 rm(list=ls())
-setwd("C:/Users/4erre/Documents/PERSONALE/SCUOLA/A.A._2025-2026/Statistica_computazionale/Progetto")
+setwd("C:/Users/feder/Documents/datasets/Computazionale/F1")
 options(warn = -1) 
 
 library(tidyverse)
@@ -25,19 +25,21 @@ library(ggcorrplot)
 library(mclust)
 
 
+
 ```
 
 # F1 : Telemetrie qualifiche
 
 Il seguente studio si pone l'obiettivo di individuare dei possibili stili di guida attraverso il clustering model based.
 
-## Espolarazione dataset
+## Esplorazione del Sdataset
 
 Si va ora ad esplorare il dataset in maniera tale da poter capire quali variabili possano essere indicative per individuare uno **stile di guida** per ciascun pilota.
 
 ```{r}
-tel <- readRDS("C:/Users/4erre/Documents/PERSONALE/SCUOLA/A.A._2025-2026/Statistica_computazionale/Progetto/formula1/data/dataset_completo_best_tel.rds")
+tel <- readRDS("C:/Users/feder/Documents/datasets/Computazionale/F1/data/dataset_completo_best_tel.rds")
 head(tel)
+tel <- as_tibble(tel)
 ```
 
 ```{r}
@@ -76,15 +78,59 @@ Le variabili posizionali quali
 
 possono tornare utili per dare un riferimento alle rilevazioni.
 
+grafici di esempio per verificare le assunzioni sulle variabili
+
+```{r}
+tel.ex <- tel %>% filter(GP == "United States Grand Prix" & (pilota == "VER" |pilota == "LEC"|pilota== "NOR"))
+colori_team <- c("VER" = "#0600EF", "LEC" = "#EF1A2D", "NOR" = "#FF8700")
+
+
+
+tel_long <- tel.ex %>%
+  select(rel_distance, pilota, throttle, acc_y, acc_x) %>%
+  pivot_longer(cols = c(throttle, acc_y, acc_x), 
+               names_to = "variabile", 
+               values_to = "valore") %>%
+  mutate(variabile = factor(variabile, 
+                            levels = c("throttle", "acc_y", "acc_x"),
+                            labels = c("Accel(%)", " Accel.Lat. (g)", " Accel. Long. (g)")))
+
+
+pp <- ggplot(tel_long, aes(x = rel_distance, y = valore, color = pilota)) +
+  geom_hline(yintercept = 0, linetype = "dashed", color = "gray70", size = 0.4) +
+  geom_line(size = 0.6, alpha = 0.8) +
+  facet_grid(variabile ~ ., scales = "free_y", switch = "y") + 
+  scale_color_manual(values = colori_team) +
+  theme_minimal(base_size = 12) +
+  labs(
+    x = "Distanza Relativa",
+    y = NULL,
+    color = "Pilota"
+  ) +
+  theme(
+    strip.placement = "outside", 
+    strip.text.y = element_text(face = "bold", size = 7),
+    strip.background = element_rect(fill = "gray96", color = NA),
+    legend.position = "top",
+    panel.spacing = unit(1.2, "lines"),
+    panel.grid.minor = element_blank(),
+    plot.title = element_text(face = "bold", size = 16, margin = margin(b = 5)),
+    plot.subtitle = element_text(size = 11, color = "gray30", margin = margin(b = 15))
+  )
+
+print(pp)
+
+
+ggsave("tel_ex1.pdf", pp, width = 7, height = 5, device = cairo_pdf)
+```
+
 Si riscalano le variabili di accelerazione al fine di peter equiparare i diversi tracciati tra loro
 
 ```{r}
-
 tel.guida <- tel  %>% 
   group_by(GP) %>% 
   mutate(across(c(acc_x,acc_y), ~ abs(rescale(.,to = c(-1, 1))))) %>% 
-  ungroup()
-
+  ungroup
 ```
 
 Si creano le seguenti variabili:
@@ -122,11 +168,11 @@ tel.guida <- tel.guida %>%
 
 Si raccolgono ora le prime statistiche riassuntive delle variabili per valutare in che modo si possano definire delle variabili associate a un potenziale stile di guida, in particolare :
 
-- Per le variabili *throttle* ,*acc_x*, *acc_y*, *brake*
- - Media;
- - Deviazione standard;
- - Massimo;
- - Minimo;
+-   Per le variabili *throttle* ,*acc_x*, *acc_y*, *brake*
+-   Media;
+-   Deviazione standard;
+-   Massimo;
+-   Minimo;
 
 ```{r}
 tel.guida_summary <- tel.guida %>% 
@@ -178,31 +224,33 @@ tel.guida_summary <- tel.guida %>%
 ```{r}
 colSums(is.na(tel.guida_summary))
 ```
+
 ```{r}
 tel.guida_summary[!complete.cases(tel.guida_summary), ]
 ```
+
 L'unico record che presenta degli `NaN` nelle statistiche riassuntive è Russel al *Miami Grand Prix*.
 
 ```{r}
 tel.guida %>%
   filter((pilota == "RUS") & (GP == "Miami Grand Prix"))
 ```
-Da questa tabella si può vedere che ci sono stati probabilmente dei problemi con i sensori di telemetria durante la qualifica. Si procede quindi a rimuovere il record. Si rimuovono inoltre le statistiche `brake_min` e `brake_max` in quanto trattandosi di una variabile dicotomica non sono per nulla indicative.
+
+Da questa tabella si può vedere che ci sono stati probabilmente dei problemi con i sensori di telemetria durante la qualifica. Si procede quindi a rimuovere il record. Si rimuovono inoltre le statistiche `brake_min` e `brake_max` in quanto trattandosi di una variabile dicotomica non sono per nulla indicative ed anche della variabile `throttle_min` e `throttle_max` in quanto limitata in [0-100] quindi risulterebbe costante per tutti i piloti.
 
 ```{r}
 tel.guida <- tel.guida %>%
   filter((pilota != "RUS") & (GP != "Miami Grand Prix"))
 tel.guida_summary <- tel.guida_summary %>%
   filter(complete.cases(.)) %>%
-  select(-brake_max, -brake_min)
+  select(-brake_max, -brake_min,-throttle_max,-throttle_min)
 ```
-
 
 ### PCA
 
 ```{r}
 PCA <- princomp(tel.guida_summary %>%
-                  select(where(is.numeric)))
+                  select(where(is.numeric)),cor=T)
 summary(PCA)
 ```
 
@@ -215,13 +263,13 @@ sort(round(PCA$loadings[,1],4),decreasing = T)
 ```{r}
 sort(round(PCA$loadings[,2],4),decreasing = T)
 ```
+
 ```{r}
 tel.sum.pca <- as.tibble(round(PCA$scores[,c(1,2)],4))
 tel.sum.pca <- tel.sum.pca %>%
   mutate(pilota = tel.guida_summary$pilota,
          GP = tel.guida_summary$GP)
 ```
-
 
 ```{r}
 
@@ -284,14 +332,13 @@ tel.clust <- tel.guida_summary %>%
 
 ```
 
-
-
 ```{r}
 clust <- Mclust(tel.clust %>% select(-GP, -pilota))
 summary(clust)
 plot(clust, what="classification")
 plot(clust, what="uncertainty")
 ```
+
 ```{r}
 tel.clust["class"] <- clust$classification
 ```
@@ -307,7 +354,6 @@ summary <- tel.clust %>%
   )), .groups = "drop"
   )
 ```
-
 
 ```{r}
 gp_list <- unique(tel.clust$GP)
@@ -335,4 +381,3 @@ for (gp in gp_list) {
   print(p)
 }
 ```
-

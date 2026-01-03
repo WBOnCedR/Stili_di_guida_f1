@@ -1,0 +1,213 @@
+\documentclass[a4paper, 11pt]{article}
+
+% --- IMPOSTAZIONI DI PAGINA (CRUCIALE PER LE 6 PAGINE) ---
+% Margini ridotti a 2cm per guadagnare spazio vitale
+\usepackage[left=2cm, right=2cm, top=2cm, bottom=2cm]{geometry}
+
+% --- LINGUA E CODIFICA ---
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[italian]{babel}     % Traduce "Figure", "Table", ecc.
+\usepackage{microtype}          % Migliora la spaziatura e la sillabazione (aspetto più professionale)
+
+% --- MATEMATICA E TABELLE ---
+\usepackage{amsmath, amssymb}   % Simboli matematici
+\usepackage{booktabs}           % Per tabelle professionali (senza linee verticali)
+\usepackage{array}
+
+% --- GRAFICI E IMMAGINI ---
+\usepackage{graphicx}
+\usepackage{subcaption}         % Fondamentale per mettere grafici affiancati (Fig 1a, 1b)
+\usepackage{float} 				   % Per usare [H] e bloccare le immagini dove vuoi tu
+\usepackage{wrapfig}          
+\usepackage[colorlinks=true,      % Attiva i colori invece dei riquadri
+linkcolor=black,      % Colore link interni (es. Indice, Figure) - meglio black per stampare
+urlcolor=blue,        % Colore link web (es. il tuo dataset)
+citecolor=black       % Colore citazioni bibliografiche
+]{hyperref}% Per link cliccabili (es. fonte dataset) senza rettangoli rossi
+
+% --- CONFIGURAZIONE CODICE R (PER APPENDICE) ---
+\usepackage{listings}
+\usepackage{xcolor}
+\usepackage{lmodern}
+\usepackage{enumitem}
+
+\definecolor{codegreen}{rgb}{0,0.6,0}
+\definecolor{codegray}{rgb}{0.5,0.5,0.5}
+\definecolor{codepurple}{rgb}{0.58,0,0.82}
+\definecolor{backcolour}{rgb}{0.95,0.95,0.92}
+
+\lstset{ 
+	language=R,
+	backgroundcolor=\color{backcolour},   
+	commentstyle=\color{codegreen},
+	keywordstyle=\color{blue},
+	numberstyle=\tiny\color{codegray},
+	stringstyle=\color{codepurple},
+	basicstyle=\footnotesize\ttfamily, % Font piccolo monospaziato
+	breakatwhitespace=false,         
+	breaklines=true,                 % Va a capo se la riga è troppo lunga
+	captionpos=b,                    
+	keepspaces=true,                 
+	numbers=left,                    % Numeri di riga a sinistra
+	numbersep=5pt,                  
+	showspaces=false,                
+	showstringspaces=false,
+	showtabs=false,                  
+	tabsize=2,
+	frame=single                     % Cornice attorno al codice
+}
+
+% --- INIZIO DEL DOCUMENTO ---
+\begin{document}
+	
+	% --- INTESTAZIONE COMPATTA (Custom Header) ---
+	% Non uso \maketitle standard perché occupa mezza pagina inutile.
+	\begin{center}
+		% Nome del gruppo (evocativo come richiesto)
+		{\Large \textbf{GRUPPO: CORES}} \\ 
+		\vspace{0.2cm}
+		% Titolo del corso e Report
+		{\large \textsc{Statistica computazionale -- Report Finale}} \\
+		\vspace{0.1cm}
+		% Membri del gruppo
+		\small
+		\begin{tabular}{c c c}
+			Maccianti Federico & Rapacioli Nicola & Riva Pietro \\
+			(909656) & (915439) & (908813) 
+		\end{tabular}
+	\end{center}
+	
+	\hrule
+	\vspace{0.5cm}
+	
+	
+	\section{Introduzione}
+	Il presente report analizza un dataset ottenuto tramite il repository \href{https://github.com/TracingInsights/2025.git}{TracingInsights}.
+	Lo studio si concentra sui dati di telemetria relativi alle sessioni di qualifica della stagione di Formula 1 2025, selezionando per ciascun pilota il singolo giro migliore.
+	
+	Il dataset originale include le seguenti variabili:
+	\begin{center}
+		\begin{tabular}{lll}
+			\hline
+			\textbf{Variabile} & \textbf{Unità} & \textbf{Tipo} \\
+			\hline
+			Gran premio            & --                 & \texttt{character} \\
+			Pilota                 & --                 & \texttt{character} \\
+			Tempo dal via          & $\mathrm{s}$        & \texttt{numeric} \\
+			Distanza percorsa      & $\mathrm{m}$        & \texttt{numeric} \\
+			Distanza relativa      & $0$--$1$            & \texttt{numeric} \\
+			Velocità               & $\mathrm{km/h}$     & \texttt{numeric} \\
+			Regime motore          & RPM                & \texttt{numeric} \\
+			Marcia                 & $1$--$8$            & \texttt{numeric} \\
+			Freno                  & $0/1$               & \texttt{factor} \\
+			Acceleratore           & $0$--$100\,\%$      & \texttt{numeric} \\
+			DRS                    & $0/1$               & \texttt{factor} \\
+			Accelerazioni laterale e longitudinale         & $\mathrm{m/s^2}$    & \texttt{numeric} \\
+			Coordinate spaziali x,y,z    & $\mathrm{m}$        & \texttt{numeric} \\
+			\hline
+		\end{tabular}
+	\end{center}
+	Le variabili binarie sono codificate come $0$ (non attivo) e $1$ (attivo).
+	
+	L’obiettivo del presente report è analizzare il dataset descritto, al fine di caratterizzare il comportamento dei piloti durante il giro di qualifica attraverso le principali variabili telemetriche disponibili.
+	
+	\section{Analisi Esplorativa}
+	\subsection{Considerazioni sulle variabili}
+	Poiché lo stile di guida non è riconducibile a variabili di tipo posizionale, le coordinate spaziali e le misure di distanza, sia assolute sia relative, vengono escluse dall’analisi.
+	\begin{wrapfigure}{r}{0.5\textwidth} % {r} sta per destra (right), 0.5 è la larghezza
+		\centering
+		\includegraphics[width=.5\textwidth]{tel_ex1.pdf}
+		\caption{Accelerazioni VER, LEC, NOR.}
+		\vspace{-10pt} % Rimuove spazio bianco sotto la didascalia
+		\label{fig:confronto}
+	\end{wrapfigure}
+	
+	In questa fase preliminare, lo stile di guida viene descritto attraverso variabili dinamiche quali l’utilizzo dell’acceleratore e del freno e le accelerazioni longitudinale e laterale, che consentono di caratterizzare rispettivamente le modalità di decelerazione in ingresso curva e l’intensità con cui la curva viene affrontata.
+	A sostegno delle ipotesi sopra citate, si riporta la Figura \ref{fig:confronto} che confronta nel Gran Premio degli USA le accelerazioni per i piloti: Charles Leclerc, Lando Norris e Max Verstappen. Notando infatti come nelle variazioni repentine si contraddistinguano meglio i piloti
+	\clearpage
+	\subsubsection{Trasformazione e creazione di nuove variabili}
+	Al fine di rendere confrontabili i diversi tracciati dei Gran Premi, le variabili di accelerazione laterale e longitudinale vengono riscalate, per ciascun Gran Premio e Pilota, nell’intervallo $[-1,1]$. Successivamente, tali variabili vengono trasformate in valore assoluto, così da ottenere una misura della loro intensità complessiva (magnitudo), il cui dominio risulta compreso in $[0,1]$.  
+	Per le restanti variabili telemetriche si mantiene invece la forma grezza.
+		
+	Si creano tre nuove variabili di variazione percentuali avendo notato dalla figura \ref{fig:confronto} che quando ci sono variazioni repentine che si contraddistingue lo stile di guida dei piloti:
+	\begin{itemize}[noitemsep, topsep=0pt]
+		\item \textbf{\_lag1} : variazione percentuale rispetto all'osservazione precedente
+		\item \textbf{\_lag2} : variazione percentuale rispetto a due osservazioni precedenti
+		\item \textbf{\_lag3} : variazione percentuale rispetto a tre osservazioni precedenti
+	\end{itemize}
+	Vengono calcolate indicando con $x_t$ l'unità statistica al tempo $t$ viene calcolata tramite la seguente formula:
+	\[\Delta=\dfrac{x_{t}-x_{t-k}}{x_{t-k}}\] 
+	
+	con $k=1,2,3$ numero di lag per le misure di accelerazione, nel caso in cui $x_{t-k}=0$ si procede con la sostituzione $x_{t-k}=0.01$ per riuscire a mantenere la validità del calcolo e continuità delle dinamiche telemetriche.
+	
+	Queste variabili consentono di catturare la dinamica delle grandezze nel tempo e sono utili per caratterizzare l’evoluzione del comportamento di guida tra un istante e l’altro.
+	
+	\subsection{Statistiche riassuntive}
+	Si procede al calcolo delle statistiche descrittive al fine di valutare in che modo esse possano essere associate allo stile di guida, considerando separatamente ciascun Gran Premio e Pilota.  
+	
+	Per le misure di accelerazione longitudinale e laterale vengono calcolate media, deviazione standard, valore massimo e valore minimo. Per la variabile relativa alla frenata, di natura dicotomica non categorica, vengono invece considerate esclusivamente la media e la deviazione standard, poiché il calcolo di minimo e massimo non risulta informativo.
+	Anche per la variabile accelerazione non si calcolano gli estremi in quanto una misura limitata nell'intervallo [0-100], e risulterebbero costanti per tutti i piloti e gran premi.
+	
+	
+	Per le variabili di tipo \_lag$k$ vengono calcolate medie e deviazioni standard distinguendo tra variazioni positive e negative, così da evidenziare eventuali asimmetrie nel comportamento dinamico del pilota.
+
+	
+	Nel calcolo delle statistiche descrittive, viene osservato come per il pilota Russell al Gran Premio di Miami si producano degli \texttt{NA}. Ricontrollando i dati grezzi ci si accorge di come probabilmente i sensori telemetrici abbiano avuto un'avaria, in quanto i record sono la maggior risulta pari a zero. Per i motivi elencati sopra, si procede dunque ad eliminare il record.
+	
+	Il nuovo dataset pertanto contiene 52 variabili, che forniscono informazione sullo stile di guida del pilota nella specifica gara.
+	
+	Si procede dunque con una analisi delle componenti principali per ridurre la dimensionalità, e comprendere quali siano le variabili più significative nel fornire l'informazione.
+	\subsection{Analisi delle componenti principali}
+	
+	
+	
+	
+	\clearpage
+	Come si evince dalla Figura \ref{fig:istogrammi_iniziali}, la distribuzione \dots
+	
+	% Esempio placeholder per due grafici affiancati (risparmio spazio)
+	\begin{figure}[ht]
+		\centering
+		\begin{subfigure}[b]{0.45\textwidth}
+			% \includegraphics[width=\textwidth]{tuo_grafico_1.pdf}
+			\rule{\textwidth}{3cm} % Rimuovi questa riga e usa includegraphics
+			\caption{Distribuzione Variabile X}
+		\end{subfigure}
+		\hfill
+		\begin{subfigure}[b]{0.45\textwidth}
+			% \includegraphics[width=\textwidth]{tuo_grafico_2.pdf}
+			\rule{\textwidth}{3cm} % Rimuovi questa riga e usa includegraphics
+			\caption{Scatterplot X vs Y}
+		\end{subfigure}
+		\caption{Analisi esplorativa iniziale delle variabili principali.}
+		\label{fig:istogrammi_iniziali}
+	\end{figure}
+	
+	\section{Modellazione}
+	Abbiamo applicato un modello di regressione lineare:
+	\begin{equation}
+		Y_i = \beta_0 + \beta_1 X_{1i} + \epsilon_i
+	\end{equation}
+	
+	% --- CHIUSURA DOCUMENTO E APPENDICE ---
+	
+	% \newpage % Scommenta se vuoi l'appendice in pagina nuova
+	\appendix
+	\section{Codice R Commentato}
+	Di seguito riportiamo lo script utilizzato per l'analisi.
+	
+	% Se hai il file .R nella stessa cartella:
+	% \lstinputlisting[language=R]{analisi_script.R}
+	
+	% Se vuoi incollare il codice qui:
+	\begin{lstlisting}
+		# Caricamento librerie
+		library(ggplot2)
+		data <- read.csv("dataset.csv")
+		
+		# Analisi preliminare
+		summary(data)
+	\end{lstlisting}
+	
+\end{document}
