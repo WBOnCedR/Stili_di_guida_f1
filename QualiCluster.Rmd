@@ -87,13 +87,13 @@ colori_team <- c("VER" = "#0600EF", "LEC" = "#EF1A2D", "NOR" = "#FF8700")
 
 
 tel_long <- tel.ex %>%
-  select(rel_distance, pilota, throttle, acc_y, acc_x) %>%
-  pivot_longer(cols = c(throttle, acc_y, acc_x), 
+  select(rel_distance, pilota,, acc_y, acc_x) %>%
+  pivot_longer(cols = c(acc_y, acc_x), 
                names_to = "variabile", 
                values_to = "valore") %>%
   mutate(variabile = factor(variabile, 
-                            levels = c("throttle", "acc_y", "acc_x"),
-                            labels = c("Accel(%)", " Accel.Lat. (g)", " Accel. Long. (g)")))
+                            levels = c("acc_y", "acc_x"),
+                            labels = c(" Accelerazione Laterale (g)", " Accelerazione Longitudinale (g)")))
 
 
 pp <- ggplot(tel_long, aes(x = rel_distance, y = valore, color = pilota)) +
@@ -247,11 +247,12 @@ tel.guida_summary <- tel.guida_summary %>%
 ```
 
 ### PCA
-
+Si applica una PCA con matrice di correlazione in quanto le variabili hanno unità di misura diverse 
 ```{r}
 PCA <- princomp(tel.guida_summary %>%
                   select(where(is.numeric)),cor=T)
 summary(PCA)
+PCA$loadings
 ```
 
 Vediamo quali sono le variabili che decrivono le prime due componenti.
