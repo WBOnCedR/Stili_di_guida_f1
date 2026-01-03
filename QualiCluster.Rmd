@@ -1,6 +1,6 @@
 ---
 title: "QualiCluster"
-author: "Pietro Riva"
+author: "Pietro Riva, Federico Maccianti"
 date: "2025-12-30"
 output: html_document
 ---
@@ -13,7 +13,7 @@ Working set up
 
 ```{r}
 rm(list=ls())
-setwd("C:/Users/feder/Documents/datasets/Computazionale/F1")
+setwd("C:/Users/4erre/Documents/PERSONALE/SCUOLA/A.A._2025-2026/Statistica_computazionale/Progetto")
 options(warn = -1) 
 
 library(tidyverse)
@@ -23,8 +23,8 @@ library(RColorBrewer)
 library(scales)
 library(ggcorrplot)
 library(mclust)
-
-
+library(caret)
+library(factoextra)
 
 ```
 
@@ -32,12 +32,12 @@ library(mclust)
 
 Il seguente studio si pone l'obiettivo di individuare dei possibili stili di guida attraverso il clustering model based.
 
-## Esplorazione del Sdataset
+## Esplorazione del dataset
 
 Si va ora ad esplorare il dataset in maniera tale da poter capire quali variabili possano essere indicative per individuare uno **stile di guida** per ciascun pilota.
 
 ```{r}
-tel <- readRDS("C:/Users/feder/Documents/datasets/Computazionale/F1/data/dataset_completo_best_tel.rds")
+tel <- readRDS("C:/Users/4erre/Documents/PERSONALE/SCUOLA/A.A._2025-2026/Statistica_computazionale/Progetto/formula1/data/dataset_completo_best_tel.rds")
 head(tel)
 tel <- as_tibble(tel)
 ```
@@ -63,14 +63,13 @@ Le variabili presenti per ciascuna telemetria sono :
 -   acc_z : G verticale
 -   x, y, z : Coordinate spaziali [m]
 
-Anzi tutto per ricercare un potenziale stile di guida bisogna individuare, a partire da queste variabili grezze, quelle che sono, in primo luogo, concettualmente legato al concetto di stile di guida. Con questo si fa riferimento a variabili quali:
+Anzi tutto per ricercare un potenziale stile di guida bisogna individuare, a partire da queste variabili grezze, quelle che sono, in primo luogo, concettualmente legate al concetto di stile di guida. Con questo si fa riferimento a variabili quali:
 
 -   throttle : utilizzo dell'accelleratore (brusco,graduale,intervallato, ...)
--   brake : utilizzo del freno
 -   acc_x : tipologie di frenate (prevalentemente brusche/secche, più gestite, ...)
 -   acc_y : tipologia di guida (accellerazioni in generale molto polarizzate potrebbero indicare una guida molto nervosa per esempio ...)
 
-Le variabili posizionali quali
+Le variabili posizionali
 
 -   time
 -   rel_distance
@@ -78,7 +77,7 @@ Le variabili posizionali quali
 
 possono tornare utili per dare un riferimento alle rilevazioni.
 
-grafici di esempio per verificare le assunzioni sulle variabili
+Di seguito alcune analisi grafiche per supportare quanto appena affermato.
 
 ```{r}
 tel.ex <- tel %>% filter(GP == "United States Grand Prix" & (pilota == "VER" |pilota == "LEC"|pilota== "NOR"))
@@ -87,7 +86,7 @@ colori_team <- c("VER" = "#0600EF", "LEC" = "#EF1A2D", "NOR" = "#FF8700")
 
 
 tel_long <- tel.ex %>%
-  select(rel_distance, pilota,, acc_y, acc_x) %>%
+  select(rel_distance, pilota, acc_y, acc_x) %>%
   pivot_longer(cols = c(acc_y, acc_x), 
                names_to = "variabile", 
                values_to = "valore") %>%
@@ -97,7 +96,7 @@ tel_long <- tel.ex %>%
 
 
 pp <- ggplot(tel_long, aes(x = rel_distance, y = valore, color = pilota)) +
-  geom_hline(yintercept = 0, linetype = "dashed", color = "gray70", size = 0.4) +
+  geom_hline(yintercept = 0, linetype = "dashed", color = "gray70", linewidth = 0.4) +
   geom_line(size = 0.6, alpha = 0.8) +
   facet_grid(variabile ~ ., scales = "free_y", switch = "y") + 
   scale_color_manual(values = colori_team) +
@@ -124,7 +123,9 @@ print(pp)
 ggsave("tel_ex1.pdf", pp, width = 7, height = 5, device = cairo_pdf)
 ```
 
-Si riscalano le variabili di accelerazione al fine di peter equiparare i diversi tracciati tra loro
+## Feature engineering
+
+Lo studio si pone di individuare stili di guida generali, non specifici di un circuito. Affinchè circuiti con molti rettilinei e circuiti con molte curve e nervosi siano conforntabili, si riscalano le accellerazioni, sia frontali che laterali, su un scala standard $[-1,1]$
 
 ```{r}
 tel.guida <- tel  %>% 
@@ -139,12 +140,12 @@ Si creano le seguenti variabili:
 -   **lag2**
 -   **lag3**
 
-Per calcolare la variazione percentuale delle variabili *throttle*,*acc_x*,*acc_y* che da un indicazione del.......
+Per calcolare la variazione percentuale delle variabili *throttle*,*acc_x*,*acc_y* che da un indicazione della magnitudo delle variazioni durante il giro.
 
 ```{r}
 tel.guida <- tel.guida %>%
   
-  select(GP,pilota,throttle,brake,acc_x,acc_y,time) %>% 
+  select(GP,pilota,throttle,acc_x,acc_y,time) %>% 
   
   arrange(GP,pilota,time) %>%
   
@@ -154,7 +155,7 @@ tel.guida <- tel.guida %>%
     across(
       c(throttle, acc_x, acc_y),
       list(
-        # La tilde (~) va all'inizio per dire "questa è una funzione"
+        
         lag1 = ~round(ifelse(lag(.x, n = 1) == 0, (.x - 0.01) /0.01, (.x - lag(.x, n = 1)) / lag(.x, n = 1 )),4),
         lag2 = ~round( ifelse(lag(.x, n = 2) == 0, (.x - 0.01) /0.01, (.x - lag(.x, n = 2 )) / lag(.x, n = 2)),4),
         lag3 = ~round( ifelse(lag(.x, n = 3) == 0, (.x - 0.01) /0.01, (.x - lag(.x, n = 3 )) / lag(.x, n = 3 )),4)
@@ -168,7 +169,7 @@ tel.guida <- tel.guida %>%
 
 Si raccolgono ora le prime statistiche riassuntive delle variabili per valutare in che modo si possano definire delle variabili associate a un potenziale stile di guida, in particolare :
 
--   Per le variabili *throttle* ,*acc_x*, *acc_y*, *brake*
+-   Per le variabili *throttle* ,*acc_x*, *acc_y*
 -   Media;
 -   Deviazione standard;
 -   Massimo;
@@ -182,7 +183,7 @@ tel.guida_summary <- tel.guida %>%
     
     summarise(.,
       across(
-        c(throttle, acc_x, acc_y, brake), 
+        c(throttle, acc_x, acc_y), 
         list(
           mean = ~round(mean(.x, na.rm = TRUE), 4),
           sd = ~round(sd(.x, na.rm = TRUE), 4),
@@ -236,33 +237,69 @@ tel.guida %>%
   filter((pilota == "RUS") & (GP == "Miami Grand Prix"))
 ```
 
-Da questa tabella si può vedere che ci sono stati probabilmente dei problemi con i sensori di telemetria durante la qualifica. Si procede quindi a rimuovere il record. Si rimuovono inoltre le statistiche `brake_min` e `brake_max` in quanto trattandosi di una variabile dicotomica non sono per nulla indicative ed anche della variabile `throttle_min` e `throttle_max` in quanto limitata in [0-100] quindi risulterebbe costante per tutti i piloti.
+Da questa tabella si può vedere che ci sono stati probabilmente dei problemi con i sensori di telemetria durante la qualifica. Si procede quindi a rimuovere il record. Si rimuovono inoltre le statistiche della variabile `throttle_min` e `throttle_max` in quanto limitata in [0-100] quindi risulterebbe costante per tutti i piloti.
 
 ```{r}
 tel.guida <- tel.guida %>%
   filter((pilota != "RUS") & (GP != "Miami Grand Prix"))
 tel.guida_summary <- tel.guida_summary %>%
   filter(complete.cases(.)) %>%
-  select(-brake_max, -brake_min,-throttle_max,-throttle_min)
+  select(-throttle_max,-throttle_min, )
 ```
 
 ### PCA
-Si applica una PCA con matrice di correlazione in quanto le variabili hanno unità di misura diverse 
+
+Si valutano anzitutto le correlazioni tra le variabili per evitare problemi di multicollinearità. 
+
+
 ```{r}
-PCA <- princomp(tel.guida_summary %>%
+corr <- round(cor(tel.guida_summary %>% select(where(is.numeric))),4)
+
+redundant_vars <- findCorrelation(corr, cutoff = 0.9, names = TRUE, exact = T)
+
+print(redundant_vars)
+```
+```{r}
+tel.pca <- tel.guida_summary %>% select(-all_of(redundant_vars))
+```
+
+
+```{r}
+PCA <- princomp(tel.pca %>%
                   select(where(is.numeric)),cor=T)
 summary(PCA)
 PCA$loadings
 ```
 
-Vediamo quali sono le variabili che decrivono le prime due componenti.
+Vediamo quali sono le variabili che decrivono le prime quattro componenti.
 
 ```{r}
-sort(round(PCA$loadings[,1],4),decreasing = T)
+fviz_contrib(PCA, choice = "var", axes = 1, top = 10) 
+fviz_contrib(PCA, choice = "var", axes = 2, top = 10)
+fviz_contrib(PCA, choice = "var", axes = 3, top = 10)
+fviz_contrib(PCA, choice = "var", axes = 4, top = 10)
+fviz_contrib(PCA, choice = "var", axes = 5, top = 10)
+fviz_contrib(PCA, choice = "var", axes = 6, top = 10)
 ```
 
 ```{r}
-sort(round(PCA$loadings[,2],4),decreasing = T)
+relevant <- c(
+  "GP",
+  "pilota",
+  "throttle_sd",
+  "acc_x_mean",
+  "acc_x_sd",
+  "acc_x_max",
+  "acc_y_mean",
+  "acc_y_sd",
+  "throttle_lag2_mean_neg",
+  "throttle_lag2_sd_pos",
+  "acc_x_lag1_sd_neg",
+  "acc_x_lag3_sd_pos",
+  "acc_y_lag1_mean_neg",
+  "acc_y_lag2_sd_pos"
+)
+
 ```
 
 ```{r}
@@ -318,11 +355,6 @@ for (gp in gp_list) {
 ## Clustering
 
 ```{r}
-relevant <- c("GP", "pilota", "acc_y_lag3_sd_pos", "acc_y_lag2_sd_pos", "acc_y_lag1_sd_pos", 
-              "acc_y_lag3_mean_pos", "acc_y_lag2_mean_pos", "acc_y_lag1_mean_pos",
-              "throttle_lag3_sd_pos", "throttle_lag2_sd_pos", "throttle_lag1_sd_pos", 
-              "throttle_lag3_mean_pos", "throttle_lag2_mean_pos", "throttle_lag1_mean_pos")
-
 tel.clust <- tel.guida_summary %>%
   select(all_of(relevant)) %>%
   filter(
@@ -338,6 +370,9 @@ clust <- Mclust(tel.clust %>% select(-GP, -pilota))
 summary(clust)
 plot(clust, what="classification")
 plot(clust, what="uncertainty")
+plot(clust, what = "BIC", ylim = c(-1000, 3000), legendArgs = list(x = "topleft"))
+
+
 ```
 
 ```{r}
@@ -354,6 +389,7 @@ summary <- tel.clust %>%
       mean = ~mean(.x, na.rm=T)
   )), .groups = "drop"
   )
+write.csv(summary, "summary.csv")
 ```
 
 ```{r}
