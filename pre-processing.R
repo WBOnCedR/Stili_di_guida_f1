@@ -40,6 +40,9 @@ for(i in 1:length(files_qualifiche_lap)) {
       json_data$GP <- parti_cartella[n-3]
       json_data$gomma <- rep(laptimes_data$compound[giro],nrow(json_data))
       json_data$lap_time <- rep(laptimes_data$time[giro],nrow(json_data))
+      json_data$strategy <- rep(laptimes_data$status[giro],nrow(json_data))
+      json_data$life <- rep(laptimes_data$life[giro],nrow(json_data))
+      json_data$life <- as.numeric(json_data$life)
       lista_dati[[i]] <- json_data
     }
 

@@ -144,10 +144,13 @@ citecolor=black       % Colore citazioni bibliografiche
 	Queste variabili consentono di catturare la dinamica delle grandezze nel tempo e sono utili per caratterizzare l’evoluzione del comportamento di guida tra un istante e l’altro.
 	
 	\subsection{Statistiche riassuntive}
-	Si procede al calcolo delle statistiche descrittive al fine di valutare in che modo esse possano essere associate allo stile di guida, considerando separatamente ciascun Gran Premio e Pilota.  
+	Si procede al calcolo delle statistiche descrittive al fine di valutare in che modo esse possano essere associate allo stile di guida, considerando separatamente ciascun Gran Premio e Pilota.
 	
-	Per le misure di accelerazione longitudinale e laterale vengono calcolate media, deviazione standard, valore massimo e valore minimo. Per la variabile relativa alla frenata, di natura dicotomica non categorica, vengono invece considerate esclusivamente la media e la deviazione standard, poiché il calcolo di minimo e massimo non risulta informativo.
-	Anche per la variabile accelerazione non si calcolano gli estremi in quanto una misura limitata nell'intervallo [0-100], e risulterebbero costanti per tutti i piloti e gran premi.
+	Per le misure di accelerazione longitudinale e laterale vengono calcolate media, deviazione standard, valore massimo e valore minimo.
+	
+	La variabile relativa alla frenata non viene invece inclusa nell’analisi descrittiva, in quanto la sua natura binaria e la forte dipendenza dalle caratteristiche specifiche del singolo Gran Premio rendono poco informative misure sintetiche come media e deviazione standard. Tali indicatori risulterebbero infatti più rappresentativi del tracciato e delle condizioni di gara che dello stile di guida del pilota.
+	
+	Anche per la variabile accelerazione non vengono considerati gli estremi minimo e massimo, poiché la misura è limitata nell’intervallo [0,100] e tali valori risulterebbero costanti per tutti i piloti e per tutti i Gran Premi, non apportando informazione discriminante.
 	
 	
 	Per le variabili di tipo \_lag$k$ vengono calcolate medie e deviazioni standard distinguendo tra variazioni positive e negative, così da evidenziare eventuali asimmetrie nel comportamento dinamico del pilota.
@@ -155,10 +158,11 @@ citecolor=black       % Colore citazioni bibliografiche
 	
 	Nel calcolo delle statistiche descrittive, viene osservato come per il pilota Russell al Gran Premio di Miami si producano degli \texttt{NA}. Ricontrollando i dati grezzi ci si accorge di come probabilmente i sensori telemetrici abbiano avuto un'avaria, in quanto i record sono la maggior risulta pari a zero. Per i motivi elencati sopra, si procede dunque ad eliminare il record.
 	
-	Il nuovo dataset pertanto contiene 52 variabili, che forniscono informazione sullo stile di guida del pilota nella specifica gara.
+	Il nuovo dataset pertanto contiene 48 variabili, che forniscono informazione sullo stile di guida del pilota nella specifica gara.
 	
 	Si procede dunque con una analisi delle componenti principali per ridurre la dimensionalità, e comprendere quali siano le variabili più significative nel fornire l'informazione.
 	\subsection{Analisi delle componenti principali}
+	Per evitare i casi di multicollinearità, avendo correlazioni molto elevate, attraverso la funzione \texttt{findCorrelation} implementata nella libreria : \texttt{\{caret\}}. 
 	
 	
 	

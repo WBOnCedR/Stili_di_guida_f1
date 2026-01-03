@@ -13,7 +13,7 @@ Working set up
 
 ```{r}
 rm(list=ls())
-setwd("C:/Users/4erre/Documents/PERSONALE/SCUOLA/A.A._2025-2026/Statistica_computazionale/Progetto")
+setwd("~/datasets/Computazionale/F1")
 options(warn = -1) 
 
 library(tidyverse)
@@ -37,7 +37,7 @@ Il seguente studio si pone l'obiettivo di individuare dei possibili stili di gui
 Si va ora ad esplorare il dataset in maniera tale da poter capire quali variabili possano essere indicative per individuare uno **stile di guida** per ciascun pilota.
 
 ```{r}
-tel <- readRDS("C:/Users/4erre/Documents/PERSONALE/SCUOLA/A.A._2025-2026/Statistica_computazionale/Progetto/formula1/data/dataset_completo_best_tel.rds")
+tel <- readRDS("~/datasets/Computazionale/F1/data/dataset_completo_best_tel.rds")
 head(tel)
 tel <- as_tibble(tel)
 ```
@@ -255,7 +255,34 @@ Si valutano anzitutto le correlazioni tra le variabili per evitare problemi di m
 ```{r}
 corr <- round(cor(tel.guida_summary %>% select(where(is.numeric))),4)
 
-redundant_vars <- findCorrelation(corr, cutoff = 0.9, names = TRUE, exact = T)
+# 1. Trova le posizioni nella matrice dove la correlazione supera il cutoff
+# Usiamo lower.tri per evitare duplicati (A-B e B-A) e la diagonale
+high_corr_idx <- which(abs(corr) > 0.95 & lower.tri(corr), arr.ind = TRUE)
+
+# 2. Crea un Data Frame leggibile
+report <- data.frame(
+  Var1 = rownames(corr)[high_corr_idx[, 1]],
+  Var2 = colnames(corr)[high_corr_idx[, 2]],
+  Corr = corr[high_corr_idx]
+)
+
+# 3. Aggiungi una colonna per vedere chi viene eliminato
+report$Status <- apply(report, 1, function(x) {
+  v1_out <- x['Var1'] %in% redundant_vars
+  v2_out <- x['Var2'] %in% redundant_vars
+  
+  if (v1_out & !v2_out) return(paste("Rimosso", x['Var1']))
+  if (!v1_out & v2_out) return(paste("Rimosso", x['Var2']))
+  if (v1_out & v2_out) return("Entrambi rimossi (ridondanza multipla)")
+  return("Nessuno rimosso (Strano, controlla il cutoff)")
+})
+
+# 4. Visualizza il risultato
+print(report)
+
+
+
+redundant_vars <- findCorrelation(corr, cutoff = 0.95, names = TRUE, exact = T)
 
 print(redundant_vars)
 ```
@@ -303,7 +330,7 @@ relevant <- c(
 ```
 
 ```{r}
-tel.sum.pca <- as.tibble(round(PCA$scores[,c(1,2)],4))
+tel.sum.pca <- as_tibble(round(PCA$scores[,c(1,2)],4))
 tel.sum.pca <- tel.sum.pca %>%
   mutate(pilota = tel.guida_summary$pilota,
          GP = tel.guida_summary$GP)
