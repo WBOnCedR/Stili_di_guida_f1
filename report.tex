@@ -90,77 +90,96 @@ citecolor=black       % Colore citazioni bibliografiche
 	\begin{center}
 		\begin{tabular}{llll}
 			\hline
-			\textbf{Variabile} & \textbf{Unità di misura} & \textbf{Supporto} & \textbf{Tipo}  \\
+			\textbf{Variabile} & \textbf{Unità di misura} & \textbf{Supporto} & \textbf{Tipo} \\
 			\hline
-			Gran premio            & --                  & $\{\text{Nomi GP}\}$              & \texttt{character} \\
-			Pilota                 & --                  & $\{\text{Sigle Piloti}\}$         & \texttt{character} \\
-			Tempo dal via          & $\mathrm{s}$        & $[0, +\infty)$                    & \texttt{numeric} \\
-			Distanza percorsa      & $\mathrm{m}$        & $[0, +\infty)$                    & \texttt{numeric} \\
-			Distanza relativa      & -- 				 & $[0, 1]$                          & \texttt{numeric} \\
-			Velocità               & $\mathrm{km/h}$     & $[0, 400]$                        & \texttt{numeric} \\
-			Regime motore          & RPM                 & $[0, 15000]$                      & \texttt{numeric} \\
-			Marcia                 & --                  & $\{1, \dots, 8\}$                 & \texttt{numeric} \\
-			Freno                  & --                  & $\{0, 1\}$                        & \texttt{factor} \\
-			Acceleratore           & $\%$                & $[0, 100]$                        & \texttt{numeric} \\
-			DRS                    & --                  & $\{0, 1\}$                        & \texttt{factor} \\
-			Accelerazione laterale e longitudinale      & $\mathrm{g}$        & $[-6, +6]$                        & \texttt{numeric} \\
-			Coordinate spaziali x,y,z  & $\mathrm{m}$        & $\mathbb{R}$                      & \texttt{numeric} \\
+			Gran premio & -- & $\{\text{Nomi GP}\}$  & \texttt{character} \\
+			Pilota & --   & $\{\text{Sigle Piloti}\}$  & \texttt{character} \\
+			Tempo dal via  & $\mathrm{s}$  & $\mathbb{R^+}$  & \texttt{numeric} \\
+			Distanza percorsa  & $\mathrm{m}$ & $\mathbb{R^+}$  & \texttt{numeric} \\
+			Distanza relativa  & --  & $[0, 1]$    & \texttt{numeric} \\
+			Velocità  & $\mathrm{km/h}$  &  $\mathbb{N}$   & \texttt{numeric} \\
+			Regime motore & RPM   & $\mathbb{N}$  & \texttt{numeric} \\
+			Marcia    & --   & $\{1, \dots, 8\}$  & \texttt{integer} \\
+			Freno     & --    & $\{0, 1\}$   & \texttt{factor} \\
+			Acceleratore  & $\%$   & $[0, 100]$    & \texttt{numeric} \\
+			DRS  & --     & $\{0, 1\}$     & \texttt{factor} \\
+			Accelerazione laterale e longitudinale    & $\mathrm{g}$ &$\mathbb{R}$ & \texttt{numeric} \\
+			Coordinate spaziali x,y,z  & $\mathrm{m}$   & $\mathbb{R}$     & \texttt{numeric} \\
+			Tempo Giro       &$\mathrm{s}$  & $\mathbb{R^+}$ &\texttt{numeric}\\
+			Gomma      &--		& $\{\text{Tipi di gomma}\}$       & \texttt{character} \\
+			Vita della gomma     &--    & $\mathbb{N}$   & \texttt{integer}\\
+			Strategia &--&$\{1,12,21\}$&\texttt{integer}\\
+			
+								
 			\hline
 		\end{tabular}
 	\end{center}
-	Le variabili binarie sono codificate come $0$ (non attivo) e $1$ (attivo).
+	Il dataset presenta le seguenti codifiche: le feature binarie assumono valore $0$ in assenza dell'evento e $1$ in sua presenza. La telemetria dell'acceleratore misura l'intensità dell'input del pilota, mentre per le distanze indicano la posizione progressiva rispetto allo start. La 'vita della gomma' è definita come il numero di giri già percorsi dallo pneumatico in uso. La variabile 'strategia' identifica il pattern di utilizzo delle gomme: $1$ per l'uso esclusivo della Soft, $12$ per la transizione Soft $\rightarrow$ Medium e $21$ per la sequenza inversa Medium $\rightarrow$ Soft.
 	
-	L’obiettivo del presente report è analizzare il dataset descritto, al fine di caratterizzare il comportamento dei piloti durante il giro di qualifica attraverso le principali variabili telemetriche disponibili.
+	L’obiettivo del presente report è analizzare tramite il dataset descritto le qualifiche del 2025, al fine di caratterizzare il comportamento dei piloti durante il giro di qualifica attraverso le principali variabili telemetriche disponibili.
 	
 	\section{Analisi Esplorativa}
 	\subsection{Considerazioni sulle variabili}
-	Poiché lo stile di guida non è riconducibile a variabili di tipo posizionale, le coordinate spaziali e le misure di distanza, sia assolute sia relative, vengono escluse dall’analisi.\\
+	Poiché lo stile di guida non è riconducibile a variabili di tipo posizionale, le coordinate spaziali e le misure di distanza, sia assolute sia relative, vengono escluse dall’analisi.
 	
-	\begin{wrapfigure}{r}{0.5\textwidth} 
+	
+	In questa fase preliminare, lo stile di guida viene descritto attraverso variabili dinamiche quali l’utilizzo dell’acceleratore e del freno e le accelerazioni, longitudinale e laterale, che consentono di caratterizzare rispettivamente le modalità di decelerazione in ingresso curva, l’intensità con cui la curva viene affrontata comprendendo anche altri tipi di comportamenti riferibili allo stile di guida.
+	A sostegno delle ipotesi sopra citate, si riporta la Figura \ref{fig:confronto} che confronta nel Gran Premio degli USA le accelerazioni per i piloti: Charles Leclerc, Lando Norris e Max Verstappen. Notando infatti come nelle variazioni repentine si contraddistinguano meglio i piloti.
+	\begin{figure}[H]
 		\centering
 		\vspace*{-30pt}
-		\includegraphics[width=.5\textwidth]{tel_ex1.pdf}
+		\includegraphics[width=.7\textwidth]{tel_ex1.pdf}
 		\caption{Accelerazioni VER, LEC, NOR.}
 		\label{fig:confronto}
+	\end{figure}
+	
+	
+	Dalle prime analisi descrittive sul dataset originale, viene osservato come per il pilota Russell al Gran Premio di Miami si producano degli \texttt{NA} per quanto riguarda la variabile distanza relativa. Ricontrollando i dati grezzi ci si accorge di come probabilmente i sensori telemetrici abbiano avuto un'avaria, in quanto i record sono la maggior risulta pari a zero e le accelerazioni costanti durante l'intero giro. Per i motivi elencati sopra, si procede dunque ad eliminare il record.
+	\\
+	\begin{wrapfigure}{r}{0.5 \textwidth }
+		\includegraphics[width=.6\textwidth]{tel_ex2.pdf}
+		\caption{Confronto Emilia Romagna Tsunoda}
+		\label{fig:confronto2}
 	\end{wrapfigure}
 	
+	Un ultimo accorgimento riguarda la variabile Tempo Giro, per alcuni piloti risulta infatti \texttt{None}, osservando i dati, si verifica per i piloti Tsunoda, Bearman e Hadjar rispettivamente nei Gran premi di Emilia Romagna, Australia e Stati Uniti.
 	
-	In questa fase preliminare, lo stile di guida viene descritto attraverso variabili dinamiche quali l’utilizzo dell’acceleratore e del freno e le accelerazioni, longitudinale e laterale, che consentono di caratterizzare rispettivamente le modalità di decelerazione in ingresso curva e l’intensità con cui la curva viene affrontata.
-	A sostegno delle ipotesi sopra citate, si riporta la Figura \ref{fig:confronto} che confronta nel Gran Premio degli USA le accelerazioni per i piloti: Charles Leclerc, Lando Norris e Max Verstappen. Notando infatti come nelle variazioni repentine si contraddistinguano meglio i piloti.
-	\clearpage
+	Analizzando la realtà si scopre che il motivo è che non hanno terminato il giro di qualifica a causa di un incidente. I dati  che si hanno a disposizione sono infatti il riscaldamento delle gomme come si nota nella figura \ref{fig:confronto2}. Anche se non è presente un tempo di giro si è registrata comunque la telemetria. Al fine di eliminare rumore nell'analisi si rimuovono queste osservazioni.
+	\\
+	
 	\subsubsection{Trasformazione e creazione di nuove variabili}
-	Al fine di rendere confrontabili i diversi tracciati dei Gran Premi, le variabili di accelerazione laterale e longitudinale vengono riscalate, per ciascun Gran Premio e Pilota, nell’intervallo $[-1,1]$. Successivamente, tali variabili vengono trasformate in valore assoluto, così da ottenere una misura della loro intensità complessiva (magnitudo), il cui dominio risulta compreso in $[0,1]$.  
+	Al fine di rendere confrontabili i diversi tracciati dei Gran Premi, la variabile di accelerazione laterale viene riscalata, per ciascun Gran Premio e Pilota, nell'intervallo $[-1,1]$. Successivamente, viene trasformata tramite valore assoluto, così da ottenere una misura dell'intensità complessiva (magnitudo), il supporto quindi risulta compreso in $[0,1]$.
+	
+	Per l'accelerazione longitudinale vengono create due nuove variabili.
+	
+	Accelerazione: essa assimila tutti i valori positivi della variabile originaria, viene successivamente normalizzata nell'intervallo $[0,1]$ per ciascun Gran Premio e Pilota, per riuscire a normalizzare i tracciati.
+	
+	Decelerazione :  essa assimila al contrario della precedente tutti i valori negativi della variabile originaria,successivamente viene applicato il valore atteso e normalizzata nell'intervallo $[0,1]$.
 	Per le restanti variabili telemetriche si mantiene invece la forma grezza.
 		
 	Si creano tre nuove variabili di variazione percentuali avendo notato dalla figura \ref{fig:confronto} che quando ci sono variazioni repentine che si contraddistingue lo stile di guida dei piloti:
 	\begin{itemize}[noitemsep, topsep=0pt]
 		\item \textbf{\_lag1} : variazione percentuale rispetto all'osservazione precedente
-		\item \textbf{\_lag2} : variazione percentuale rispetto a due osservazioni precedenti
 		\item \textbf{\_lag3} : variazione percentuale rispetto a tre osservazioni precedenti
+		\item \textbf{\_lag5} : variazione percentuale rispetto a cinque osservazioni precedenti
 	\end{itemize}
 	Vengono calcolate indicando con $x_t$ l'unità statistica al tempo $t$ viene calcolata tramite la seguente formula:
 	\[\Delta=\dfrac{x_{t}-x_{t-k}}{x_{t-k}}\] 
 	
-	con $k=1,2,3$ numero di lag per le misure di accelerazione, nel caso in cui $x_{t-k}=0$ si procede con la sostituzione $x_{t-k}=0.01$ per riuscire a mantenere la validità del calcolo e continuità delle dinamiche telemetriche.
+	con $k=1,3,5$ numero di lag per le misure di accelerazione, nel caso in cui $x_{t-k}=0$ e $x_t=0$ non si applica la formula e la variabile \_lag assume 0 per pre-costruzione ,successivamente quando si osserva solamente $x_{t-k}=0$ procede con la sostituzione $x_{t-k}=0.01$ per riuscire a mantenere la validità del calcolo e continuità delle dinamiche telemetriche.
 	
 	Queste variabili consentono di catturare la dinamica delle grandezze nel tempo e sono utili per caratterizzare l’evoluzione del comportamento di guida tra un istante e l’altro.
 	
 	\subsection{Statistiche riassuntive}
 	Si procede al calcolo delle statistiche descrittive al fine di valutare in che modo esse possano essere associate allo stile di guida, considerando separatamente ciascun Gran Premio e Pilota.
 	
-	Per le misure di accelerazione longitudinale e laterale vengono calcolate media, deviazione standard, valore massimo e valore minimo.
+	Per le misure di accelerazione laterale,longitudinale e decelerazione longitudinale vengono calcolate media e deviazione standard.
 	
 	La variabile relativa alla frenata non viene invece inclusa nell’analisi descrittiva, in quanto la sua natura binaria e la forte dipendenza dalle caratteristiche specifiche del singolo Gran Premio rendono poco informative misure sintetiche come media e deviazione standard. Tali indicatori risulterebbero infatti più rappresentativi del tracciato e delle condizioni di gara che dello stile di guida del pilota.
 	
-	Anche per la variabile accelerazione non vengono considerati gli estremi minimo e massimo, poiché la misura è limitata nell’intervallo [0,100] e tali valori risulterebbero costanti per tutti i piloti e per tutti i Gran Premi, non apportando informazione discriminante.
-	
-	
 	Per le variabili di tipo \_lag$k$ vengono calcolate medie e deviazioni standard distinguendo tra variazioni positive e negative, così da evidenziare eventuali asimmetrie nel comportamento dinamico del pilota.
-
 	
-	Nel calcolo delle statistiche descrittive, viene osservato come per il pilota Russell al Gran Premio di Miami si producano degli \texttt{NA}. Ricontrollando i dati grezzi ci si accorge di come probabilmente i sensori telemetrici abbiano avuto un'avaria, in quanto i record sono la maggior risulta pari a zero e le accelerazioni costanti durante l'intero giro. Per i motivi elencati sopra, si procede dunque ad eliminare il record.
-	
-	Il nuovo dataset pertanto contiene 48 variabili, che forniscono informazione sullo stile di guida del pilota nella specifica gara.
+	Il nuovo dataset pertanto contiene 58 variabili, che forniscono informazione sullo stile di guida del pilota nella specifica gara.
 	
 	Si procede dunque con una analisi delle componenti principali per ridurre la dimensionalità, e comprendere quali siano le variabili più significative nel fornire l'informazione.
 	\subsection{Analisi delle componenti principali}
