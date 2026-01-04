@@ -40,6 +40,9 @@ Si va ora ad esplorare il dataset in maniera tale da poter capire quali variabil
 tel <- readRDS("~/datasets/Computazionale/F1/data/dataset_completo_best_tel.rds")
 head(tel)
 tel <- as_tibble(tel)
+
+
+tel %>% group_by(GP,pilota) %>% summarize(n())
 ```
 
 ```{r}
@@ -81,7 +84,7 @@ Di seguito alcune analisi grafiche per supportare quanto appena affermato.
 
 ```{r}
 tel.ex <- tel %>% filter(GP == "United States Grand Prix" & (pilota == "VER" |pilota == "LEC"|pilota== "NOR"))
-colori_team <- c("VER" = "#0600EF", "LEC" = "#EF1A2D", "NOR" = "#FF8700")
+colori_team <- c("VER" = "#0600EF", "TSU" = "#EF1A2D", "NOR" = "#FF8700")
 
 
 
@@ -120,8 +123,43 @@ pp <- ggplot(tel_long, aes(x = rel_distance, y = valore, color = pilota)) +
 print(pp)
 
 
-ggsave("tel_ex1.pdf", pp, width = 7, height = 5, device = cairo_pdf)
+#ggsave("tel_ex1.pdf", pp, width = 7, height = 5, device = cairo_pdf)
 ```
+
+
+
+```{r}
+summary(tel)
+```
+
+Notando che il massimo che assume la variabile *throttle* è 104 si riporta tutto sulla scala originaria tenendo come massimo 100 
+
+```{r}
+tel$throttle <- ifelse(tel$throttle > 100, 100, tel$throttle)
+```
+
+Inoltre si verificano delle osservazioni `NA` analizzando il dataset originale si nota come siano costanti le distanze e molti record pari a zero di conseguenza si presuppone che i sensori di telemetria abbiano avuto un'avaria si decide quindi di eliminare i dati relativi al GP di Miami di Russell
+
+
+```{r}
+tel[which(is.na(tel$rel_distance)),]
+
+
+tel <- tel %>% filter(pilota != "RUS" & GP != "Miami Grand Prix")
+```
+
+Un ultimo accorgimento riguarda la variabile laptime essa infatti quando è pari a None il che si verifica per i piloti Tsunoda, Bearman e Hadjar rispettivamente nei GP Emilia romagna, Australian e Usa.
+Il motivo è perchè non hanno terminato il giro di qualifica quindi non c'è un tempo di giro ma comunque si è registrata la telemetria.
+Al fine di eliminare rumore nell'analisi si rimuovono queste osservazioni.
+
+```{r}
+tel %>% 
+  group_by(GP,pilota) %>% 
+  filter(lap_time == "None") %>% summarize(n(),lap_time=max(lap_time))
+
+tel <- tel %>% filter(lap_time !="None")
+```
+
 
 ## Feature engineering
 
@@ -129,9 +167,17 @@ Lo studio si pone di individuare stili di guida generali, non specifici di un ci
 
 ```{r}
 tel.guida <- tel  %>% 
-  group_by(GP) %>% 
-  mutate(across(c(acc_x,acc_y), ~ abs(rescale(.,to = c(-1, 1))))) %>% 
+  group_by(GP,pilota) %>% 
+  mutate(across(acc_y, ~ abs(rescale(.,to = c(-1, 1))))) %>% 
   ungroup
+
+tel.guida <- tel.guida %>% 
+                group_by(GP,pilota) %>% 
+                  mutate(
+                   dec_x = if_else(acc_x < 0, acc_x, 0),
+                   acc_x = if_else(acc_x > 0, acc_x, 0)) %>% 
+                    mutate(acc_x=rescale(acc_x,to=c(0,1)),dec_x=rescale(dec_x,to=c(-1,0)))
+
 ```
 
 Si creano le seguenti variabili:
@@ -145,15 +191,15 @@ Per calcolare la variazione percentuale delle variabili *throttle*,*acc_x*,*acc_
 ```{r}
 tel.guida <- tel.guida %>%
   
-  select(GP,pilota,throttle,acc_x,acc_y,time) %>% 
+  select(GP,pilota,throttle,acc_x,acc_y,dec_x,rel_distance) %>% 
   
-  arrange(GP,pilota,time) %>%
+  arrange(GP,pilota,rel_distance) %>%
   
   group_by(GP,pilota) %>%
   
   mutate(
     across(
-      c(throttle, acc_x, acc_y),
+      c(throttle, acc_x, acc_y,dec_x),
       list(
         
         lag1 = ~round(ifelse(lag(.x, n = 1) == 0, (.x - 0.01) /0.01, (.x - lag(.x, n = 1)) / lag(.x, n = 1 )),4),
@@ -164,7 +210,7 @@ tel.guida <- tel.guida %>%
     )
   )  %>% 
   ungroup() %>% 
-  select(-time)
+  select(-rel_distance)
 ```
 
 Si raccolgono ora le prime statistiche riassuntive delle variabili per valutare in che modo si possano definire delle variabili associate a un potenziale stile di guida, in particolare :
@@ -186,9 +232,7 @@ tel.guida_summary <- tel.guida %>%
         c(throttle, acc_x, acc_y), 
         list(
           mean = ~round(mean(.x, na.rm = TRUE), 4),
-          sd = ~round(sd(.x, na.rm = TRUE), 4),
-          max = ~round(max(.x, na.rm = TRUE), 4),
-          min = ~round(min(.x, na.rm = TRUE), 4)
+          sd = ~round(sd(.x, na.rm = TRUE), 4)
         ),
         .names = "{.col}_{.fn}"
       ),
@@ -222,35 +266,11 @@ tel.guida_summary <- tel.guida %>%
   }
 ```
 
-```{r}
-colSums(is.na(tel.guida_summary))
-```
 
-```{r}
-tel.guida_summary[!complete.cases(tel.guida_summary), ]
-```
-
-L'unico record che presenta degli `NaN` nelle statistiche riassuntive è Russel al *Miami Grand Prix*.
-
-```{r}
-tel.guida %>%
-  filter((pilota == "RUS") & (GP == "Miami Grand Prix"))
-```
-
-Da questa tabella si può vedere che ci sono stati probabilmente dei problemi con i sensori di telemetria durante la qualifica. Si procede quindi a rimuovere il record. Si rimuovono inoltre le statistiche della variabile `throttle_min` e `throttle_max` in quanto limitata in [0-100] quindi risulterebbe costante per tutti i piloti.
-
-```{r}
-tel.guida <- tel.guida %>%
-  filter((pilota != "RUS") & (GP != "Miami Grand Prix"))
-tel.guida_summary <- tel.guida_summary %>%
-  filter(complete.cases(.)) %>%
-  select(-throttle_max,-throttle_min, )
-```
 
 ### PCA
 
-Si valutano anzitutto le correlazioni tra le variabili per evitare problemi di multicollinearità. 
-
+Si valutano anzitutto le correlazioni tra le variabili per evitare problemi di multicollinearità.
 
 ```{r}
 corr <- round(cor(tel.guida_summary %>% select(where(is.numeric))),4)
@@ -258,6 +278,7 @@ corr <- round(cor(tel.guida_summary %>% select(where(is.numeric))),4)
 # 1. Trova le posizioni nella matrice dove la correlazione supera il cutoff
 # Usiamo lower.tri per evitare duplicati (A-B e B-A) e la diagonale
 high_corr_idx <- which(abs(corr) > 0.95 & lower.tri(corr), arr.ind = TRUE)
+redundant_vars <- findCorrelation(corr, cutoff = 0.95, names = TRUE, exact = T)
 
 # 2. Crea un Data Frame leggibile
 report <- data.frame(
@@ -280,16 +301,51 @@ report$Status <- apply(report, 1, function(x) {
 # 4. Visualizza il risultato
 print(report)
 
+#write.csv(report,"findcorrelation")
 
 
-redundant_vars <- findCorrelation(corr, cutoff = 0.95, names = TRUE, exact = T)
+redundant_vars <- findCorrelation(corr, cutoff = 0.9, names = TRUE, exact = T)
 
 print(redundant_vars)
 ```
+
 ```{r}
 tel.pca <- tel.guida_summary %>% select(-all_of(redundant_vars))
 ```
 
+throttle_sd: Variabilità nell'uso dell'acceleratore.
+
+acc_x_mean: Media dell'accelerazione longitudinale positiva.
+
+acc_x_sd: Variabilità della fase di accelerazione.
+
+acc_y_mean: Media della forza G laterale.
+
+acc_y_sd: Variabilità della forza laterale .
+
+throttle_lag2_mean_pos: Accelerazione media del movimento del piede mentre preme il gas (quanto rapidamente aumenta la velocità di pressione).
+
+acc_x_lag1_mean_neg: Velocità media con cui diminuisce l'accelerazione longitudinale (la fase di rilascio della spinta prima della frenata).
+
+acc_y_lag1_mean_neg: Velocità media con cui diminuisce la forza laterale (velocità di raddrizzamento dello sterzo in uscita curva).
+
+throttle_lag1_sd_pos: Inconsistenza nella velocità di pressione dell'acceleratore (se alta pilota più aggressivo se bassa pilota più preciso).
+
+acc_x_lag3_sd_pos: variabilità di comportamento in uscita curva in base al tipo di curva 
+
+acc_y_lag2_sd_pos: variabilità nell'accelerazione laterale  nell'inserimento in curva (se alta pilota più inconsistente ad entrare in curva se bassa pilota più fluido/aggressivo nell'ingresso).
+
+acc_x_lag1_sd_neg: variabilità nella velocità di rilascio dell'accelerazione.
+
+acc_x_lag3_sd_neg: variabilità durante il calo di accelerazione di durata maggiore.
+
+acc_y_lag3_sd_neg: variabilità nell'accelerazione laterale  nell'uscita da una curva (se alta pilota inconsistente ad uscire in curva se bassa pilota più fluido/aggressivo in uscita ).
+
+dec_x_lag1_sd_pos: Consistenza nel rilascio del freno. Poiché dec_x è negativo, un cambiamento "positivo" significa tornare verso lo 0 (alzare il piede dal freno). Misura quanto è costante il pilota nel trail braking (frenata in curva).
+
+dec_x_lag1_sd_neg: Consistenza nell'attacco del freno. Un cambiamento "negativo" significa andare verso valori più bassi (frenare più forte). Misura se il pilota "pesta" il freno sempre con la stessa decisione.
+
+dec_x_lag3_sd_neg: Inconsistenza di ordine superiore (vibrazioni/micro-correzioni) durante la fase di attacco della frenata.
 
 ```{r}
 PCA <- princomp(tel.pca %>%
@@ -309,6 +365,12 @@ fviz_contrib(PCA, choice = "var", axes = 5, top = 10)
 fviz_contrib(PCA, choice = "var", axes = 6, top = 10)
 ```
 
+Si nota come la `PCA` abbia evidenziato nella prima componente le variabili con più peso riguardano l'accelerazione longitudinale e la variazione dell' accelerazioni l'ampia variazione di queste variabili potrebbe assimilarsi in una versione di guida più dinamica e aggressiva per quanto riguarda la seconda componente è l'accelerazione laterale insieme alle decelerazioni a fornire contributo, quindi per quanto riguarda lo stile di guida potrebbe riguardare dei piloti che entrano ed escono molto forti dalle curve molto aggressivi in curva.
+Per la terza componente invece dominano le variabili di accelerazione longitudinale insieme alle variabili riguardanti la pressione del pedale di accelerazione, in particolare potrebbero rappresentare il momento prima delle frenate  
+Per la quarta componente invece predomina la pressione del piede sull'acceleratore, rappresentando come ogni pilota gestisca il pedale
+Riguardo alla quinta componente ci sono variabili rappresentanti l'uscita da una curva
+Per la sesta componente ci sono variabili rappresentanti l'entrata in una curva
+
 ```{r}
 relevant <- c(
   "GP",
@@ -316,16 +378,20 @@ relevant <- c(
   "throttle_sd",
   "acc_x_mean",
   "acc_x_sd",
-  "acc_x_max",
   "acc_y_mean",
   "acc_y_sd",
-  "throttle_lag2_mean_neg",
-  "throttle_lag2_sd_pos",
+  "throttle_lag2_mean_pos",
+  "throttle_lag1_sd_pos",
   "acc_x_lag1_sd_neg",
   "acc_x_lag3_sd_pos",
   "acc_y_lag1_mean_neg",
-  "acc_y_lag2_sd_pos"
-)
+  "acc_y_lag2_sd_pos",
+  "dec_x_lag1_sd_neg",
+  "acc_y_lag3_sd_neg",
+  "acc_x_lag3_sd_neg",
+  "acc_x_lag1_mean_neg",
+  "dec_x_lag1_sd_neg"
+  )
 
 ```
 
@@ -383,22 +449,17 @@ for (gp in gp_list) {
 
 ```{r}
 tel.clust <- tel.guida_summary %>%
-  select(all_of(relevant)) %>%
-  filter(
-    if_all(where(is.numeric), ~between(.x, 
-                                   quantile(.x, 0.25, na.rm = TRUE) - 1.5 * IQR(.x, na.rm = TRUE),
-                                   quantile(.x, 0.75, na.rm = TRUE) + 1.5 * IQR(.x, na.rm = TRUE)))
-  )
+  select(all_of(relevant))
 
 ```
 
 ```{r}
-clust <- Mclust(tel.clust %>% select(-GP, -pilota))
+clust <- Mclust(tel.clust %>% select(-GP, -pilota) )
 summary(clust)
 plot(clust, what="classification")
 plot(clust, what="uncertainty")
-plot(clust, what = "BIC", ylim = c(-1000, 3000), legendArgs = list(x = "topleft"))
-
+plot(clust, what = "BIC", ylim = c(2500, 2700), legendArgs = list(x = "topright"))
+clust$BIC
 
 ```
 
@@ -445,3 +506,15 @@ for (gp in gp_list) {
   print(p)
 }
 ```
+
+
+
+
+```{r}
+tel.lap <- tel %>% group_by(GP,pilota) %>% summarize(laptime=max(lap_time))
+
+tel.clust$laptime <- tel.lap$laptime
+
+tel.clust <- tel.clust %>% arrange(laptime,GP,pilota,)
+```
+

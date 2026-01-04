@@ -88,23 +88,23 @@ citecolor=black       % Colore citazioni bibliografiche
 	
 	Il dataset originale include le seguenti variabili:
 	\begin{center}
-		\begin{tabular}{lll}
+		\begin{tabular}{llll}
 			\hline
-			\textbf{Variabile} & \textbf{Unità} & \textbf{Tipo} \\
+			\textbf{Variabile} & \textbf{Unità di misura} & \textbf{Supporto} & \textbf{Tipo}  \\
 			\hline
-			Gran premio            & --                 & \texttt{character} \\
-			Pilota                 & --                 & \texttt{character} \\
-			Tempo dal via          & $\mathrm{s}$        & \texttt{numeric} \\
-			Distanza percorsa      & $\mathrm{m}$        & \texttt{numeric} \\
-			Distanza relativa      & $0$--$1$            & \texttt{numeric} \\
-			Velocità               & $\mathrm{km/h}$     & \texttt{numeric} \\
-			Regime motore          & RPM                & \texttt{numeric} \\
-			Marcia                 & $1$--$8$            & \texttt{numeric} \\
-			Freno                  & $0/1$               & \texttt{factor} \\
-			Acceleratore           & $0$--$100\,\%$      & \texttt{numeric} \\
-			DRS                    & $0/1$               & \texttt{factor} \\
-			Accelerazioni laterale e longitudinale         & $\mathrm{g}$    & \texttt{numeric} \\
-			Coordinate spaziali x,y,z    & $\mathrm{m}$        & \texttt{numeric} \\
+			Gran premio            & --                  & $\{\text{Nomi GP}\}$              & \texttt{character} \\
+			Pilota                 & --                  & $\{\text{Sigle Piloti}\}$         & \texttt{character} \\
+			Tempo dal via          & $\mathrm{s}$        & $[0, +\infty)$                    & \texttt{numeric} \\
+			Distanza percorsa      & $\mathrm{m}$        & $[0, +\infty)$                    & \texttt{numeric} \\
+			Distanza relativa      & -- 				 & $[0, 1]$                          & \texttt{numeric} \\
+			Velocità               & $\mathrm{km/h}$     & $[0, 400]$                        & \texttt{numeric} \\
+			Regime motore          & RPM                 & $[0, 15000]$                      & \texttt{numeric} \\
+			Marcia                 & --                  & $\{1, \dots, 8\}$                 & \texttt{numeric} \\
+			Freno                  & --                  & $\{0, 1\}$                        & \texttt{factor} \\
+			Acceleratore           & $\%$                & $[0, 100]$                        & \texttt{numeric} \\
+			DRS                    & --                  & $\{0, 1\}$                        & \texttt{factor} \\
+			Accelerazione laterale e longitudinale      & $\mathrm{g}$        & $[-6, +6]$                        & \texttt{numeric} \\
+			Coordinate spaziali x,y,z  & $\mathrm{m}$        & $\mathbb{R}$                      & \texttt{numeric} \\
 			\hline
 		\end{tabular}
 	\end{center}
@@ -114,17 +114,19 @@ citecolor=black       % Colore citazioni bibliografiche
 	
 	\section{Analisi Esplorativa}
 	\subsection{Considerazioni sulle variabili}
-	Poiché lo stile di guida non è riconducibile a variabili di tipo posizionale, le coordinate spaziali e le misure di distanza, sia assolute sia relative, vengono escluse dall’analisi.
-	\begin{wrapfigure}{r}{0.5\textwidth} % {r} sta per destra (right), 0.5 è la larghezza
+	Poiché lo stile di guida non è riconducibile a variabili di tipo posizionale, le coordinate spaziali e le misure di distanza, sia assolute sia relative, vengono escluse dall’analisi.\\
+	
+	\begin{wrapfigure}{r}{0.5\textwidth} 
 		\centering
-		\includegraphics[width=.63\textwidth]{tel_ex1.pdf}
+		\vspace*{-30pt}
+		\includegraphics[width=.5\textwidth]{tel_ex1.pdf}
 		\caption{Accelerazioni VER, LEC, NOR.}
-		\vspace{-10pt} % Rimuove spazio bianco sotto la didascalia
 		\label{fig:confronto}
 	\end{wrapfigure}
 	
+	
 	In questa fase preliminare, lo stile di guida viene descritto attraverso variabili dinamiche quali l’utilizzo dell’acceleratore e del freno e le accelerazioni, longitudinale e laterale, che consentono di caratterizzare rispettivamente le modalità di decelerazione in ingresso curva e l’intensità con cui la curva viene affrontata.
-	A sostegno delle ipotesi sopra citate, si riporta la Figura \ref{fig:confronto} che confronta nel Gran Premio degli USA le accelerazioni per i piloti: Charles Leclerc, Lando Norris e Max Verstappen. Notando infatti come nelle variazioni repentine si contraddistinguano meglio i piloti
+	A sostegno delle ipotesi sopra citate, si riporta la Figura \ref{fig:confronto} che confronta nel Gran Premio degli USA le accelerazioni per i piloti: Charles Leclerc, Lando Norris e Max Verstappen. Notando infatti come nelle variazioni repentine si contraddistinguano meglio i piloti.
 	\clearpage
 	\subsubsection{Trasformazione e creazione di nuove variabili}
 	Al fine di rendere confrontabili i diversi tracciati dei Gran Premi, le variabili di accelerazione laterale e longitudinale vengono riscalate, per ciascun Gran Premio e Pilota, nell’intervallo $[-1,1]$. Successivamente, tali variabili vengono trasformate in valore assoluto, così da ottenere una misura della loro intensità complessiva (magnitudo), il cui dominio risulta compreso in $[0,1]$.  
@@ -156,13 +158,13 @@ citecolor=black       % Colore citazioni bibliografiche
 	Per le variabili di tipo \_lag$k$ vengono calcolate medie e deviazioni standard distinguendo tra variazioni positive e negative, così da evidenziare eventuali asimmetrie nel comportamento dinamico del pilota.
 
 	
-	Nel calcolo delle statistiche descrittive, viene osservato come per il pilota Russell al Gran Premio di Miami si producano degli \texttt{NA}. Ricontrollando i dati grezzi ci si accorge di come probabilmente i sensori telemetrici abbiano avuto un'avaria, in quanto i record sono la maggior risulta pari a zero. Per i motivi elencati sopra, si procede dunque ad eliminare il record.
+	Nel calcolo delle statistiche descrittive, viene osservato come per il pilota Russell al Gran Premio di Miami si producano degli \texttt{NA}. Ricontrollando i dati grezzi ci si accorge di come probabilmente i sensori telemetrici abbiano avuto un'avaria, in quanto i record sono la maggior risulta pari a zero e le accelerazioni costanti durante l'intero giro. Per i motivi elencati sopra, si procede dunque ad eliminare il record.
 	
 	Il nuovo dataset pertanto contiene 48 variabili, che forniscono informazione sullo stile di guida del pilota nella specifica gara.
 	
 	Si procede dunque con una analisi delle componenti principali per ridurre la dimensionalità, e comprendere quali siano le variabili più significative nel fornire l'informazione.
 	\subsection{Analisi delle componenti principali}
-	Per evitare i casi di multicollinearità, avendo correlazioni molto elevate, attraverso la funzione \texttt{findCorrelation} implementata nella libreria : \texttt{\{caret\}}. 
+	Per evitare i casi di multicollinearità, avendo correlazioni molto elevate, attraverso la funzione \texttt{findCorrelation} implementata nella libreria : \texttt{\{caret\}}. Si osserva come le variabili  
 	
 	
 	

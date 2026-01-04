@@ -57,17 +57,4 @@ saveRDS(dataset_completo, file = "dataset_completo_best_tel.rds")
 
 
 
-dati <- dati_tutti_gp_clean %>% 
-         arrange(GP,pilota,distance) %>% 
-         group_by(GP,pilota) %>% 
-         mutate(diff_dist=distance - lag(distance,n = 1,default = 0)) %>% 
-         ungroup()
-
-dati <- dati_tutti_gp_clean %>% 
-          arrange(GP,pilota,time) %>% 
-          group_by(GP,pilota) %>% 
-          mutate(diff_time=time - lag(time,n = 1,default = 0)) %>% 
-          ungroup()
-
-
 
