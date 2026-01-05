@@ -25,6 +25,7 @@ library(ggcorrplot)
 library(mclust)
 library(caret)
 library(factoextra)
+library(GGally)
 
 ```
 
@@ -84,11 +85,11 @@ Di seguito alcune analisi grafiche per supportare quanto appena affermato.
 
 ```{r}
 tel.ex <- tel %>% filter(GP == "United States Grand Prix" & (pilota == "VER" |pilota == "LEC"|pilota== "NOR"))
-colori_team <- c("VER" = "#0600EF", "TSU" = "#EF1A2D", "NOR" = "#FF8700")
+colori_team <- c("VER" = "#0600EF", "LEC" = "#EF1A2D", "NOR" = "#FF8700")
 
 
 
-tel_long <- tel.ex %>%
+tel_g <- tel.ex %>%
   select(rel_distance, pilota, acc_y, acc_x) %>%
   pivot_longer(cols = c(acc_y, acc_x), 
                names_to = "variabile", 
@@ -98,7 +99,7 @@ tel_long <- tel.ex %>%
                             labels = c(" Accelerazione Laterale (g)", " Accelerazione Longitudinale (g)")))
 
 
-pp <- ggplot(tel_long, aes(x = rel_distance, y = valore, color = pilota)) +
+pp <- ggplot(tel_g, aes(x = rel_distance, y = valore, color = pilota)) +
   geom_hline(yintercept = 0, linetype = "dashed", color = "gray70", linewidth = 0.4) +
   geom_line(size = 0.6, alpha = 0.8) +
   facet_grid(variabile ~ ., scales = "free_y", switch = "y") + 
@@ -149,12 +150,12 @@ Un ultimo accorgimento riguarda la variabile laptime essa infatti quando è pari
 
 
 ```{r}
-tel.ex <- tel %>% filter(GP == "Emilia Romagna Grand Prix" & (pilota == "VER" |pilota == "LEC"|pilota== "NOR"))
-colori_team <- c("VER" = "#0600EF", "TSU" = "#EF1A2D", "NOR" = "#FF8700")
+tel.ex <- tel %>% filter(GP == "Emilia Romagna Grand Prix" & (pilota == "ANT" |pilota == "HAM"|pilota== "TSU"))
+colori_team <- c("ANT" = "#0600EF", "HAM" = "#EF1A2D", "TSU" = "#FDD900")
 
 
 
-tel_long <- tel.ex %>%
+tel_g <- tel.ex %>%
   select(rel_distance, pilota, acc_y, acc_x) %>%
   pivot_longer(cols = c(acc_y, acc_x), 
                names_to = "variabile", 
@@ -164,7 +165,8 @@ tel_long <- tel.ex %>%
                             labels = c(" Accelerazione Laterale (g)", " Accelerazione Longitudinale (g)")))
 
 
-pp <- ggplot(tel_long, aes(x = rel_distance, y = valore, color = pilota)) +
+pp <- ggplot(tel_g
+             , aes(x = rel_distance, y = valore, color = pilota)) +
   geom_hline(yintercept = 0, linetype = "dashed", color = "gray70", linewidth = 0.4) +
   geom_line(size = 0.6, alpha = 0.8) +
   facet_grid(variabile ~ ., scales = "free_y", switch = "y") + 
@@ -189,7 +191,7 @@ pp <- ggplot(tel_long, aes(x = rel_distance, y = valore, color = pilota)) +
 print(pp)
 
 
-#ggsave("tel_ex1.pdf", pp, width = 7, height = 5, device = cairo_pdf)
+ggsave("tel_ex2.pdf", pp, width = 7, height = 5, device = cairo_pdf)
 ```
 
 
@@ -201,6 +203,7 @@ tel %>%
   filter(lap_time == "None") %>% summarize(n(),lap_time=max(lap_time))
 
 tel <- tel %>% filter(lap_time !="None")
+
 ```
 
 ## Feature engineering
@@ -208,17 +211,13 @@ tel <- tel %>% filter(lap_time !="None")
 Lo studio si pone di individuare stili di guida generali, non specifici di un circuito. Affinchè circuiti con molti rettilinei e circuiti con molte curve e nervosi siano conforntabili, si riscalano le accellerazioni, sia frontali che laterali, su un scala standard $[-1,1]$
 
 ```{r}
-tel.guida <- tel  %>% 
-  group_by(GP,pilota) %>% 
-  mutate(across(acc_y, ~ abs(rescale(.,to = c(-1, 1))))) %>% 
-  ungroup
-
-tel.guida <- tel.guida %>% 
+tel.guida <- tel.
+%>% 
                 group_by(GP,pilota) %>% 
                   mutate(
                    dec_x = if_else(acc_x < 0, abs(acc_x), 0),
                    acc_x = if_else(acc_x > 0, acc_x, 0)) %>% 
-                    mutate(acc_x=rescale(acc_x,to=c(0,1)),dec_x=rescale(dec_x,to=c(0,1)))
+                    mutate(acc_x=rescale(acc_x,to=c(0,1)),dec_x=rescale(dec_x,to=c(0,1),acc_y= abs(rescale(acc_y,to = c(-1, 1))))) %>%                     ungroup()
 
 ```
 
@@ -347,42 +346,13 @@ Si valutano anzitutto le correlazioni tra le variabili per evitare problemi di m
 ```{r}
 corr <- round(cor(tel.guida_summary %>% select(where(is.numeric))),4)
 
-# 1. Trova le posizioni nella matrice dove la correlazione supera il cutoff
-# Usiamo lower.tri per evitare duplicati (A-B e B-A) e la diagonale
-high_corr_idx <- which(abs(corr) > 0.95 & lower.tri(corr), arr.ind = TRUE)
-redundant_vars <- findCorrelation(corr, cutoff = 0.95, names = TRUE, exact = T)
+variabili_dipendenti <- findCorrelation(corr, cutoff = 0.9, names = TRUE, exact = T,verbose = T)
 
-# 2. Crea un Data Frame leggibile
-report <- data.frame(
-  Var1 = rownames(corr)[high_corr_idx[, 1]],
-  Var2 = colnames(corr)[high_corr_idx[, 2]],
-  Corr = corr[high_corr_idx]
-)
-
-# 3. Aggiungi una colonna per vedere chi viene eliminato
-report$Status <- apply(report, 1, function(x) {
-  v1_out <- x['Var1'] %in% redundant_vars
-  v2_out <- x['Var2'] %in% redundant_vars
-  
-  if (v1_out & !v2_out) return(paste("Rimosso", x['Var1']))
-  if (!v1_out & v2_out) return(paste("Rimosso", x['Var2']))
-  if (v1_out & v2_out) return("Entrambi rimossi (ridondanza multipla)")
-  return("Nessuno rimosso (Strano, controlla il cutoff)")
-})
-
-# 4. Visualizza il risultato
-print(report)
-
-#write.csv(report,"findcorrelation")
-
-
-redundant_vars <- findCorrelation(corr, cutoff = 0.9, names = TRUE, exact = T)
-
-print(redundant_vars)
+ print(variabili_dipendenti)
 ```
 
 ```{r}
-tel.pca <- tel.guida_summary %>% select(-all_of(redundant_vars))
+tel.pca <- tel.guida_summary %>% select(-all_of(variabili_dipendenti))
 ```
 
 throttle_sd: Variabilità nell'uso dell'acceleratore.
@@ -423,7 +393,10 @@ dec_x_lag3_sd_neg: Inconsistenza di ordine superiore (vibrazioni/micro-correzion
 PCA <- princomp(tel.pca %>%
                   select(where(is.numeric)),cor=T)
 summary(PCA)
-PCA$loadings
+print(PCA$loadings,cutoff = 0)
+tel.comp <- as_tibble(PCA$scores[,c(1:8)])
+
+ggpairs(tel.comp,progress = F)
 ```
 
 Vediamo quali sono le variabili che decrivono le prime quattro componenti.
@@ -435,6 +408,8 @@ fviz_contrib(PCA, choice = "var", axes = 3, top = 10)
 fviz_contrib(PCA, choice = "var", axes = 4, top = 10)
 fviz_contrib(PCA, choice = "var", axes = 5, top = 10)
 fviz_contrib(PCA, choice = "var", axes = 6, top = 10)
+
+fviz_pca_var(PCA)
 ```
 
 Si nota come la `PCA` abbia evidenziato nella prima componente le variabili con più peso riguardano l'accelerazione longitudinale e la variazione dell' accelerazioni l'ampia variazione di queste variabili potrebbe assimilarsi in una versione di guida più dinamica e aggressiva per quanto riguarda la seconda componente è l'accelerazione laterale insieme alle decelerazioni a fornire contributo, quindi per quanto riguarda lo stile di guida potrebbe riguardare dei piloti che entrano ed escono molto forti dalle curve molto aggressivi in curva. Per la terza componente invece dominano le variabili di accelerazione longitudinale insieme alle variabili riguardanti la pressione del pedale di accelerazione, in particolare potrebbero rappresentare il momento prima delle frenate\
@@ -523,22 +498,21 @@ tel.clust <- tel.guida_summary %>%
 ```
 
 ```{r}
-clust <- Mclust(tel.clust %>% select(-GP, -pilota) )
+clust <- Mclust(tel.comp)
 summary(clust)
 plot(clust, what="classification")
 plot(clust, what="uncertainty")
-plot(clust, what = "BIC", ylim = c(2500, 2700), legendArgs = list(x = "topright"))
+plot(clust, what = "BIC", legendArgs = list(x = "topright"))
 clust$BIC
 
 ```
 
 ```{r}
-tel.clust["class"] <- clust$classification
+tel.comp["class"] <- clust$classification
 ```
 
 ```{r}
-summary <- tel.clust %>%
-  select(-GP,-pilota)%>%
+summary <- tel.comp %>%
   group_by(class) %>%
   summarize(
     across(everything(),
@@ -546,7 +520,24 @@ summary <- tel.clust %>%
       mean = ~mean(.x, na.rm=T)
   )), .groups = "drop"
   )
-write.csv(summary, "summary.csv")
+#write.csv(summary, "summary.csv")
+
+tel.comp$GP <- tel.pca$GP
+tel.comp$pilota <- tel.pca$pilota
+tel2 <- tel %>% group_by(GP,pilota) %>% summarize(laptime=max(lap_time),life=max(life),strategy=(max(strategy)),gomma=(max(gomma))) %>% ungroup()
+tel.comp$laptime <- tel2$laptime
+tel.comp$life <- tel2$life
+tel.comp$strategy <- tel2$strategy
+tel.comp$gomma <- tel2$gomma
+
+summary <- tel.comp %>%
+  group_by(pilota,class) %>%
+  summarize(
+    across(where(is.numeric),
+    list(
+      mean = ~mean(.x, na.rm=T)
+  )),n() ,.groups = "drop"
+  )
 ```
 
 ```{r}

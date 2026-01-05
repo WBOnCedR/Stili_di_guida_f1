@@ -49,7 +49,6 @@ for(i in 1:length(files_qualifiche_lap)) {
 dataset_completo <- bind_rows(lista_dati)
 
 dataset_completo <- dataset_completo %>%
-  select(GP, pilota, everything()) %>%
   select(-dataKey)
 
 setwd("C:/Users/feder/Documents/datasets/Computazionale/F1/data")

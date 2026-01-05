@@ -31,6 +31,8 @@ citecolor=black       % Colore citazioni bibliografiche
 \usepackage{xcolor}
 \usepackage{lmodern}
 \usepackage{enumitem}
+\usepackage{placeins}
+
 
 \definecolor{codegreen}{rgb}{0,0.6,0}
 \definecolor{codegray}{rgb}{0.5,0.5,0.5}
@@ -83,7 +85,7 @@ citecolor=black       % Colore citazioni bibliografiche
 	
 	
 	\section{Introduzione}
-	Il presente report analizza un dataset ottenuto tramite il repository \href{https://github.com/TracingInsights/2025.git}{TracingInsights}.
+	Il presente report analizza un dataset ottenuto tramite il repository \href{https://github.com/TracingInsights/2025.git}{TracingInsights} \footnote{Codice di estrazione dati nell'appendice \ref{estrazione}.}
 	Lo studio si concentra sui dati di telemetria relativi alle sessioni di qualifica della stagione di Formula 1 2025, selezionando per ciascun pilota il singolo giro migliore.
 	
 	Il dataset originale include le seguenti variabili:
@@ -120,21 +122,22 @@ citecolor=black       % Colore citazioni bibliografiche
 	
 	\section{Analisi Esplorativa}
 	\subsection{Considerazioni sulle variabili}
+		
 	Poiché lo stile di guida non è riconducibile a variabili di tipo posizionale, le coordinate spaziali e le misure di distanza, sia assolute sia relative, vengono escluse dall’analisi.
 	
 	
 	In questa fase preliminare, lo stile di guida viene descritto attraverso variabili dinamiche quali l’utilizzo dell’acceleratore e del freno e le accelerazioni, longitudinale e laterale, che consentono di caratterizzare rispettivamente le modalità di decelerazione in ingresso curva, l’intensità con cui la curva viene affrontata comprendendo anche altri tipi di comportamenti riferibili allo stile di guida.
 	A sostegno delle ipotesi sopra citate, si riporta la Figura \ref{fig:confronto} che confronta nel Gran Premio degli USA le accelerazioni per i piloti: Charles Leclerc, Lando Norris e Max Verstappen. Notando infatti come nelle variazioni repentine si contraddistinguano meglio i piloti.
+	
 	\begin{figure}[H]
 		\centering
-		\vspace*{-30pt}
 		\includegraphics[width=.7\textwidth]{tel_ex1.pdf}
 		\caption{Accelerazioni VER, LEC, NOR.}
 		\label{fig:confronto}
 	\end{figure}
 	
 	
-	Dalle prime analisi descrittive sul dataset originale, viene osservato come per il pilota Russell al Gran Premio di Miami si producano degli \texttt{NA} per quanto riguarda la variabile distanza relativa. Ricontrollando i dati grezzi ci si accorge di come probabilmente i sensori telemetrici abbiano avuto un'avaria, in quanto i record sono la maggior risulta pari a zero e le accelerazioni costanti durante l'intero giro. Per i motivi elencati sopra, si procede dunque ad eliminare il record.
+	Dalle prime analisi descrittive sul dataset originale\footnote{Estratto codice R consultabile nell'appendice \ref{codice preliminare}.\label{appendice 2}}, viene osservato come per il pilota Russell al Gran Premio di Miami si producano degli \texttt{NA} per quanto riguarda la variabile distanza relativa. Ricontrollando i dati grezzi ci si accorge di come probabilmente i sensori telemetrici abbiano avuto un'avaria, in quanto i record sono la maggior risulta pari a zero e le accelerazioni costanti durante l'intero giro. Per i motivi elencati sopra, si procede dunque ad eliminare il record.
 	\\
 	\begin{wrapfigure}{r}{0.5 \textwidth }
 		\includegraphics[width=.6\textwidth]{tel_ex2.pdf}
@@ -142,22 +145,24 @@ citecolor=black       % Colore citazioni bibliografiche
 		\label{fig:confronto2}
 	\end{wrapfigure}
 	
-	Un ultimo accorgimento riguarda la variabile Tempo Giro, per alcuni piloti risulta infatti \texttt{None}, osservando i dati, si verifica per i piloti Tsunoda, Bearman e Hadjar rispettivamente nei Gran premi di Emilia Romagna, Australia e Stati Uniti.
+	Un ultimo accorgimento riguarda la variabile Tempo Giro, per alcuni piloti risulta infatti \texttt{None}, osservando i dati\textsuperscript{\ref{appendice 2}}, si verifica per i piloti Tsunoda, Bearman e Hadjar rispettivamente nei Gran premi di Emilia Romagna, Australia e Stati Uniti.
 	
-	Analizzando la realtà si scopre che il motivo è che non hanno terminato il giro di qualifica a causa di un incidente. I dati  che si hanno a disposizione sono infatti il riscaldamento delle gomme come si nota nella figura \ref{fig:confronto2}. Anche se non è presente un tempo di giro si è registrata comunque la telemetria. Al fine di eliminare rumore nell'analisi si rimuovono queste osservazioni.
-	\\
+	
+	Analizzando la realtà si scopre che il motivo è che non hanno terminato il giro di qualifica a causa di un incidente. I dati  che si hanno a disposizione sono infatti il riscaldamento delle gomme come si nota nella figura \ref{fig:confronto2}. Anche se non è presente un tempo di giro si è registrata comunque la telemetria. Al fine di eliminare rumore nell'analisi si rimuovono queste osservazioni.\\
+
+	\clearpage
 	
 	\subsubsection{Trasformazione e creazione di nuove variabili}
-	Al fine di rendere confrontabili i diversi tracciati dei Gran Premi, la variabile di accelerazione laterale viene riscalata, per ciascun Gran Premio e Pilota, nell'intervallo $[-1,1]$. Successivamente, viene trasformata tramite valore assoluto, così da ottenere una misura dell'intensità complessiva (magnitudo), il supporto quindi risulta compreso in $[0,1]$.
+	Al fine di rendere confrontabili i diversi tracciati dei Gran Premi, la variabile di accelerazione laterale viene riscalata\footnote{Estratto codice R consultabile nell'appendice \ref{codice trattamento e creazione variabili}.\label{appendice 3}}, per ciascun Gran Premio e Pilota, nell'intervallo $[-1,1]$. Successivamente, viene trasformata tramite valore assoluto, così da ottenere una misura dell'intensità complessiva (magnitudo), il supporto quindi risulta compreso in $[0,1]$.
 	
-	Per l'accelerazione longitudinale vengono create due nuove variabili.
+	Per l'accelerazione longitudinale vengono create due nuove variabili\textsuperscript{\ref{appendice 3}}.\\
 	
-	Accelerazione: essa assimila tutti i valori positivi della variabile originaria, viene successivamente normalizzata nell'intervallo $[0,1]$ per ciascun Gran Premio e Pilota, per riuscire a normalizzare i tracciati.
+	Accelerazione: essa assimila tutti i valori positivi della variabile originaria, viene successivamente normalizzata nell'intervallo $[0,1]$ per ciascun Gran Premio e Pilota, per riuscire a normalizzare i tracciati.\\
 	
 	Decelerazione :  essa assimila al contrario della precedente tutti i valori negativi della variabile originaria,successivamente viene applicato il valore atteso e normalizzata nell'intervallo $[0,1]$.
-	Per le restanti variabili telemetriche si mantiene invece la forma grezza.
+	Per le restanti variabili telemetriche si mantiene invece la forma grezza.\\
 		
-	Si creano tre nuove variabili di variazione percentuali avendo notato dalla figura \ref{fig:confronto} che quando ci sono variazioni repentine che si contraddistingue lo stile di guida dei piloti:
+	Si creano tre nuove variabili di variazione percentuali\footnote{Estratto codice R consultabile nell'appendice \ref{creazione variabili}} avendo notato dalla figura \ref{fig:confronto} che quando ci sono variazioni repentine che si contraddistingue lo stile di guida dei piloti:
 	\begin{itemize}[noitemsep, topsep=0pt]
 		\item \textbf{\_lag1} : variazione percentuale rispetto all'osservazione precedente
 		\item \textbf{\_lag3} : variazione percentuale rispetto a tre osservazioni precedenti
@@ -171,7 +176,7 @@ citecolor=black       % Colore citazioni bibliografiche
 	Queste variabili consentono di catturare la dinamica delle grandezze nel tempo e sono utili per caratterizzare l’evoluzione del comportamento di guida tra un istante e l’altro.
 	
 	\subsection{Statistiche riassuntive}
-	Si procede al calcolo delle statistiche descrittive al fine di valutare in che modo esse possano essere associate allo stile di guida, considerando separatamente ciascun Gran Premio e Pilota.
+	Si procede al calcolo delle statistiche descrittive\footnote{Estratto codice R consultabile nell'appendice \ref{codice statistiche riassuntive}.} al fine di valutare in che modo esse possano essere associate allo stile di guida, considerando separatamente ciascun Gran Premio e Pilota.
 	
 	Per le misure di accelerazione laterale,longitudinale e decelerazione longitudinale vengono calcolate media e deviazione standard.
 	
@@ -182,8 +187,23 @@ citecolor=black       % Colore citazioni bibliografiche
 	Il nuovo dataset pertanto contiene 58 variabili, che forniscono informazione sullo stile di guida del pilota nella specifica gara.
 	
 	Si procede dunque con una analisi delle componenti principali per ridurre la dimensionalità, e comprendere quali siano le variabili più significative nel fornire l'informazione.
-	\subsection{Analisi delle componenti principali}
-	Per evitare i casi di multicollinearità, avendo correlazioni molto elevate, attraverso la funzione \texttt{findCorrelation} implementata nella libreria : \texttt{\{caret\}}. Si osserva come le variabili  
+	
+	\clearpage
+	\subsection{Riduzione della dimensionalità}
+	\subsubsection{Analisi correlazioni}
+	Per limitare i casi di multicollinearità ed eliminare il rumore, avendo correlazioni molto elevate ($cor(x,y)>0.9$), attraverso la funzione \texttt{findCorrelation} implementata nella libreria : \texttt{\{caret\}}\footnote{Estratto del codice R consultabile nell'appendice \ref{correlazioni}},si cerca di eliminare la ridondanza delle variabili.
+	
+	In particolare la funzione analizza le coppie di variabili con correlazione eccessiva e rimuove quella che, in media, risulta più correlata con tutte le altre. Questo processo di scrematura ha permesso di ridurre la dimensionalità a 27 variabili.
+	
+	\subsubsection{Analisi delle componenti principali}
+	Seppur la dimensionalità sia diminuita, 27 dimensioni sono eccessive sia ai fini di interpretabilità che per sforzo computazionale.
+	
+	Si passa dunque da un analisi delle componenti principali (PCA) ai fini di ridurre la dimensionalità.
+	Per l'applicazione della PCA si opta di inserire come input la matrice di correlazione, in quanto, le variabili hanno unità di misura diverse\footnote{Estratto del codice R consultabile nell'appendice \ref{PCA}}.
+	
+	Dall'analisi risulta che le prime 8 componenti spiegano l'$80\%$ della varianza, i pesi associati ad ogni componente sono invece 
+	
+	
 	
 	
 	
@@ -215,24 +235,207 @@ citecolor=black       % Colore citazioni bibliografiche
 		Y_i = \beta_0 + \beta_1 X_{1i} + \epsilon_i
 	\end{equation}
 	
-	% --- CHIUSURA DOCUMENTO E APPENDICE ---
-	
-	% \newpage % Scommenta se vuoi l'appendice in pagina nuova
+	\clearpage
 	\appendix
-	\section{Codice R Commentato}
-	Di seguito riportiamo lo script utilizzato per l'analisi.
-	
-	% Se hai il file .R nella stessa cartella:
-	% \lstinputlisting[language=R]{analisi_script.R}
-	
-	% Se vuoi incollare il codice qui:
+	\section{Codice R Commentato Estrazione dei dati}
+	\label{estrazione}
 	\begin{lstlisting}
-		# Caricamento librerie
-		library(ggplot2)
-		data <- read.csv("dataset.csv")
+		library(jsonlite)
+		library(tidyverse)
+		rm(list=ls())
+		#Cartella origine
+		cartella <- "C:/Users/feder/Documents/datasets/Computazionale/2025"
 		
-		# Analisi preliminare
-		summary(data)
+		#filtro sui file con i giri e poi qualifiche
+		file_giri <- list.files(path = cartella, 
+		pattern = "laptimes\\.json$", 
+		full.names = TRUE, 
+		recursive = TRUE)
+		
+		files_qualifiche_lap <- file_giri[grepl("Qualifying", file_giri) & !grepl("Sprint",file_giri)]
+		lista_dati <- list()
+		
+		#Ciclo di estrazione 
+		
+		for(i in 1:length(files_qualifiche_lap)) {
+			
+			cartella_giro <- files_qualifiche_lap[i]
+			
+			laptimes_data <- fromJSON(cartella_giro)
+			
+			giro <- as.numeric(laptimes_data$lap[which.min(laptimes_data$time)])
+			
+			cartella_pilota <- dirname(cartella_giro)
+			if(length(giro) > 0){
+				path_telemetry <- paste0(cartella_pilota, "/", giro, "_tel.json")
+			} else{
+				giro <- 1
+				path_telemetry <- paste0(cartella_pilota, "/", giro, "_tel.json") } 
+			
+			testo <- read_file(path_telemetry)
+			testo <- str_replace_all(testo, "NaN", "null")
+			json_data <- fromJSON(testo)[["tel"]]
+			json_data <- as_tibble(json_data)
+			
+			parti_cartella <- str_split(cartella_giro, "/")[[1]]
+			n <- length(parti_cartella)
+			
+			json_data$pilota <- parti_cartella[n-1]
+			json_data$GP <- parti_cartella[n-3]
+			json_data$gomma <- rep(laptimes_data$compound[giro],nrow(json_data))
+			json_data$lap_time <- rep(laptimes_data$time[giro],nrow(json_data))
+			json_data$strategy <- rep(laptimes_data$status[giro],nrow(json_data))
+			json_data$life <- rep(laptimes_data$life[giro],nrow(json_data))
+			json_data$life <- as.numeric(json_data$life)
+			lista_dati[[i]] <- json_data
+		}
+		#merge dei dati
+		dataset_completo <- bind_rows(lista_dati)
+		#pulizia
+		dataset_completo <- dataset_completo %>%
+		select(-dataKey)
+		setwd("C:/Users/feder/Documents/datasets/Computazionale/F1/data")
+		saveRDS(dataset_completo, file = "dataset_completo_best_tel.rds")
+
 	\end{lstlisting}
+	\section{Codice R Commentato Esplorazione iniziale}
+	\label{codice preliminare}
+	\begin{lstlisting}
+		# A seguito del caricamento delle librerie e del dataset si inizia l'esplorazione con le iniziali statistiche descrittive 
+		summary(tel)
+		# Sistemazione delle variabili
+		tel$throttle <- ifelse(tel$throttle > 100, 100, tel$throttle)
 	
+		#Trattamento degli NA e None
+	
+		tel[which(is.na(tel$rel_distance)),]
+		tel <- tel %>% filter(pilota != "RUS" & GP != "Miami Grand Prix")
+		
+		tel %>% 
+		group_by(GP,pilota) %>% 
+		filter(lap_time == "None") %>% summarize(n(),lap_time=max(lap_time))
+		
+		tel <- tel %>% filter(lap_time !="None")
+	\end{lstlisting}
+	\section{Codice R Commentato Trattemento variabili}
+	\label{trattamento variabili}
+	\begin{lstlisting}
+		tel.guida <- tel %>% 
+		group_by(GP,pilota) %>% 
+		mutate(
+			dec_x = if_else(acc_x < 0, abs(acc_x), 0),
+			acc_x = if_else(acc_x > 0, acc_x, 0)) %>% 
+			mutate(acc_x=rescale(acc_x,to=c(0,1)),
+			dec_x=rescale(dec_x,to=c(0,1),
+			acc_y=abs(rescale(acc_y,to = c(-1, 1))))) %>%           
+		          ungroup()
+	\end{lstlisting}
+	\section{Codice R Commentato Creazione variabili}
+	\label{creazione variabili}
+	\begin{lstlisting}
+		#Creazione delle variabili lag
+		tel.guida <- tel.guida %>%
+		select(GP,pilota,throttle,acc_x,acc_y,dec_x,rel_distance) %>% 
+		arrange(GP,pilota,rel_distance) %>%
+		group_by(GP,pilota) %>%
+		mutate(
+		across(
+		c(throttle, acc_x, acc_y,dec_x),
+		list(
+		lag1 = ~round(
+		ifelse(
+		lag(.x, 1) == 0 & .x == 0,
+		0,
+		ifelse(
+		lag(.x, 1) == 0,
+		(.x-0.01)/0.01,
+		(.x - lag(.x, 1)) / lag(.x, 1))
+		),
+		4),
+		...
+		),
+		.names = "{.col}_{.fn}"
+		)
+		)  %>% 
+		ungroup() %>% 
+		select(-rel_distance)
+	\end{lstlisting}
+	\clearpage
+	\section{Codice R Commentato Statistiche Riassuntive}
+	\label{codice statistiche riassuntive}
+	\begin{lstlisting}
+		tel.guida_summary <- tel.guida %>% 
+		group_by(GP, pilota) %>%
+		{
+			lag_cols <- names(.) %>% .[str_detect(., "lag")]
+			
+			summarise(.,
+			across(
+			c(throttle, acc_x, acc_y,dec_x), 
+			list(
+			mean = ~round(mean(.x, na.rm = TRUE), 4),
+			sd = ~round(sd(.x, na.rm = TRUE), 4)
+			),
+			.names = "{.col}_{.fn}"
+			),
+			
+			across(
+			all_of(lag_cols),
+			~round(mean(.x[.x > 0], na.rm = TRUE), 4),
+			.names = "{.col}_mean_pos"
+			),
+			
+			across(
+			all_of(lag_cols),
+			~round(mean(.x[.x <= 0], na.rm = TRUE), 4),
+			.names = "{.col}_mean_neg"
+			),
+			
+			across(
+			all_of(lag_cols),
+			~round(sd(.x[.x > 0], na.rm = TRUE), 4),
+			.names = "{.col}_sd_pos"
+			),
+			
+			across(
+			all_of(lag_cols),
+			~round(sd(.x[.x <= 0], na.rm = TRUE), 4),
+			.names = "{.col}_sd_neg"
+			),
+			
+			.groups = "drop"
+			)
+		}
+	\end{lstlisting}
+	\section{Codice R Commentato Analisi delle correlazioni}
+	\label{correlazioni}
+	\begin{lstlisting}
+	corr <- round(cor(tel.guida_summary %>% select(where(is.numeric))),4)
+	
+	#Ricerca di variabili dipendenti
+	
+	variabili_dipendenti <- findCorrelation(corr, cutoff = 0.9, names = TRUE, exact = T,verbose = T)
+	
+	print(variabili_dipendenti)
+	
+	tel.pca <- tel.guida_summary %>% select(-all_of(variabili_dipendenti))
+	
+	\end{lstlisting}
+	\section{Codice R Commentato Analisi delle componenti principali}
+	\label{PCA}
+	\begin{lstlisting}
+	PCA <- princomp(tel.pca %>%
+	select(where(is.numeric)),cor=T)
+	
+	summary(PCA)
+	
+	PCA$loadings
+	
+	fviz_contrib(PCA, choice = "var", axes = 1, top = 10) 
+	fviz_contrib(PCA, choice = "var", axes = 2, top = 10)
+	fviz_contrib(PCA, choice = "var", axes = 3, top = 10)
+	fviz_contrib(PCA, choice = "var", axes = 4, top = 10)
+	fviz_contrib(PCA, choice = "var", axes = 5, top = 10)
+	fviz_contrib(PCA, choice = "var", axes = 6, top = 10)
+	\end{lstlisting}
 \end{document}
