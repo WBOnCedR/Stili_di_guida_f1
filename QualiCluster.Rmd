@@ -191,7 +191,7 @@ pp <- ggplot(tel_g
 print(pp)
 
 
-ggsave("tel_ex2.pdf", pp, width = 7, height = 5, device = cairo_pdf)
+#ggsave("tel_ex2.pdf", pp, width = 7, height = 5, device = cairo_pdf)
 ```
 
 ```{r}
@@ -203,6 +203,8 @@ tel <- tel %>% filter(lap_time !="None")
 
 ```
 
+
+
 ## Feature engineering
 
 Lo studio si pone di individuare stili di guida generali, non specifici di un circuito. Affinchè circuiti con molti rettilinei e circuiti con molte curve e nervosi siano conforntabili, si riscalano le accellerazioni, sia frontali che laterali, su un scala standard $[-1,1]$
@@ -213,7 +215,7 @@ tel.guida <- tel %>%
                   mutate(
                    dec_x = if_else(acc_x < 0, abs(acc_x), 0),
                    acc_x = if_else(acc_x > 0, acc_x, 0)) %>% 
-                    mutate(acc_x=rescale(acc_x,to=c(0,1)),dec_x=rescale(dec_x,to=c(0,1),acc_y= abs(rescale(acc_y,to = c(0, 1))))) %>%                     ungroup()
+                      ungroup()
 
 ```
 
@@ -336,92 +338,112 @@ tel.guida_summary <- tel.guida %>%
 
 tel2 <- tel %>% 
           group_by(GP,pilota) %>% 
-              summarize(laptime=max(lap_time),life=max(life),strategy=(max(strategy)),gomma=(max(gomma)),.groups = "drop") %>% 
-                  group_by(GP) %>% 
-                      mutate(laptime=scale(as.numeric(laptime))) %>% ungroup()
+              summarize(laptime=max(lap_time),strategy=(max(strategy)),gomma=(max(gomma)),.groups = "drop") 
 
-tel.guida_summary$laptime <- tel2$laptime
+tel.guida_summary$laptime <- as.numeric(tel2$laptime)
 tel.guida_summary$strategy <- tel2$strategy
 tel.guida_summary$gomma <- tel2$gomma
 
-
 ```
+
+Eliminazione dei dati non coerenti con regole della *FIA* ovvero che se si è oltre il 107% del tempo minimo si esclude il pilota.
+```{r}
+tel.guida_summary %>% group_by(GP) %>% filter(laptime > 1.07*min(laptime))
+
+tel.guida_summary <- tel.guida_summary %>% filter(!(pilota=="STR" & GP=="Dutch Grand Prix"))
+```
+
+Visto che Nel GP di Las vegas la pista era bagnata nella Q1 e successivamente verso la fine è andata ad asciugarsi per la struttura del dataset visto che sono stati presi i migliori tempi per ogni pilota, dal filtraggio si evince che i piloti usciti in Q1 abbiano un tempo che non rientra nella regola quindi non si escludono dal dataset, cosa che per STR nel GP di Olanda non si può evitare essendo che ha avuto un incidente, e di conseguenza il tempo migliore risulta quello di un giro di riscaldamento.
+
+
+
+Creazione indice di variabile
+
+
+
+```{r}
+sd_cols <-tel.guida_summary %>% names(.) %>% .[str_detect(., "sd")]
+mean_cols <-tel.guida_summary %>%  names(.) %>% .[str_detect(., "mean")]
+
+tel.guida_summary.idx <- tel.guida_summary[sd_cols] / tel.guida_summary[mean_cols]
+
+names(tel.guida_summary.idx) <- str_replace(names(tel.guida_summary.idx), "sd", "sd_stand")
+
+tel.guida_summary.idx$GP <- tel.guida_summary$GP                                          
+
+tel.guida_summary.idx$pilota <- tel.guida_summary$pilota                         
+   
+                            
+                            
+```
+
+
+
+
+
+
+
+
+
+
 
 ### PCA
 
 Si valutano anzitutto le correlazioni tra le variabili per evitare problemi di multicollinearità.
 
 ```{r}
-corr <- round(cor(tel.guida_summary %>% select(where(is.numeric))),4)
+
+tel.guida_summary <- tel.guida_summary.idx %>% mutate(across(where(is.numeric),~rescale(.,to=c(0,1))))
+
+
+
+corr <- round(cor(tel.guida_summary.idx %>% select(where(is.numeric))),4)
 
 variabili_dipendenti <- findCorrelation(corr, cutoff = 0.9, names = TRUE, exact = T,verbose = T)
 
  print(variabili_dipendenti)
 ```
 
-Filtraggio per variabili significative e standardizzazione per gara
+Filtraggio per variabili significative e normalizzare per gara
 
 ```{r}
 
-tel.pca <- tel.guida_summary %>% select(-all_of(variabili_dipendenti)) %>% group_by(GP) %>%
-  mutate(across(where(is.numeric), ~ scale(.) )) %>% 
-  ungroup()
+tel.pca <- tel.guida_summary %>% select(-all_of(variabili_dipendenti))
 ```
 
-throttle_sd: Variabilità nell'uso dell'acceleratore.
+*throttle_mean* :  l'intensità di accelerazionevalore alto stile "aggressivo" basso stile "assertivo" docile sull'acceleratore
 
-acc_x_mean: Media dell'accelerazione longitudinale positiva.
 
-acc_x_sd: Variabilità della fase di accelerazione.
+*acc_x_mean*    : l'intensità di accelerazione in termini di forza g per ogni pilota un valore alto 
 
-acc_y_mean: Media della forza G laterale.
-
-acc_y_sd: Variabilità della forza laterale .
-
-throttle_lag5_mean_pos: Accelerazione media del movimento del piede mentre preme il gas (quanto rapidamente aumenta la velocità di pressione).
-
-acc_x_lag1_mean_neg: Velocità media con cui diminuisce l'accelerazione longitudinale (la fase di rilascio della spinta prima della frenata).
-
-acc_y_lag1_mean_neg: Velocità media con cui diminuisce la forza laterale (velocità di raddrizzamento dello sterzo in uscita curva).
-
-throttle_lag1_sd_pos: Inconsistenza nella velocità di pressione dell'acceleratore (se alta pilota più aggressivo se bassa pilota più preciso).
-
-acc_x_lag3_sd_pos: variabilità di comportamento in uscita curva in base al tipo di curva
-
-acc_y_lag5_sd_pos: variabilità nell'accelerazione laterale nell'inserimento in curva (se alta pilota più inconsistente ad entrare in curva se bassa pilota più fluido/aggressivo nell'ingresso).
-
-acc_x_lag1_sd_neg: variabilità nella velocità di rilascio dell'accelerazione.
-
-acc_x_lag3_sd_neg: variabilità durante il calo di accelerazione di durata maggiore.
-
-acc_y_lag3_sd_neg: variabilità nell'accelerazione laterale nell'uscita da una curva (se alta pilota inconsistente ad uscire in curva se bassa pilota più fluido/aggressivo in uscita ).
-
-dec_x_lag1_sd_pos: Consistenza nel rilascio del freno. Poiché dec_x è negativo, un cambiamento "positivo" significa tornare verso lo 0 (alzare il piede dal freno). Misura quanto è costante il pilota nel trail braking (frenata in curva).
-
-dec_x_lag1_sd_neg: Consistenza nell'attacco del freno. Un cambiamento "negativo" significa andare verso valori più bassi (frenare più forte). Misura se il pilota "pesta" il freno sempre con la stessa decisione.
-
-dec_x_lag3_sd_neg: Inconsistenza di ordine superiore (vibrazioni/micro-correzioni) durante la fase di attacco della frenata.
 
 ```{r}
 PCA <- princomp(tel.pca %>%
                   select(where(is.numeric)),cor=T)
+
+fviz_screeplot(PCA,choice= "variance")
+
+
+
 summary(PCA)
 print(PCA$loadings,cutoff = 0)
-tel.comp <- as_tibble(PCA$scores[,c(1:10)])
+tel.comp <- as_tibble(PCA$scores[,c(1:6)])
 ```
 
 
 Vediamo quali sono le variabili che decrivono le prime quattro componenti.
 
 ```{r}
-for (i in 1:10){
+for (i in 1:6){
  p <- fviz_contrib(PCA, choice = "var", axes = i, top = 15)
  print(p)
  }
 ```
+Comp 1 : intensità del pilota su accelerazione/frenata longitudinale se bassa 
 
+Comp 2 : intensità della forza g in curva
 
-
+Comp 3 : intensità di utilizzo dell'acceleratore per ogni pilota 
 
 
 
@@ -511,13 +533,30 @@ tel.clust <- tel.guida_summary %>%
 ```
 
 ```{r}
+clust <- Mclust(tel.comp,G=4)
+summary(clust)
+plot(clust, what="classification")
+plot(clust, what="uncertainty")
+plot(clust, what = "BIC", legendArgs = list(x = "topleft"))
+clust$BIC
+```
+
+
+
+
+
+```{r}
 clust <- Mclust(tel.comp)
 summary(clust)
 plot(clust, what="classification")
 plot(clust, what="uncertainty")
-plot(clust, what = "BIC", legendArgs = list(x = "topright"))
+plot(clust, what = "BIC", legendArgs = list(x = "topleft"))
 clust$BIC
 ```
+
+
+
+
 
 ```{r}
 comp.class <- unlist ( clust$classification )
@@ -527,8 +566,39 @@ tel.comp.labels["class"] <- clust$classification
 tel.comp.labels$pilota <- tel.pca$pilota
 tel.comp.labels$GP <- tel.pca$GP
 
-plot(tel.comp.labels$Comp.2,tel.comp$Comp.4,col=tel.comp.labels$class,pch=16)
-plot(tel.comp.labels$Comp.2,tel.comp$Comp.7,col=tel.comp.labels$class,pch=16)
+tel.comp.labels$fill_pilota <- ifelse(tel.comp.labels$pilota %in% c("VER","HAM","BEA"),tel.comp.labels$pilota,"")
+
+ggplot(tel.comp.labels, aes(x = Comp.3, y = Comp.4)) +
+  # 1. Usa 'color' invece di 'fill' per i punti standard
+  geom_point(aes(color = as.factor(class)), size = 3) + 
+  
+  # 2. Correggi il nome della colonna per le etichette (presumo sia 'pilota')
+  # check_overlap = TRUE evita che le scritte si sovrappongano troppo
+  geom_text(aes(label = fill_pilota), vjust = -1, size = 3, check_overlap = FALSE) + 
+  
+  # 3. Usa una scala di colori ad alto contrasto
+  scale_color_brewer(palette = "Set1") +
+  
+  theme_minimal() +
+  labs(title = "Plot Comp.3 vs Comp.4",
+       color = "Classe") # Ora questo corrisponde all'aes(color)
+
+ggplot(tel.comp.labels %>% filter(class==3), aes(x = Comp.3, y = Comp.4)) +
+  # 1. Usa 'color' invece di 'fill' per i punti standard
+  geom_point(aes(color = as.factor(class)), size = 3) + 
+  
+  # 2. Correggi il nome della colonna per le etichette (presumo sia 'pilota')
+  # check_overlap = TRUE evita che le scritte si sovrappongano troppo
+  geom_text(aes(label = pilota), vjust = -1, size = 3, check_overlap = FALSE) + 
+  
+  # 3. Usa una scala di colori ad alto contrasto
+  scale_color_brewer(palette = "Set1") +
+  
+  theme_minimal() +
+  labs(title = "Plot Comp.3 vs Comp.4",
+       color = "Classe") # Ora questo corrisponde all'aes(color)
+
+
 ```
 
 ```{r}
@@ -548,6 +618,9 @@ summary2 <- tel.comp.labels %>%
       mean = ~mean(.x, na.rm=T)
   )),n() ,.groups = "drop"
   )
+
+table(tel.comp.labels$pilota,tel.comp.labels$class)
+
 ```
 
 ```{r}
@@ -590,18 +663,16 @@ tel.clust <- tel.clust %>% arrange(laptime,GP,pilota,)
 listmod=c("Gaussian_pk_L_I","Gaussian_pk_Lk_I","Gaussian_pk_L_B","Gaussian_pk_Lk_B","Gaussian_pk_L_Bk",
           "Gaussian_pk_Lk_Bk","Gaussian_pk_L_C","Gaussian_pk_Lk_C","Gaussian_pk_L_D_Ak_D","Gaussian_pk_Lk_D_Ak_D",
           "Gaussian_pk_L_Dk_A_Dk","Gaussian_pk_Lk_Dk_A_Dk","Gaussian_pk_L_Ck","Gaussian_pk_Lk_Ck")
-tel.data <- tel.comp[,c(2,4,7)]
+tel.data <- tel.comp[,c(2,4)]
 tel.comp.labels$class <- as.factor(tel.comp.labels$class)
-tel.class <- unlist( tel.comp.labels[,11] )
+tel.class <- unlist( tel.comp.labels[,7] )
 str(tel.class)
 str(tel.data)
 
-set.seed(543)
-n <- nrow(tel.data)
-test.set <- sample(1:n,20)
+
 
 res = mixmodLearn(tel.data[-test.set,], tel.class[-test.set], 
-                  models=mixmodGaussianModel(listModels=listmod),
+                  models=mixmodGaussianModel(listModels=listmod,equal.proportions=F),
                   criterion=c('CV','BIC'))
 summary(res)
 
