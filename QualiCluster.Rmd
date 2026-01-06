@@ -26,6 +26,7 @@ library(mclust)
 library(caret)
 library(factoextra)
 library(GGally)
+library(Rmixmod)
 
 ```
 
@@ -212,7 +213,7 @@ tel.guida <- tel %>%
                   mutate(
                    dec_x = if_else(acc_x < 0, abs(acc_x), 0),
                    acc_x = if_else(acc_x > 0, acc_x, 0)) %>% 
-                    mutate(acc_x=rescale(acc_x,to=c(0,1)),dec_x=rescale(dec_x,to=c(0,1),acc_y= abs(rescale(acc_y,to = c(-1, 1))))) %>%                     ungroup()
+                    mutate(acc_x=rescale(acc_x,to=c(0,1)),dec_x=rescale(dec_x,to=c(0,1),acc_y= abs(rescale(acc_y,to = c(0, 1))))) %>%                     ungroup()
 
 ```
 
@@ -332,6 +333,18 @@ tel.guida_summary <- tel.guida %>%
       .groups = "drop"
     )
   }
+
+tel2 <- tel %>% 
+          group_by(GP,pilota) %>% 
+              summarize(laptime=max(lap_time),life=max(life),strategy=(max(strategy)),gomma=(max(gomma)),.groups = "drop") %>% 
+                  group_by(GP) %>% 
+                      mutate(laptime=scale(as.numeric(laptime))) %>% ungroup()
+
+tel.guida_summary$laptime <- tel2$laptime
+tel.guida_summary$strategy <- tel2$strategy
+tel.guida_summary$gomma <- tel2$gomma
+
+
 ```
 
 ### PCA
@@ -394,27 +407,19 @@ PCA <- princomp(tel.pca %>%
                   select(where(is.numeric)),cor=T)
 summary(PCA)
 print(PCA$loadings,cutoff = 0)
-tel.comp <- as_tibble(PCA$scores[,c(1:8)])
+tel.comp <- as_tibble(PCA$scores[,c(1:10)])
 ```
 
 
 Vediamo quali sono le variabili che decrivono le prime quattro componenti.
 
 ```{r}
-fviz_contrib(PCA, choice = "var", axes = 1, top = 15) 
-fviz_contrib(PCA, choice = "var", axes = 2, top = 10)
-fviz_contrib(PCA, choice = "var", axes = 3, top = 10)
-fviz_contrib(PCA, choice = "var", axes = 4, top = 10)
-fviz_contrib(PCA, choice = "var", axes = 5, top = 10)
-fviz_contrib(PCA, choice = "var", axes = 6, top = 10)
-fviz_contrib(PCA, choice = "var", axes = 7, top = 10)
-
+for (i in 1:10){
+ p <- fviz_contrib(PCA, choice = "var", axes = i, top = 15)
+ print(p)
+ }
 ```
 
-
-```{r}
-ggpairs(tel.comp,progress = F)
-```
 
 
 
@@ -512,34 +517,30 @@ plot(clust, what="classification")
 plot(clust, what="uncertainty")
 plot(clust, what = "BIC", legendArgs = list(x = "topright"))
 clust$BIC
-
 ```
 
 ```{r}
+comp.class <- unlist ( clust$classification )
+
 tel.comp.labels <- tel.comp
 tel.comp.labels["class"] <- clust$classification
+tel.comp.labels$pilota <- tel.pca$pilota
+tel.comp.labels$GP <- tel.pca$GP
+
+plot(tel.comp.labels$Comp.2,tel.comp$Comp.4,col=tel.comp.labels$class,pch=16)
+plot(tel.comp.labels$Comp.2,tel.comp$Comp.7,col=tel.comp.labels$class,pch=16)
 ```
 
 ```{r}
 summary <- tel.comp.labels %>%
   group_by(class) %>%
   summarize(
-    across(everything(),
+    across(where(is.numeric),
     list(
       mean = ~mean(.x, na.rm=T)
   )), .groups = "drop"
   )
-#write.csv(summary, "summary.csv")
-
-tel.comp.labels$GP <- tel.pca$GP
-tel.comp.labels$pilota <- tel.pca$pilota
-tel2 <- tel %>% group_by(GP,pilota) %>% summarize(laptime=max(lap_time),life=max(life),strategy=(max(strategy)),gomma=(max(gomma))) %>% ungroup()
-tel.comp.labels$laptime <- tel2$laptime
-tel.comp.labels$life <- tel2$life
-tel.comp.labels$strategy <- tel2$strategy
-tel.comp.labels$gomma <- tel2$gomma
-
-summary <- tel.comp.labels %>%
+summary2 <- tel.comp.labels %>%
   group_by(pilota,class) %>%
   summarize(
     across(where(is.numeric),
@@ -583,3 +584,31 @@ tel.clust$laptime <- tel.lap$laptime
 
 tel.clust <- tel.clust %>% arrange(laptime,GP,pilota,)
 ```
+
+
+```{r}
+listmod=c("Gaussian_pk_L_I","Gaussian_pk_Lk_I","Gaussian_pk_L_B","Gaussian_pk_Lk_B","Gaussian_pk_L_Bk",
+          "Gaussian_pk_Lk_Bk","Gaussian_pk_L_C","Gaussian_pk_Lk_C","Gaussian_pk_L_D_Ak_D","Gaussian_pk_Lk_D_Ak_D",
+          "Gaussian_pk_L_Dk_A_Dk","Gaussian_pk_Lk_Dk_A_Dk","Gaussian_pk_L_Ck","Gaussian_pk_Lk_Ck")
+tel.data <- tel.comp[,c(2,4,7)]
+tel.comp.labels$class <- as.factor(tel.comp.labels$class)
+tel.class <- unlist( tel.comp.labels[,11] )
+str(tel.class)
+str(tel.data)
+
+set.seed(543)
+n <- nrow(tel.data)
+test.set <- sample(1:n,20)
+
+res = mixmodLearn(tel.data[-test.set,], tel.class[-test.set], 
+                  models=mixmodGaussianModel(listModels=listmod),
+                  criterion=c('CV','BIC'))
+summary(res)
+
+prediction <- mixmodPredict(data=tel.data[test.set,],classificationRule=res["bestResult"])
+
+mean(as.integer(tel.class[test.set]) == prediction@partition)
+```
+
+
+
