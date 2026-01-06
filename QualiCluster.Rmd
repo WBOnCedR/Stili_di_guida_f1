@@ -148,7 +148,6 @@ tel <- tel %>% filter(pilota != "RUS" & GP != "Miami Grand Prix")
 
 Un ultimo accorgimento riguarda la variabile laptime essa infatti quando è pari a None il che si verifica per i piloti Tsunoda, Bearman e Hadjar rispettivamente nei GP Emilia romagna, Australian e Usa. Il motivo è perchè non hanno terminato il giro di qualifica quindi non c'è un tempo di giro ma comunque si è registrata la telemetria. Al fine di eliminare rumore nell'analisi si rimuovono queste osservazioni.
 
-
 ```{r}
 tel.ex <- tel %>% filter(GP == "Emilia Romagna Grand Prix" & (pilota == "ANT" |pilota == "HAM"|pilota== "TSU"))
 colori_team <- c("ANT" = "#0600EF", "HAM" = "#EF1A2D", "TSU" = "#FDD900")
@@ -194,9 +193,6 @@ print(pp)
 ggsave("tel_ex2.pdf", pp, width = 7, height = 5, device = cairo_pdf)
 ```
 
-
-
-
 ```{r}
 tel %>% 
   group_by(GP,pilota) %>% 
@@ -211,8 +207,7 @@ tel <- tel %>% filter(lap_time !="None")
 Lo studio si pone di individuare stili di guida generali, non specifici di un circuito. Affinchè circuiti con molti rettilinei e circuiti con molte curve e nervosi siano conforntabili, si riscalano le accellerazioni, sia frontali che laterali, su un scala standard $[-1,1]$
 
 ```{r}
-tel.guida <- tel.
-%>% 
+tel.guida <- tel %>%  
                 group_by(GP,pilota) %>% 
                   mutate(
                    dec_x = if_else(acc_x < 0, abs(acc_x), 0),
@@ -351,8 +346,13 @@ variabili_dipendenti <- findCorrelation(corr, cutoff = 0.9, names = TRUE, exact 
  print(variabili_dipendenti)
 ```
 
+Filtraggio per variabili significative e standardizzazione per gara
+
 ```{r}
-tel.pca <- tel.guida_summary %>% select(-all_of(variabili_dipendenti))
+
+tel.pca <- tel.guida_summary %>% select(-all_of(variabili_dipendenti)) %>% group_by(GP) %>%
+  mutate(across(where(is.numeric), ~ scale(.) )) %>% 
+  ungroup()
 ```
 
 throttle_sd: Variabilità nell'uso dell'acceleratore.
@@ -365,7 +365,7 @@ acc_y_mean: Media della forza G laterale.
 
 acc_y_sd: Variabilità della forza laterale .
 
-throttle_lag2_mean_pos: Accelerazione media del movimento del piede mentre preme il gas (quanto rapidamente aumenta la velocità di pressione).
+throttle_lag5_mean_pos: Accelerazione media del movimento del piede mentre preme il gas (quanto rapidamente aumenta la velocità di pressione).
 
 acc_x_lag1_mean_neg: Velocità media con cui diminuisce l'accelerazione longitudinale (la fase di rilascio della spinta prima della frenata).
 
@@ -375,7 +375,7 @@ throttle_lag1_sd_pos: Inconsistenza nella velocità di pressione dell'accelerato
 
 acc_x_lag3_sd_pos: variabilità di comportamento in uscita curva in base al tipo di curva
 
-acc_y_lag2_sd_pos: variabilità nell'accelerazione laterale nell'inserimento in curva (se alta pilota più inconsistente ad entrare in curva se bassa pilota più fluido/aggressivo nell'ingresso).
+acc_y_lag5_sd_pos: variabilità nell'accelerazione laterale nell'inserimento in curva (se alta pilota più inconsistente ad entrare in curva se bassa pilota più fluido/aggressivo nell'ingresso).
 
 acc_x_lag1_sd_neg: variabilità nella velocità di rilascio dell'accelerazione.
 
@@ -395,22 +395,30 @@ PCA <- princomp(tel.pca %>%
 summary(PCA)
 print(PCA$loadings,cutoff = 0)
 tel.comp <- as_tibble(PCA$scores[,c(1:8)])
-
-ggpairs(tel.comp,progress = F)
 ```
+
 
 Vediamo quali sono le variabili che decrivono le prime quattro componenti.
 
 ```{r}
-fviz_contrib(PCA, choice = "var", axes = 1, top = 10) 
+fviz_contrib(PCA, choice = "var", axes = 1, top = 15) 
 fviz_contrib(PCA, choice = "var", axes = 2, top = 10)
 fviz_contrib(PCA, choice = "var", axes = 3, top = 10)
 fviz_contrib(PCA, choice = "var", axes = 4, top = 10)
 fviz_contrib(PCA, choice = "var", axes = 5, top = 10)
 fviz_contrib(PCA, choice = "var", axes = 6, top = 10)
+fviz_contrib(PCA, choice = "var", axes = 7, top = 10)
 
-fviz_pca_var(PCA)
 ```
+
+
+```{r}
+ggpairs(tel.comp,progress = F)
+```
+
+
+
+
 
 Si nota come la `PCA` abbia evidenziato nella prima componente le variabili con più peso riguardano l'accelerazione longitudinale e la variazione dell' accelerazioni l'ampia variazione di queste variabili potrebbe assimilarsi in una versione di guida più dinamica e aggressiva per quanto riguarda la seconda componente è l'accelerazione laterale insieme alle decelerazioni a fornire contributo, quindi per quanto riguarda lo stile di guida potrebbe riguardare dei piloti che entrano ed escono molto forti dalle curve molto aggressivi in curva. Per la terza componente invece dominano le variabili di accelerazione longitudinale insieme alle variabili riguardanti la pressione del pedale di accelerazione, in particolare potrebbero rappresentare il momento prima delle frenate\
 Per la quarta componente invece predomina la pressione del piede sull'acceleratore, rappresentando come ogni pilota gestisca il pedale Riguardo alla quinta componente ci sono variabili rappresentanti l'uscita da una curva Per la sesta componente ci sono variabili rappresentanti l'entrata in una curva
@@ -508,11 +516,12 @@ clust$BIC
 ```
 
 ```{r}
-tel.comp["class"] <- clust$classification
+tel.comp.labels <- tel.comp
+tel.comp.labels["class"] <- clust$classification
 ```
 
 ```{r}
-summary <- tel.comp %>%
+summary <- tel.comp.labels %>%
   group_by(class) %>%
   summarize(
     across(everything(),
@@ -522,15 +531,15 @@ summary <- tel.comp %>%
   )
 #write.csv(summary, "summary.csv")
 
-tel.comp$GP <- tel.pca$GP
-tel.comp$pilota <- tel.pca$pilota
+tel.comp.labels$GP <- tel.pca$GP
+tel.comp.labels$pilota <- tel.pca$pilota
 tel2 <- tel %>% group_by(GP,pilota) %>% summarize(laptime=max(lap_time),life=max(life),strategy=(max(strategy)),gomma=(max(gomma))) %>% ungroup()
-tel.comp$laptime <- tel2$laptime
-tel.comp$life <- tel2$life
-tel.comp$strategy <- tel2$strategy
-tel.comp$gomma <- tel2$gomma
+tel.comp.labels$laptime <- tel2$laptime
+tel.comp.labels$life <- tel2$life
+tel.comp.labels$strategy <- tel2$strategy
+tel.comp.labels$gomma <- tel2$gomma
 
-summary <- tel.comp %>%
+summary <- tel.comp.labels %>%
   group_by(pilota,class) %>%
   summarize(
     across(where(is.numeric),
