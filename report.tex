@@ -142,7 +142,7 @@ citecolor=black       % Colore citazioni bibliografiche
 	\\
 	\begin{wrapfigure}{r}{0.5 \textwidth }
 		\includegraphics[width=.6\textwidth]{tel_ex2.pdf}
-		\caption{Confronto Emilia Romagna Tsunoda}
+		\caption{Confronto Australia Bearman}
 		\label{fig:confronto2}
 	\end{wrapfigure}
 	
@@ -154,13 +154,11 @@ citecolor=black       % Colore citazioni bibliografiche
 	\clearpage
 	
 	\subsubsection{Trasformazione e creazione di nuove variabili}
-	Al fine di rendere confrontabili i diversi tracciati dei Gran Premi, la variabile di accelerazione laterale viene riscalata\footnote{Estratto codice R consultabile nell'appendice \ref{trattamento variabili}.\label{appendice 3}}, per ciascun Gran Premio e Pilota, nell'intervallo $[-1,1]$. Successivamente, viene trasformata tramite valore assoluto, così da ottenere una misura dell'intensità complessiva (magnitudo), il supporto quindi risulta compreso in $[0,1]$.
+	Per l'analisi la variabile di accelerazione laterale, viene trasformata tramite valore assoluto, così da ottenere una misura dell'intensità complessiva (magnitudo)\footnote{Estratto codice R consultabile nell'appendice \ref{trattamento variabili}.\label{appendice_3}}
 	
-	Per l'accelerazione longitudinale vengono create due nuove variabili\textsuperscript{\ref{appendice 3}}.\\
+	Per l'accelerazione longitudinale invece vengono create due nuove variabili\textsuperscript{\ref{appendice_3}}.\\
 	
-	Accelerazione: essa assimila tutti i valori positivi della variabile originaria, viene successivamente normalizzata nell'intervallo $[0,1]$ per ciascun Gran Premio e Pilota, per riuscire a normalizzare i tracciati.\\
-	
-	Decelerazione :  essa assimila al contrario della precedente tutti i valori negativi della variabile originaria,successivamente viene applicato il valore atteso e normalizzata nell'intervallo $[0,1]$.
+	Accelerazione, che assimila tutti i valori positivi della variabile originaria,Decelerazione che al contrario della precedente assimila, tutti i valori negativi della variabile originaria, successivamente viene applicato il valore assoluto.
 	Per le restanti variabili telemetriche si mantiene invece la forma grezza.\\
 		
 	Si creano tre nuove variabili di variazione percentuali\footnote{Estratto codice R consultabile nell'appendice \ref{creazione variabili}} avendo notato dalla figura \ref{fig:confronto} che quando ci sono variazioni repentine che si contraddistingue lo stile di guida dei piloti:
@@ -179,31 +177,55 @@ citecolor=black       % Colore citazioni bibliografiche
 	\subsection{Statistiche riassuntive}
 	Si procede al calcolo delle statistiche descrittive\footnote{Estratto codice R consultabile nell'appendice \ref{codice statistiche riassuntive}.} al fine di valutare in che modo esse possano essere associate allo stile di guida, considerando separatamente ciascun Gran Premio e Pilota.
 	
-	Per le misure di accelerazione laterale,longitudinale e decelerazione longitudinale vengono calcolate media e deviazione standard.
+	Per le misure di accelerazione laterale,longitudinale e decelerazione longitudinale vengono calcolate media e deviazione standard.\\
 	
-	La variabile relativa alla frenata non viene invece inclusa nell’analisi descrittiva, in quanto la sua natura binaria e la forte dipendenza dalle caratteristiche specifiche del singolo Gran Premio rendono poco informative misure sintetiche come media e deviazione standard. Tali indicatori risulterebbero infatti più rappresentativi del tracciato e delle condizioni di gara che dello stile di guida del pilota.
 	
-	Per le variabili di tipo \_lag$k$ vengono calcolate medie e deviazioni standard distinguendo tra variazioni positive e negative, così da evidenziare eventuali asimmetrie nel comportamento dinamico del pilota.
+	La variabile relativa alla frenata non viene invece inclusa nell’analisi descrittiva, in quanto la sua natura binaria e la forte dipendenza dalle caratteristiche specifiche del singolo Gran Premio rendono poco informative misure sintetiche come media e deviazione standard. Tali indicatori risulterebbero infatti più rappresentativi del tracciato e delle condizioni di gara che dello stile di guida del pilota viene comunque presa in considerazione in modo latente dalla decelerazione.
 	
-	Il nuovo dataset pertanto contiene 58 variabili, che forniscono informazione sullo stile di guida del pilota nella specifica gara.
+	Per le variabili di tipo \_lag$k$ vengono calcolate medie e deviazioni standard distinguendo tra variazioni positive e negative, così da evidenziare eventuali asimmetrie nel comportamento dinamico del pilota.\\
 	
-	Si procede dunque con una analisi delle componenti principali per ridurre la dimensionalità, e comprendere quali siano le variabili più significative nel fornire l'informazione.
+	Ogni statistica descrittiva viene impiegata per creare il coefficiente di variazione, con struttura del tipo:
+	\[\dfrac{sd(x)}{mean(x)}\]
+	Al fine di eliminare l'effetto di scala.
 	
 	\clearpage
+	
+	
+	Un ultimo accorgimento riguarda la variabile tempo giro, in quanto per regolamento della \textbf{FIA}(federazione internazionale dell'automobile) un pilota se supera il $107\%$ del tempo giro minore viene escluso dalle qualifiche.
+	
+	Applicando questo filtro al dataset, emergono come outlier i piloti Hamilton, Tsunoda, Antonelli, Albon e Bortoleto nel GP di Las Vegas e Stroll nel GP d'Olanda.
+	
+	Analizzando il contesto, si nota che a Las Vegas i tempi più elevati sono imputabili alle condizioni meteo avverse (pioggia intensa), seguite da un progressivo asciugamento della pista che ha avvantaggiato gli altri piloti. Nel caso di Stroll, invece, il dato si riferisce a un giro di lancio completo, poiché nel momento del giro di qualifica non è stato completato il giro per un incidente.
+	
+	Di conseguenza per eliminare il rumore, si elimina soltanto l'occorrenza di Stroll, in quanto il giro non rappresenta il giro "migliore" ma solamente il riscaldamento.\\
+	 
+		
+	Il nuovo dataset pertanto contiene 30 variabili, che forniscono informazione sullo stile di guida del pilota nella specifica gara.
+	
+	Il dato è pertanto, ancora influenzato dal tracciato di ogni gran premio, per ovviare, si riscalano tutte le variabili nell'intervallo $[0,1]$
+	
+	Si procede dunque con una analisi delle correlazioni per ridurre la dimensionalità, e comprendere quali siano le variabili più significative nel fornire l'informazione.
+	
 	\subsection{Riduzione della dimensionalità}
 	\subsubsection{Analisi correlazioni}
 	Per limitare i casi di multicollinearità ed eliminare il rumore, avendo correlazioni molto elevate ($cor(x,y)>0.9$), attraverso la funzione \texttt{findCorrelation} implementata nella libreria : \texttt{\{caret\}}\footnote{Estratto del codice R consultabile nell'appendice \ref{correlazioni}},si cerca di eliminare la ridondanza delle variabili.
 	
-	In particolare la funzione analizza le coppie di variabili con correlazione eccessiva e rimuove quella che, in media, risulta più correlata con tutte le altre. Questo processo di scrematura ha permesso di ridurre la dimensionalità a 27 variabili.
+	In particolare la funzione analizza le coppie di variabili con correlazione eccessiva e rimuove quella che, in media, risulta più correlata con tutte le altre. Questo processo di scrematura permette di ridurre la dimensionalità a 21 variabili.
 	
 	\subsubsection{Analisi delle componenti principali}
-	Seppur la dimensionalità sia diminuita, 27 dimensioni sono eccessive sia ai fini di interpretabilità che per sforzo computazionale.
+	Seppur la dimensionalità sia diminuita, 21 dimensioni sono eccessive sia ai fini di interpretabilità che per sforzo computazionale per un model base clustering.
+	
 	
 	Si passa dunque da un analisi delle componenti principali (PCA) ai fini di ridurre la dimensionalità.
-	Per l'applicazione della PCA si opta di inserire come input la matrice di correlazione, in quanto, le variabili hanno unità di misura diverse\footnote{Estratto del codice R consultabile nell'appendice \ref{PCA}}.
+	Successivamente l'applicazione della PCA \footnote{Estratto del codice R consultabile nell'appendice \ref{PCA}}, dall'analisi risulta che le prime 6 componenti spiegano l'$80\%$ della varianza, come si nota nella figura \ref{fig:pca}.
 	
-	Dall'analisi risulta che le prime 8 componenti spiegano l'$80\%$ della varianza, i pesi associati ad ogni componente sono invece 
-	
+	\begin{figure}[H]
+		\centering
+		\includegraphics[width=.5\textwidth]{tel_pca.pdf}
+		\caption{Varianza Spiegata Comulata}
+		\label{fig:pca}
+	\end{figure}
+	\subsubsection{Interpretazione delle componenti}
 	
 	
 	
@@ -298,8 +320,8 @@ citecolor=black       % Colore citazioni bibliografiche
 		select(-dataKey)
 		setwd("C:/Users/feder/Documents/datasets/Computazionale/F1/data")
 		saveRDS(dataset_completo, file = "dataset_completo_best_tel.rds")
-
 	\end{lstlisting}
+	\clearpage
 	\section{Codice R Commentato Esplorazione iniziale}
 	\label{codice preliminare}
 	\begin{lstlisting}
@@ -322,15 +344,13 @@ citecolor=black       % Colore citazioni bibliografiche
 	\section{Codice R Commentato Trattemento variabili}
 	\label{trattamento variabili}
 	\begin{lstlisting}
-		tel.guida <- tel %>% 
-		group_by(GP,pilota) %>% 
-		mutate(
-			dec_x = if_else(acc_x < 0, abs(acc_x), 0),
-			acc_x = if_else(acc_x > 0, acc_x, 0)) %>% 
-			mutate(acc_x=rescale(acc_x,to=c(0,1)),
-			dec_x=rescale(dec_x,to=c(0,1),
-			acc_y=abs(rescale(acc_y,to = c(-1, 1))))) %>%           
-		          ungroup()
+	tel.guida <- tel %>%  
+	group_by(GP,pilota) %>% 
+	mutate(
+	dec_x = if_else(acc_x < 0, abs(acc_x), 0),
+	acc_x = if_else(acc_x > 0, acc_x, 0),
+	acc_y = abs(acc_y)) %>% 
+	ungroup()
 	\end{lstlisting}
 	\section{Codice R Commentato Creazione variabili}
 	\label{creazione variabili}
@@ -408,7 +428,16 @@ citecolor=black       % Colore citazioni bibliografiche
 			.groups = "drop"
 			)
 		}
+		
+		tel2 <- tel %>% 
+		group_by(GP,pilota) %>% 
+		summarize(laptime=max(lap_time),strategy=(max(strategy)),gomma=(max(gomma)),.groups = "drop") 
+		
+		tel.guida_summary$laptime <- as.numeric(tel2$laptime)
+		tel.guida_summary$strategy <- tel2$strategy
+		tel.guida_summary$gomma <- tel2$gomma
 	\end{lstlisting}
+	\clearpage
 	\section{Codice R Commentato Analisi delle correlazioni}
 	\label{correlazioni}
 	\begin{lstlisting}
@@ -427,17 +456,16 @@ citecolor=black       % Colore citazioni bibliografiche
 	\label{PCA}
 	\begin{lstlisting}
 	PCA <- princomp(tel.pca %>%
-	select(where(is.numeric)),cor=T)
+	select(where(is.numeric)))
+	
+	fviz_screeplot(PCA,choice= "variance")
 	
 	summary(PCA)
+	print(PCA$loadings,cutoff = 0)
 	
-	PCA$loadings
-	
-	fviz_contrib(PCA, choice = "var", axes = 1, top = 10) 
-	fviz_contrib(PCA, choice = "var", axes = 2, top = 10)
-	fviz_contrib(PCA, choice = "var", axes = 3, top = 10)
-	fviz_contrib(PCA, choice = "var", axes = 4, top = 10)
-	fviz_contrib(PCA, choice = "var", axes = 5, top = 10)
-	fviz_contrib(PCA, choice = "var", axes = 6, top = 10)
+	for (i in 1:6){
+		p <- fviz_contrib(PCA, choice = "var", axes = i, top = 15)
+		print(p)
+	}
 	\end{lstlisting}
 \end{document}
