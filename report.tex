@@ -149,9 +149,16 @@ citecolor=black       % Colore citazioni bibliografiche
 	Un ultimo accorgimento riguarda la variabile Tempo Giro, per alcuni piloti risulta infatti \texttt{None}, osservando i dati\textsuperscript{\ref{appendice 2}}, si verifica per i piloti Tsunoda, Bearman e Hadjar rispettivamente nei Gran premi di Emilia Romagna, Australia e Stati Uniti.
 	
 	
-	Analizzando la realtà si scopre che il motivo è che non hanno terminato il giro di qualifica a causa di un incidente. I dati  che si hanno a disposizione sono infatti il riscaldamento delle gomme come si nota nella figura \ref{fig:confronto2}. Anche se non è presente un tempo di giro si è registrata comunque la telemetria. Al fine di eliminare rumore nell'analisi si rimuovono queste osservazioni.\\
-
+	Analizzando la realtà si scopre che il motivo è che non hanno terminato il giro di qualifica a causa di un incidente. I dati  che si hanno a disposizione sono infatti il riscaldamento delle gomme come si nota nella figura \ref{fig:confronto2}. Anche se non è presente un tempo di giro si è registrata comunque la telemetria. Al fine di eliminare rumore nell'analisi si rimuovono queste osservazioni.
+	
 	\clearpage
+	
+	Sempre per quanto riguarda la variabile tempo giro, dato il fatto che per regolamento della \textbf{FIA}(\href{https://www.fia.com/sites/default/files/fia_2025_formula_1_sporting_regulations_-_issue_1_-_2024-07-31.pdf}{39.4.b.i ; PAG:47}) un pilota se supera il $107\%$ del tempo giro minore viene escluso dalle qualifiche.	Si applica questo filtro al dataset, emergono come outlier i piloti Hamilton, Tsunoda, Antonelli, Albon e Bortoleto nel GP di Las Vegas e Stroll nel GP d'Olanda.
+	
+	Analizzando il contesto, si nota che a Las Vegas i tempi più elevati sono imputabili alle condizioni meteo avverse (pioggia intensa), seguite da un progressivo asciugamento della pista che ha avvantaggiato gli altri piloti. Nel caso di Stroll, invece, il dato si riferisce a un giro di lancio completo, poiché nel momento del giro di qualifica non è stato completato il giro per un incidente.
+	
+	Di conseguenza per eliminare il rumore, si elimina soltanto l'occorrenza di Stroll, in quanto il giro non rappresenta il giro "migliore" ma solamente il riscaldamento.\\
+
 	
 	\subsubsection{Trasformazione e creazione di nuove variabili}
 	Per l'analisi la variabile di accelerazione laterale, viene trasformata tramite valore assoluto, così da ottenere una misura dell'intensità complessiva (magnitudo)\footnote{Estratto codice R consultabile nell'appendice \ref{trattamento variabili}.\label{appendice_3}}
@@ -188,17 +195,6 @@ citecolor=black       % Colore citazioni bibliografiche
 	\[\dfrac{sd(x)}{mean(x)}\]
 	Al fine di eliminare l'effetto di scala.
 	
-	\clearpage
-	
-	
-	Un ultimo accorgimento riguarda la variabile tempo giro, in quanto per regolamento della \textbf{FIA}(federazione internazionale dell'automobile) un pilota se supera il $107\%$ del tempo giro minore viene escluso dalle qualifiche.
-	
-	Applicando questo filtro al dataset, emergono come outlier i piloti Hamilton, Tsunoda, Antonelli, Albon e Bortoleto nel GP di Las Vegas e Stroll nel GP d'Olanda.
-	
-	Analizzando il contesto, si nota che a Las Vegas i tempi più elevati sono imputabili alle condizioni meteo avverse (pioggia intensa), seguite da un progressivo asciugamento della pista che ha avvantaggiato gli altri piloti. Nel caso di Stroll, invece, il dato si riferisce a un giro di lancio completo, poiché nel momento del giro di qualifica non è stato completato il giro per un incidente.
-	
-	Di conseguenza per eliminare il rumore, si elimina soltanto l'occorrenza di Stroll, in quanto il giro non rappresenta il giro "migliore" ma solamente il riscaldamento.\\
-	 
 		
 	Il nuovo dataset pertanto contiene 30 variabili, che forniscono informazione sullo stile di guida del pilota nella specifica gara.
 	
