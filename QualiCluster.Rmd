@@ -168,8 +168,8 @@ Un ultimo accorgimento riguarda la variabile *laptime*. Essa infatti è pari a `
 Di seguito una rappresentazione visiva di quanto è stato appena osservato.
 
 ```{r}
-tel.ex <- tel %>% filter(GP == "Emilia Romagna Grand Prix" & (pilota == "ANT" |pilota == "HAM"|pilota== "TSU"))
-colori_team <- c("ANT" = "#0600EF", "HAM" = "#EF1A2D", "TSU" = "#FDD900")
+tel.ex <- tel %>% filter(GP == "Qatar Grand Prix" & (pilota == "LEC" |pilota == "VER"|pilota== "NOR"))
+colori_team <- c("LEC" = "#0600EF", "VER" = "#EF1A2D", "NOR" = "#FDD900")
 
 
 
@@ -479,7 +479,7 @@ Dai precedenti risultati si possono definire le componenti nel seguente modo :
 
     -   **Score bassi**: indicano frenate più progressive e stabili, con minori variazioni laterali, suggerendo un ingresso curva più controllato.
 
--   `Comp.5`: Risposta del veicolo a variazioni di carico. Riflette la sensibilità della dinamica laterale e longitudinale a variazioni progressive degli input, potenzialmente influenzata dal setup meccanico e aerodinamico.
+-   `Comp.5`: Risposta del setup a variazioni di carico. Riflette la sensibilità della dinamica laterale e longitudinale a variazioni progressive degli input, potenzialmente influenzata dal setup meccanico e aerodinamico.
 
     -   **Score elevati** : indicano un veicolo e un sistema pilota–vettura molto reattivi alle variazioni di carico, con una dinamica che risponde in modo marcato anche a cambiamenti progressivi. Valori alti possono riflettere un setup più rigido o una configurazione aerodinamica che amplifica la reattività della vettura.
     -   **Score bassi** : indicano una risposta più smorzata e filtrata, coerente con un comportamento più stabile e prevedibile. Possono essere associati a setup più morbidi o a regolazioni che riducono la sensibilità alle variazioni di carico, privilegiando la stabilità rispetto alla reattività.
@@ -490,7 +490,7 @@ Per effettuare il clustering sulle componenti ottenute, si rimuove la `Comp.2`, 
 
 ```{r}
 tel.comp <- tel.comp %>%
-  select(-Comp.2)
+  select(-Comp.2,-Comp.5)
 ```
 
 Si procede ora a effettuare un primo clustering
