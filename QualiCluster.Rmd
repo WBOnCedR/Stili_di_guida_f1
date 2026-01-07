@@ -13,7 +13,7 @@ Working set up
 
 ```{r}
 rm(list=ls())
-setwd("~/datasets/Computazionale/F1")
+setwd("C:/Users/4erre/Documents/PERSONALE/SCUOLA/A.A._2025-2026/Statistica_computazionale/Progetto/formula1")
 options(warn = -1) 
 
 library(tidyverse)
@@ -36,10 +36,15 @@ Il seguente studio si pone l'obiettivo di individuare dei possibili stili di gui
 
 ## Esplorazione del dataset
 
-Si va ora ad esplorare il dataset in maniera tale da poter capire quali variabili possano essere indicative per individuare uno **stile di guida** per ciascun pilota.
+Si va ora ad esplorare il dataset per :
+
+- Effettuare una prima parte di data cleaning;
+- Capire quali variabili possano essere indicative per individuare uno **stile di guida** per ciascun pilota;
+
+### Analisi logica variabili
 
 ```{r}
-tel <- readRDS("~/datasets/Computazionale/F1/data/dataset_completo_best_tel.rds")
+tel <- readRDS("data/dataset_completo_best_tel.rds")
 head(tel)
 tel <- as_tibble(tel)
 
@@ -49,6 +54,9 @@ tel %>% group_by(GP,pilota) %>% summarize(n())
 
 ```{r}
 str(tel)
+```
+```{r}
+tel$lap_time <- as.numeric(tel$lap_time)
 ```
 
 Le variabili presenti per ciascuna telemetria sono :
@@ -82,7 +90,7 @@ Le variabili posizionali
 
 possono tornare utili per dare un riferimento alle rilevazioni.
 
-Di seguito alcune analisi grafiche per supportare quanto appena affermato.
+Di seguito alcune analisi grafiche per verificare che queste variabili siano distinte, almeno in parte, da pilota a pilota.
 
 ```{r}
 tel.ex <- tel %>% filter(GP == "United States Grand Prix" & (pilota == "VER" |pilota == "LEC"|pilota== "NOR"))
@@ -128,17 +136,18 @@ print(pp)
 #ggsave("tel_ex1.pdf", pp, width = 7, height = 5, device = cairo_pdf)
 ```
 
+### Data cleaning 
+
 ```{r}
 summary(tel)
 ```
-
 Notando che il massimo che assume la variabile *throttle* è 104 si riporta tutto sulla scala originaria tenendo come massimo 100
 
 ```{r}
 tel$throttle <- ifelse(tel$throttle > 100, 100, tel$throttle)
 ```
 
-Inoltre si verificano delle osservazioni `NA` analizzando il dataset originale si nota come siano costanti le distanze e molti record pari a zero di conseguenza si presuppone che i sensori di telemetria abbiano avuto un'avaria si decide quindi di eliminare i dati relativi al GP di Miami di Russell
+Inoltre sono presenti alcune osservazioni `NA`. Analizzando il dataset originale in corrisondenza degli `NA` si nota come siano costanti le distanze e molti record pari a zero di conseguenza si presuppone che i sensori di telemetria abbiano avuto un'avaria si decide quindi di eliminare i dati relativi al GP di Miami di Russell.
 
 ```{r}
 tel[which(is.na(tel$rel_distance)),]
@@ -147,7 +156,9 @@ tel[which(is.na(tel$rel_distance)),]
 tel <- tel %>% filter(pilota != "RUS" & GP != "Miami Grand Prix")
 ```
 
-Un ultimo accorgimento riguarda la variabile laptime essa infatti quando è pari a None il che si verifica per i piloti Tsunoda, Bearman e Hadjar rispettivamente nei GP Emilia romagna, Australian e Usa. Il motivo è perchè non hanno terminato il giro di qualifica quindi non c'è un tempo di giro ma comunque si è registrata la telemetria. Al fine di eliminare rumore nell'analisi si rimuovono queste osservazioni.
+Un ultimo accorgimento riguarda la variabile *laptime*. Essa infatti è pari a `None` per i piloti Tsunoda, Bearman e Hadjar rispettivamente nei GP Emilia Romagna, Australian e Usa a causa del fatto che non hanno terminato il giro di qualifica quindi non c'è un tempo del giro, ma comunque si è registrata la telemetria. Al fine di eliminare rumore nell'analisi si rimuovono queste osservazioni.
+
+Di seguito una rappresentazione visiva di quanto è stato appena osservato.
 
 ```{r}
 tel.ex <- tel %>% filter(GP == "Emilia Romagna Grand Prix" & (pilota == "ANT" |pilota == "HAM"|pilota== "TSU"))
@@ -203,7 +214,18 @@ tel <- tel %>% filter(lap_time !="None")
 
 ```
 
+Si procede con la verifica che i dati siano coerenti con il regolamento *FIA* che prevede l'esclusione del pilota se il suo tempo supera il 107% del tempo minimo.
 
+```{r}
+tel %>% group_by(GP) %>% filter(lap_time > 1.07*min(lap_time))
+```
+
+
+```{r}
+tel.guida_summary <- tel.guida_summary %>% filter(!(pilota=="STR" & GP=="Dutch Grand Prix"))
+```
+
+Visto che Nel GP di Las vegas la pista era bagnata nella Q1 e successivamente verso la fine è andata ad asciugarsi per la struttura del dataset visto che sono stati presi i migliori tempi per ogni pilota, dal filtraggio si evince che i piloti usciti in Q1 abbiano un tempo che non rientra nella regola quindi non si escludono dal dataset, cosa che per STR nel GP di Olanda non si può evitare essendo che ha avuto un incidente, e di conseguenza il tempo migliore risulta quello di un giro di riscaldamento.
 
 ## Feature engineering
 
@@ -346,14 +368,7 @@ tel.guida_summary$gomma <- tel2$gomma
 
 ```
 
-Eliminazione dei dati non coerenti con regole della *FIA* ovvero che se si è oltre il 107% del tempo minimo si esclude il pilota.
-```{r}
-tel.guida_summary %>% group_by(GP) %>% filter(laptime > 1.07*min(laptime))
 
-tel.guida_summary <- tel.guida_summary %>% filter(!(pilota=="STR" & GP=="Dutch Grand Prix"))
-```
-
-Visto che Nel GP di Las vegas la pista era bagnata nella Q1 e successivamente verso la fine è andata ad asciugarsi per la struttura del dataset visto che sono stati presi i migliori tempi per ogni pilota, dal filtraggio si evince che i piloti usciti in Q1 abbiano un tempo che non rientra nella regola quindi non si escludono dal dataset, cosa che per STR nel GP di Olanda non si può evitare essendo che ha avuto un incidente, e di conseguenza il tempo migliore risulta quello di un giro di riscaldamento.
 
 
 
@@ -439,7 +454,9 @@ for (i in 1:6){
  print(p)
  }
 ```
-Comp 1 : intensità del pilota su accelerazione/frenata longitudinale se bassa 
+Dai precedenti risultati si possono definire le componenti nel seguente modo
+
+- *Comp1* : riguarda la componente longitudinale della guida, quindi accellerazione e decelerazione frontale. 
 
 Comp 2 : intensità della forza g in curva
 
@@ -447,90 +464,12 @@ Comp 3 : intensità di utilizzo dell'acceleratore per ogni pilota
 
 
 
-Si nota come la `PCA` abbia evidenziato nella prima componente le variabili con più peso riguardano l'accelerazione longitudinale e la variazione dell' accelerazioni l'ampia variazione di queste variabili potrebbe assimilarsi in una versione di guida più dinamica e aggressiva per quanto riguarda la seconda componente è l'accelerazione laterale insieme alle decelerazioni a fornire contributo, quindi per quanto riguarda lo stile di guida potrebbe riguardare dei piloti che entrano ed escono molto forti dalle curve molto aggressivi in curva. Per la terza componente invece dominano le variabili di accelerazione longitudinale insieme alle variabili riguardanti la pressione del pedale di accelerazione, in particolare potrebbero rappresentare il momento prima delle frenate\
+Si nota come la `PCA` abbia evidenziato nella prima componente le variabili con più peso riguardano l'accelerazione longitudinale e la variazione dell' accelerazioni l'ampia variazione di queste variabili potrebbe assimilarsi in una versione di guida più dinamica e aggressiva per quanto riguarda la seconda componente è l'accelerazione laterale insieme alle decelerazioni a fornire contributo, quindi per quanto riguarda lo stile di guida potrebbe riguardare dei piloti che entrano ed escono molto forti dalle curve molto aggressivi in curva. Per la terza componente invece dominano le variabili di accelerazione longitudinale insieme alle variabili riguardanti la pressione del pedale di accelerazione, in particolare potrebbero rappresentare il momento prima delle frenate/
 Per la quarta componente invece predomina la pressione del piede sull'acceleratore, rappresentando come ogni pilota gestisca il pedale Riguardo alla quinta componente ci sono variabili rappresentanti l'uscita da una curva Per la sesta componente ci sono variabili rappresentanti l'entrata in una curva
 
-```{r}
-relevant <- c(
-  "GP",
-  "pilota",
-  "throttle_sd",
-  "acc_x_mean",
-  "acc_x_sd",
-  "acc_y_mean",
-  "acc_y_sd",
-  "throttle_lag2_mean_pos",
-  "throttle_lag1_sd_pos",
-  "acc_x_lag1_sd_neg",
-  "acc_x_lag3_sd_pos",
-  "acc_y_lag1_mean_neg",
-  "acc_y_lag2_sd_pos",
-  "dec_x_lag1_sd_neg",
-  "acc_y_lag3_sd_neg",
-  "acc_x_lag3_sd_neg",
-  "acc_x_lag1_mean_neg",
-  "dec_x_lag1_sd_neg"
-  )
 
-```
-
-```{r}
-tel.sum.pca <- as_tibble(round(PCA$scores[,c(1,2)],4))
-tel.sum.pca <- tel.sum.pca %>%
-  mutate(pilota = tel.guida_summary$pilota,
-         GP = tel.guida_summary$GP)
-```
-
-```{r}
-
-piloti_unici <- sort(unique(tel.sum.pca$pilota))
-
-
-n_piloti <- length(piloti_unici)
-colori_piloti <- setNames(
-  c("#E41A1C", "#377EB8", "#4DAF4A", "#984EA3", "#FF7F00",
-    "#FFFF33", "#A65628", "#F781BF", "#66C2A5", "#FC8D62",
-    "#8DA0CB", "#E78AC3", "#A6D854", "#FFD92F", "#E5C494",
-    "#1B9E77", "#D95F02", "#7570B3", "#E7298A", "#66A61E")[1:length(piloti_unici)],
-  piloti_unici
-)
-
-
-gp_list <- unique(tel.sum.pca$GP)
-
-for (gp in gp_list) {
-  
-  dati_gp <- tel.sum.pca %>% filter(GP == gp)
-  
-  p <- ggplot(dati_gp, aes(x = Comp.1, y = Comp.2, color = pilota)) +
-    geom_point(size = 5, alpha = 0.8) +
-    geom_text(aes(label = pilota), hjust = -0.2, vjust = 0.5, size = 4, fontface = "bold") +
-    scale_color_manual(values = colori_piloti) +
-    labs(
-      title = paste("Stile di Guida -", gp),
-      x = "Magnitudo accellerazione laterale [G]",
-      y = "Irruenza accelleraizione",
-      color = "Pilota"
-    ) +
-    theme_minimal(base_size = 14) +
-    theme(
-      plot.title = element_text(hjust = 0.5, face = "bold", size = 16),
-      legend.position = "right"
-    )
-  
-  print(p)
-}
-
-
-```
 
 ## Clustering
-
-```{r}
-tel.clust <- tel.guida_summary %>%
-  select(all_of(relevant))
-
-```
 
 ```{r}
 clust <- Mclust(tel.comp,G=4)
@@ -568,35 +507,25 @@ tel.comp.labels$GP <- tel.pca$GP
 
 tel.comp.labels$fill_pilota <- ifelse(tel.comp.labels$pilota %in% c("VER","HAM","BEA"),tel.comp.labels$pilota,"")
 
-ggplot(tel.comp.labels, aes(x = Comp.3, y = Comp.4)) +
-  # 1. Usa 'color' invece di 'fill' per i punti standard
+ggplot(tel.comp.labels, aes(x = Comp.2, y = Comp.4)) +
+  
   geom_point(aes(color = as.factor(class)), size = 3) + 
   
-  # 2. Correggi il nome della colonna per le etichette (presumo sia 'pilota')
-  # check_overlap = TRUE evita che le scritte si sovrappongano troppo
   geom_text(aes(label = fill_pilota), vjust = -1, size = 3, check_overlap = FALSE) + 
   
-  # 3. Usa una scala di colori ad alto contrasto
   scale_color_brewer(palette = "Set1") +
   
   theme_minimal() +
-  labs(title = "Plot Comp.3 vs Comp.4",
-       color = "Classe") # Ora questo corrisponde all'aes(color)
+  labs(title = "Plot Comp.2 vs Comp.4",
+       color = "Classe")
 
-ggplot(tel.comp.labels %>% filter(class==3), aes(x = Comp.3, y = Comp.4)) +
-  # 1. Usa 'color' invece di 'fill' per i punti standard
+ggplot(tel.comp.labels, aes(x = Comp.3, y = Comp.4)) +
   geom_point(aes(color = as.factor(class)), size = 3) + 
-  
-  # 2. Correggi il nome della colonna per le etichette (presumo sia 'pilota')
-  # check_overlap = TRUE evita che le scritte si sovrappongano troppo
   geom_text(aes(label = pilota), vjust = -1, size = 3, check_overlap = FALSE) + 
-  
-  # 3. Usa una scala di colori ad alto contrasto
   scale_color_brewer(palette = "Set1") +
-  
   theme_minimal() +
   labs(title = "Plot Comp.3 vs Comp.4",
-       color = "Classe") # Ora questo corrisponde all'aes(color)
+       color = "Classe") 
 
 
 ```
@@ -621,33 +550,6 @@ summary2 <- tel.comp.labels %>%
 
 table(tel.comp.labels$pilota,tel.comp.labels$class)
 
-```
-
-```{r}
-gp_list <- unique(tel.clust$GP)
-
-for (gp in gp_list) {
-  
-  dati_gp <- tel.clust %>% filter(GP == gp)
-  
-  p <- ggplot(dati_gp, aes(x = Comp.1, y = Comp.2, color = pilota)) +
-    geom_point(size = 5, alpha = 0.8) +
-    geom_text(aes(label = pilota), hjust = -0.2, vjust = 0.5, size = 4, fontface = "bold") +
-    scale_color_manual(values = colori_piloti) +
-    labs(
-      title = paste("Stile di Guida -", gp),
-      x = "Magnitudo accellerazione laterale [G]",
-      y = "Irruenza accelleraizione",
-      color = "Pilota"
-    ) +
-    theme_minimal(base_size = 14) +
-    theme(
-      plot.title = element_text(hjust = 0.5, face = "bold", size = 16),
-      legend.position = "right"
-    )
-  
-  print(p)
-}
 ```
 
 ```{r}
