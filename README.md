@@ -16,7 +16,7 @@ L'obiettivo è analizzare le telemetrie delle qualifiche di Formula 1 per indivi
 
 Lo studio parte dall'analisi di file JSON contenenti i tempi sul giro e le telemetrie. Attraverso una pipeline di pre-processing e feature engineering, vengono estratte variabili significative (accelerazione longitudinale/laterale, uso dell'acceleratore/freno, variazioni nel tempo). Successivamente, si applica la PCA (Principal Component Analysis) per ridurre la dimensionalità e si utilizza `Mclust` per raggruppare i piloti in base al loro stile di guida.
 
-## ✨ Funzionalità
+## Funzionalità
 
 - **Data Ingestion**: Caricamento e parsing di file JSON (laptimes e telemetry).
 - **Pre-processing**: Pulizia dei dati, gestione dei valori mancanti e filtraggio dei giri non validi.
@@ -62,7 +62,7 @@ install.packages(c("jsonlite", "tidyverse", "dotenv", "ggplot2", "RColorBrewer",
 1. **Clona il repository**:
    ```bash
    git clone https://github.com/WBOnCedR/Statistica_Computazionale_Progetto.git
-   cd Statistica_Computazionale_Progetto/formula1
+   cd Statistica_Computazionale_Progetto
    ```
 
 2. **Configura le variabili d'ambiente**:
