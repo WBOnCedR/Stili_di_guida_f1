@@ -1,9 +1,11 @@
 library(jsonlite)
 library(tidyverse)
+library(dotenv)
 
 rm(list=ls())
 
-cartella <- "C:/Users/feder/Documents/datasets/Computazionale/2025"
+json_path <- Sys.getenv("JSON_PATH")
+cartella <- json_path
 
 file_giri <- list.files(path = cartella, 
                              pattern = "laptimes\\.json$", 
