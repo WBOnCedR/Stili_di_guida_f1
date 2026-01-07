@@ -207,10 +207,11 @@ print(pp)
 
 ```{r}
 tel %>% 
-  group_by(GP,pilota) %>% 
-  filter(lap_time == "None") %>% summarize(n(),lap_time=max(lap_time))
+  group_by(GP, pilota) %>% 
+  filter(is.na(lap_time)) %>% 
+  summarize(n = n(), .groups = "drop")
 
-tel <- tel %>% filter(lap_time !="None")
+tel <- tel %>% filter(!is.na(lap_time))
 
 ```
 
