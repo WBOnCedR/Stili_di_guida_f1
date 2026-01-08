@@ -168,8 +168,8 @@ Un ultimo accorgimento riguarda la variabile *laptime*. Essa infatti è pari a `
 Di seguito una rappresentazione visiva di quanto è stato appena osservato.
 
 ```{r}
-tel.ex <- tel %>% filter(GP == "Qatar Grand Prix" & (pilota == "LEC" |pilota == "VER"|pilota== "NOR"))
-colori_team <- c("LEC" = "#0600EF", "VER" = "#EF1A2D", "NOR" = "#FDD900")
+tel.ex <- tel %>% filter(GP == "Australian Grand Prix" & (pilota == "BEA" |pilota == "HAM"|pilota== "TSU"))
+colori_team <- c("BEA" = "#0600EF", "HAM" = "#EF1A2D", "TSU" = "#FDD900")
 
 
 
@@ -261,7 +261,7 @@ Per calcolare la variazione percentuale delle variabili *throttle*,*acc_x*,*acc_
 ```{r}
 tel.guida <- tel.guida %>%
   
-  select(GP,pilota,throttle,acc_x,acc_y,dec_x,rel_distance) %>% 
+  select(GP,pilota,throttle,acc_x,acc_y,dec_x,brake,speed,rel_distance) %>% 
   
   arrange(GP,pilota,rel_distance) %>%
   
@@ -269,7 +269,7 @@ tel.guida <- tel.guida %>%
   
   mutate(
     across(
-      c(throttle, acc_x, acc_y,dec_x),
+      c(throttle, acc_x, acc_y,dec_x,speed),
       list(
         
       lag1 = ~round(
@@ -319,7 +319,7 @@ tel.guida_summary <- tel.guida %>%
     
     summarise(.,
       across(
-        c(throttle, acc_x, acc_y,dec_x), 
+        c(throttle, acc_x, acc_y,dec_x,brake,speed), 
         list(
           mean = ~round(mean(.x, na.rm = TRUE), 4),
           sd = ~round(sd(.x, na.rm = TRUE), 4)
@@ -369,7 +369,8 @@ Il calcolo di queste statistiche ha l’obiettivo di ottenere degli indicatori c
 
 $$
 \text{CV} =\dfrac{sd(x)}{mean(x)}
-$$ che misura la variabilità relativa di una variabile rispetto alla sua media.
+$$ 
+che misura la variabilità relativa di una variabile rispetto alla sua media.
 
 ```{r}
 sd_cols <-tel.guida_summary %>% names(.) %>% .[str_detect(., "sd")]
@@ -437,7 +438,21 @@ Nota metodologica:
 PCA <- princomp(tel.pca %>%
                   select(where(is.numeric)),cor=T)
 
-fviz_screeplot(PCA,choice= "variance")
+
+cumulative <- as_tibble(get_eigenvalue(PCA)$cumulative.variance.percent)
+
+cumulative$Componenti <- 1:24
+
+p <- ggplot(cumulative, aes(x=Componenti,y=value))+
+  geom_bar(stat="identity",aes(fill = value))+
+  scale_fill_fermenter(palette = "Set2")+
+  geom_label(aes(label=round(value,2)),stat="identity")+
+  labs(title= "Cumulative variance",
+       y="Proporzione")+
+  theme_minimal()
+print(p)
+#ggsave("tel_pca.pdf", p, width = 7, height = 5, device = cairo_pdf)
+
 
 
 
@@ -489,8 +504,7 @@ Dai precedenti risultati si possono definire le componenti nel seguente modo :
 Per effettuare il clustering sulle componenti ottenute, si rimuove la `Comp.2`, poiché caratterizzante il circuito e non interpretativamente collegata allo stile di guida effettivo.
 
 ```{r}
-tel.comp <- tel.comp %>%
-  select(-Comp.2)
+
 ```
 
 Si procede ora a effettuare un primo clustering
@@ -504,16 +518,6 @@ plot(clust, what = "BIC", legendArgs = list(x = "bottomleft"))
 clust$BIC
 ```
 
-**INSERITE QUI PERCHÈ ABBIAMO FORZATO 4 GRUPPI!!!!!!**
-
-```{r}
-clust <- Mclust(tel.comp,G=4)
-summary(clust)
-plot(clust, what="classification")
-plot(clust, what="uncertainty")
-plot(clust, what = "BIC", legendArgs = list(x = "topleft"))
-clust$BIC
-```
 
 ```{r}
 comp.class <- unlist ( clust$classification )
@@ -521,6 +525,10 @@ tel.comp.labels <- tel.comp
 tel.comp.labels["class"] <- clust$classification
 tel.comp.labels$pilota <- tel.pca$pilota
 tel.comp.labels$GP <- tel.pca$GP
+
+tel.comp.labels$laptime <- tel2$laptime
+
+tel.comp.labels <- tel.comp.labels %>% arrange(laptime,GP,pilota,)
 ```
 
 ------------------------------------------------------------------------
@@ -528,17 +536,22 @@ tel.comp.labels$GP <- tel.pca$GP
 ### Interpretazione dei risultati
 
 ```{r}
-tel.comp.labels$fill_pilota <- ifelse(tel.comp.labels$pilota %in% c("VER","HAM","BEA"),tel.comp.labels$pilota,"")
 unique_GP <- unique(tel.comp.labels$GP)
+
+x_lim <- range(tel.comp.labels$Comp.1, na.rm = TRUE)
+y_lim <- range(tel.comp.labels$Comp.2, na.rm = TRUE)
+
+
 
 for (gp in unique_GP) {
   
-   p <- ggplot(tel.comp.labels %>% filter(GP == gp), aes(x = Comp.3, y = Comp.4)) +
-  geom_point(aes(fill = as.factor(class)), shape = 21, size = 3, color = "black") + 
+   p <- ggplot(tel.comp.labels %>% filter(GP == gp), aes(x = Comp.1, y = Comp.2)) +
+  geom_point(aes(fill = as.factor(class)), shape = 21,size=3,color = "black") + 
   geom_text(aes(label = pilota), vjust = -1, size = 3, check_overlap = FALSE) + 
   scale_color_brewer(palette = "Set1") +
+  coord_cartesian(xlim = x_lim, ylim = y_lim)+
   theme_minimal() +
-  labs(title = paste0("Plot Comp.3 vs Comp.4 ", gp),
+  labs(title = paste0("Plot Comp.5 vs Comp.1 ", gp),
        fill = "Classe") 
    print(p)
 }
@@ -546,6 +559,12 @@ for (gp in unique_GP) {
 
 
 ```
+La clusterizzazione tramite Model Based clustering, ha evidenziato due cluster:
+- il *primo* nel quale i piloti hanno un atteggiamento più progressivo,graduale e *stabile*, nella guida.
+- il *secondo* nel quale si ha un atteggiamento più *instabile* e aggressivo
+
+Esempi chiari, sono il gp di `Las Vegas` per quanto riguarda lo stile stabile sempre per le condizioni atmosferiche, invece si può osservare nella pista di `Monaco` come lo stile sia per lo più instabile e aggressivo, dovuto per l'appunto alla configurazione del tracciato. 
+
 
 ```{r}
 summary <- tel.comp.labels %>%
@@ -557,7 +576,7 @@ summary <- tel.comp.labels %>%
   )), .groups = "drop"
   )
 summary2 <- tel.comp.labels %>%
-  group_by(pilota,class) %>%
+  group_by(GP,class) %>%
   summarize(
     across(where(is.numeric),
     list(
@@ -574,13 +593,7 @@ print(summary)
 print(summary2)
 ```
 
-```{r}
-tel.lap <- tel %>% group_by(GP,pilota) %>% summarize(laptime=max(lap_time))
 
-tel.comp.labels$laptime <- tel.lap$laptime
-
-tel.comp.labels <- tel.comp.labels %>% arrange(laptime,GP,pilota,)
-```
 
 ## Classificazione
 
