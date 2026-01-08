@@ -30,7 +30,7 @@ library(flexmix)
 
 options(warn = -1) 
 
-load_dot_env("C:/Users/feder/Documents/datasets/Computazionale/F1/.env.example")
+load_dot_env()
 setwd(Sys.getenv("WORK_DIR"))
 
 data_path <- Sys.getenv("DATA")
@@ -257,7 +257,7 @@ tel.guida <- tel %>%
 
 ```
 
-Per calcolare la variazione percentuale delle variabili *throttle*,*acc_x*,*acc_y*,*dec_x* e ottenere un indicazione della magnitudo delle variazioni durante il giro, si calcolano le seguenti variabili :
+Per calcolare la variazione percentuale delle variabili *throttle*,*acc_x*,*acc_y*,*dec_x* e *speed* e ottenere un indicazione della magnitudo delle variazioni durante il giro, si calcolano le seguenti variabili :
 
 -   \*\*\_lag1\*\* : breve periodo;
 -   \*\*\_lag5\*\* : medio perodo;
