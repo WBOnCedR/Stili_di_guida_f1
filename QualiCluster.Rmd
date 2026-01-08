@@ -26,6 +26,7 @@ library(factoextra)
 library(GGally)
 library(Rmixmod)
 library(dotenv)
+library(flexmix)
 
 options(warn = -1) 
 
@@ -88,7 +89,9 @@ Anzi tutto per ricercare un potenziale stile di guida bisogna individuare, a par
 -   brake : utilizzo del freno
 -   acc_x : tipologie di frenate (prevalentemente brusche/secche, più gestite, ...)
 -   acc_y : tipologia di guida (accellerazioni in generale molto polarizzate potrebbero indicare una guida molto nervosa per esempio ...)
--   speed : PERCHÈ???
+-   brake  ( variazione dell'utilizzo del freno nel tempo)
+-   speed   (gestione della velocità nel tracciato, preferenza di aumenti progressivi oppure di aumenti                     repentini)
+
 
 Le variabili posizionali
 
@@ -101,19 +104,19 @@ possono tornare utili per dare un riferimento alle rilevazioni.
 Di seguito alcune analisi grafiche per verificare che queste variabili siano distinte, almeno in parte, da pilota a pilota.
 
 ```{r}
-tel.ex <- tel %>% filter(GP == "United States Grand Prix" & (pilota == "VER" |pilota == "LEC"|pilota== "NOR"))
-colori_team <- c("VER" = "#0600EF", "LEC" = "#EF1A2D", "NOR" = "#FF8700")
+tel.ex <- tel %>% filter(GP == "United States Grand Prix" & (pilota == "VER" |pilota == "LEC"|pilota== "COL"|pilota=="BEA"))
+colori_team <- c("VER" = "#0600EF", "LEC" = "#EF1A2D", "COL" = "#FF8700","BEA"="#000000")
 
 
 
 tel_g <- tel.ex %>%
-  select(rel_distance, pilota, acc_y, acc_x) %>%
-  pivot_longer(cols = c(acc_y, acc_x), 
+  select(rel_distance, pilota, acc_y, acc_x,speed,brake,throttle) %>%
+  pivot_longer(cols = c(acc_y, acc_x,speed,throttle), 
                names_to = "variabile", 
                values_to = "valore") %>%
   mutate(variabile = factor(variabile, 
-                            levels = c("acc_y", "acc_x"),
-                            labels = c(" Accelerazione laterale (g)", " Accelerazione longitudinale (g)")))
+                            levels = c("acc_y", "acc_x","speed","throttle"),
+                            labels = c(" Acc. lat (g)", " Acc. long g(0)", "Vel (km/s)","Acc. (%)" )))
 
 
 pp <- ggplot(tel_g, aes(x = rel_distance, y = valore, color = pilota)) +
@@ -222,6 +225,7 @@ tel %>%
 
 tel <- tel %>% filter(!is.na(lap_time))
 
+tel
 ```
 
 Si procede con la verifica che i dati siano coerenti con il regolamento *FIA* che prevede l'esclusione del pilota se il suo tempo supera il 107% del tempo minimo.
@@ -490,7 +494,6 @@ print(p)
 
 summary(PCA)
 print(PCA$loadings,cutoff = 0)
-tel.comp <- as_tibble(PCA$scores[,c(1:5)])
 ```
 
 ```{r}
@@ -536,7 +539,13 @@ Dai precedenti risultati si possono definire le componenti nel seguente modo :
 
 ## Clustering
 
-Si procede ora a effettuare il clustering sulle componenti ottenute
+Si filtra per le prime cinque componenti ottenute.
+
+```{r}
+tel.comp <- as_tibble(PCA$scores[,c(1:5)])
+```
+
+Si procede ora a effettuare un primo clustering
 
 ```{r}
 clust <- Mclust(tel.comp)
@@ -546,6 +555,7 @@ plot(clust, what="uncertainty")
 plot(clust, what = "BIC", legendArgs = list(x = "bottomleft"))
 clust$BIC
 ```
+
 Metriche di valutazione
 
 ```{r}
@@ -555,6 +565,26 @@ KL <- clust$icl - clust$bic; KL
 cat("Incertezza attesa \n")
 mean(clust$uncertainty)
 ```
+
+Il modello trovato è un VEE 9 con BIC pari a -7949.208 il con KL pari a 50
+
+Notando come le componenti 1 e 2 siano le più discriminanti per il clustering, si prova quindi ad applicare il Model Base Clustering solo sulle prime due componenti 
+
+```{r}
+tel.comp <- tel.comp %>% select(Comp.2,Comp.1)
+
+
+clust <- Mclust(tel.comp)
+summary(clust)
+plot(clust, what="classification")
+plot(clust, what="uncertainty")
+plot(clust, what = "BIC", legendArgs = list(x = "bottomleft"))
+clust$BIC
+
+
+```
+Il modello trovato è un EEV 5 con BIC pari a -3752.150, molto superiore rispetto al modello precedente, e graficamente più distinti i gruppi tra di loro con KL circa pari a 100 di conseguenza si predilige il seguente modello al precedente.
+
 
 
 ```{r}
@@ -569,34 +599,59 @@ tel.comp.labels$laptime <- tel2$laptime
 tel.comp.labels <- tel.comp.labels %>% arrange(laptime,GP,pilota,)
 ```
 
+
+------------------------------------------------------------------------
+
+
 ### Interpretazione dei risultati
 
 ```{r}
 unique_GP <- unique(tel.comp.labels$GP)
 
-x_lim <- range(tel.comp.labels$Comp.1, na.rm = TRUE)
-y_lim <- range(tel.comp.labels$Comp.2, na.rm = TRUE)
+x_lim <- range(tel.comp.labels$Comp.2, na.rm = TRUE)
+y_lim <- range(tel.comp.labels$Comp.1, na.rm = TRUE)
 
 
 
 for (gp in unique_GP) {
   
-   p <- ggplot(tel.comp.labels %>% filter(GP == gp), aes(x = Comp.1, y = Comp.2)) +
-  geom_point(aes(fill = as.factor(class)), shape = 21,size=3,color = "black") + 
-  geom_text(aes(label = pilota), vjust = -1, size = 3, check_overlap = FALSE) + 
+   p <- ggplot(tel.comp.labels %>% filter(GP == gp), aes(x = Comp.2, y = Comp.1)) +
+  geom_text(aes(label = pilota,colour  = as.factor(class)), vjust = -1, size = 3, check_overlap = F) + 
   scale_color_brewer(palette = "Set1") +
   coord_cartesian(xlim = x_lim, ylim = y_lim)+
   theme_minimal() +
-  labs(title = paste0("Plot Comp.5 vs Comp.1 ", gp),
+  labs(title = paste0("Plot Comp.2 vs Comp.1 ", gp),
        fill = "Classe") 
    print(p)
 }
 
 
+p <- ggplot(tel.comp.labels, aes(x = Comp.2, y = Comp.1)) +
+    geom_point(aes(colour = as.factor(class)), alpha = 0) + 
+    geom_text(aes(label = GP, colour = as.factor(class)), 
+            vjust = -1, size = 3, check_overlap = T,show.legend = F) + 
+  scale_color_brewer(palette = "Set1", type = "qual") +
+  coord_cartesian(xlim = c(-5,5), ylim = c(-7,7)) +
+  labs(title = paste0("Plot Comp.2 vs Comp.1 ", gp),
+       colour = "Classe") +
+  guides(colour = guide_legend(override.aes = list(alpha = 1, size = 5, shape = 19)))
+
+print(p)
 
 ```
 
 La clusterizzazione tramite Model Based clustering, ha evidenziato due cluster: - il *primo* nel quale i piloti hanno un atteggiamento più progressivo,graduale e *stabile*, nella guida. - il *secondo* nel quale si ha un atteggiamento più *instabile* e aggressivo
+
+- Il *primo* cluster comprende prevalentemente Gran Premi con piste caratterizzate da numerose curve a medio-bassa velocità, nei quali i piloti mostrano una gestione longitudinale relativamente costante e una maggiore variabilità della dinamica laterale.
+
+- Il *secondo* cluster raccoglie Gran Premi associati a circuiti caratterizzati da curve veloci e sequenze fluide, in cui le accelerazioni e decelerazioni longitudinali risultano più graduali.
+
+- Il *terzo* cluster include Gran Premi tipicamente legati a tracciati con curve a medio-bassa velocità, nei quali la variabilità longitudinale è elevata a fronte di una minore variabilità laterale.
+
+- Il *quarto* cluster rappresenta una configurazione intermedia, comprendente circuiti con caratteristiche miste.
+
+- Il *quinto* cluster comprende Gran Premi associati a circuiti stop-and-go, con molte curve lente e pochi rettilinei, nei quali si osserva una gestione più irregolare dell’accelerazione longitudinale.
+
 
 Esempi chiari, sono il gp di `Las Vegas` per quanto riguarda lo stile stabile sempre per le condizioni atmosferiche, invece si può osservare nella pista di `Monaco` come lo stile sia per lo più instabile e aggressivo, dovuto per l'appunto alla configurazione del tracciato.
 
@@ -610,7 +665,7 @@ summary <- tel.comp.labels %>%
   )), .groups = "drop"
   )
 summary2 <- tel.comp.labels %>%
-  group_by(GP,class) %>%
+  group_by(pilota,GP,class) %>%
   summarize(
     across(where(is.numeric),
     list(
@@ -618,7 +673,7 @@ summary2 <- tel.comp.labels %>%
   )),n() ,.groups = "drop"
   )
 
-table(tel.comp.labels$pilota,tel.comp.labels$class)
+table(tel.comp.labels$GP,tel.comp.labels$class)
 
 ```
 
@@ -633,20 +688,48 @@ print(summary2)
 listmod=c("Gaussian_pk_L_I","Gaussian_pk_Lk_I","Gaussian_pk_L_B","Gaussian_pk_Lk_B","Gaussian_pk_L_Bk",
           "Gaussian_pk_Lk_Bk","Gaussian_pk_L_C","Gaussian_pk_Lk_C","Gaussian_pk_L_D_Ak_D","Gaussian_pk_Lk_D_Ak_D",
           "Gaussian_pk_L_Dk_A_Dk","Gaussian_pk_Lk_Dk_A_Dk","Gaussian_pk_L_Ck","Gaussian_pk_Lk_Ck")
-tel.data <- tel.comp[,c(2,4)]
+tel.data <- tel.comp[,c(1,2)]
 tel.comp.labels$class <- as.factor(tel.comp.labels$class)
-tel.class <- unlist( tel.comp.labels[,7] )
+tel.class <- unlist( tel.comp.labels[,3] )
 str(tel.class)
 str(tel.data)
 
 
+set.seed(789)
+vec <- data.frame(CV=NA,BIC=NA,MODEL=NA,TOT_MISS=NA,PROP_MISS=NA,N=NA)
+n_test <- list()
+for (s in seq(from=20,to=50,by=10)){
+  for (i in 1:2000){
+test.set <- sample(1:nrow(tel.data),s)
+res <-  mixmodLearn(tel.data[-test.set,], tel.class[-test.set], 
+                  models=mixmodGaussianModel(listModels=listmod,equal.proportions=F),criterion= c("CV","BIC"))
+   vec[i,1] <- res@bestResult@criterionValue[1]
+   vec[i,2] <- res@bestResult@criterionValue[2]
+   vec[i,3] <- res@bestResult@model
+  
+  
+pred <-  mixmodPredict(tel.data[test.set,], classificationRule=res@bestResult)
+   vec[i,4] <- sum(pred@partition == tel.class[test.set])
+   vec[i,5] <- mean(pred@partition == tel.class[test.set])
+  }
+  cat(cat(paste("Progress",s,"\n")))
+  vec$N <- rep(s,2000)
+  n_test[[as.character(s)]]   <- vec 
+}
 
-res = mixmodLearn(tel.data[-test.set,], tel.class[-test.set], 
-                  models=mixmodGaussianModel(listModels=listmod,equal.proportions=F),
-                  criterion=c('CV','BIC'))
-summary(res)
+tot <- bind_rows(n_test)
 
-prediction <- mixmodPredict(data=tel.data[test.set,],classificationRule=res["bestResult"])
+sort(rowSums(table(tot$MODEL,tot$N)),decreasing = T)
 
-mean(as.integer(tel.class[test.set]) == prediction@partition)
 ```
+
+
+
+
+```{r}
+fit <- stepFlexmix(Comp.1 ~ Comp.2 ,data=tel.comp.labels , k=2:4,verbose = TRUE, drop = F, unique = FALSE,FLXMRglm=(formula= .~. , family="gaussian"))
+
+fit
+
+```
+
