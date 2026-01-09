@@ -121,16 +121,16 @@ citecolor=black       % Colore citazioni bibliografiche
 	\section{Analisi Esplorativa}
 	\subsection{Considerazioni sulle variabili}
 		
-	Poiché lo stile di guida non è riconducibile a variabili di tipo posizionale, le coordinate spaziali e le misure di distanza, sia assolute sia relative, vengono escluse dall’analisi.
+	Poiché lo stile di guida non è riconducibile a variabili di tipo posizionale, le coordinate spaziali e le misure di distanza, sia assolute che relative, vengono escluse dall’analisi.
 	
 	
-	In questa fase preliminare, lo stile di guida viene descritto attraverso variabili dinamiche, quali l’utilizzo dell’acceleratore e del freno e le accelerazioni longitudinali e laterali, che consentono, per esempio, di valutare rispettivamente le modalità di decelerazione in ingresso curva, l’intensità con cui la curva viene affrontata tutte caratteristiche che fanno riferimento allo stile di guida.
-	A sostegno delle ipotesi sopra citate, si riporta la Figura \ref{fig:confronto} che confronta nel Gran Premio degli USA le accelerazioni per i piloti: Charles Leclerc, Lando Norris e Max Verstappen. 
+	In questa fase preliminare, lo stile di guida viene descritto attraverso variabili dinamiche, quali l’utilizzo dell’acceleratore, del freno, la velocità e le seguenti accelerazioni longitudinali e laterali, che consentono, per esempio, di valutare rispettivamente le modalità di decelerazione in ingresso curva, l’intensità con cui la curva viene affrontata tutte caratteristiche che fanno riferimento allo stile di guida.
+	A sostegno delle ipotesi sopra citate, si riporta la Figura \ref{fig:confronto} che confronta nel Gran Premio degli USA le accelerazioni e velocità per i piloti: Charles Leclerc, Lando Norris, Max Verstappen e Franco Colapinto. 
 	
 	\begin{figure}[H]
 		\centering
 		\includegraphics[width=.85\textwidth]{tel_ex1.pdf}
-		\caption{Accelerazioni VER, LEC, NOR.}
+		\caption{Accelerazioni VER, LEC, NOR, COL.}
 		\label{fig:confronto}
 	\end{figure}
 	Si nota infatti come nelle variazioni repentine si possano già individuare differenze significative tra piloti.\\
@@ -147,7 +147,7 @@ citecolor=black       % Colore citazioni bibliografiche
 	Infine, osservando la variabile \texttt{Tempo Giro}, alcuni piloti riportano alcuni valori \texttt{NA}. Osservando i dati\textsuperscript{\ref{appendice 2}}, ciò si verifica per i piloti Tsunoda, Bearman e Hadjar rispettivamente nei Gran premi di Emilia Romagna, Australia e Stati Uniti.
 	
 	
-	Effettuando un analisi di tipo qualitativo, si scopre che ciò è riconducibile ad un incidente durante il giro di qualifica. Le uniche telemetrie disponibili sono infatti riconducibili al giro di riscaldamento delle gomme, come si nota nella figura \ref{fig:confronto2}. Al fine di eliminare rumore nell'analisi si rimuovono queste osservazioni.
+	Effettuando un'analisi di tipo qualitativo, si scopre che ciò è riconducibile ad un incidente durante il giro di qualifica. Le uniche telemetrie disponibili sono infatti riconducibili al giro di riscaldamento delle gomme, come si nota nella figura \ref{fig:confronto2}. Al fine di eliminare rumore nell'analisi si rimuovono queste osservazioni.
 	
 	\clearpage
 	
@@ -169,7 +169,7 @@ citecolor=black       % Colore citazioni bibliografiche
 	\end{itemize}
 	Successivamente viene applicato il valore assoluto e per le restanti variabili telemetriche si mantiene invece la forma originaria.
 		
-	Si creano due nuove variabili di variazione percentuali\footnote{Estratto codice R consultabile nell'appendice \ref{creazione variabili}}, per catturare l'intensità di variazione delle variabili che aiutano a distinguere lo stile di guida dei piloti, nei vari istanti di tempo:
+	Si creano per le variabili \texttt{velocità, acceleratore, decelerazione e accelerazioni}, nuove variabili di variazione percentuali\footnote{Estratto codice R consultabile nell'appendice \ref{creazione variabili}}, per catturare l'intensità di variazione delle variabili che aiutano a distinguere lo stile di guida dei piloti, nei vari istanti di tempo:
 	
 	\begin{itemize}[noitemsep, topsep=0pt]
 		\item \texttt{\textbf{\_lag1}} : variazione percentuale rispetto all'osservazione precedente;
@@ -183,9 +183,8 @@ citecolor=black       % Colore citazioni bibliografiche
 	\subsection{Statistiche riassuntive}
 	Vengono calcolate delle statistiche descrittive\footnote{Estratto codice R consultabile nell'appendice \ref{codice statistiche riassuntive}.} al fine di valutare in che modo le variabili possano essere associate allo stile di guida, considerando separatamente ciascun Gran Premio e Pilota.
 	
-	Per le misure di accelerazione laterale,longitudinale e decelerazione vengono calcolate media e deviazione standard.	
+	Per le misure di accelerazione laterale, longitudinale, decelerazione e per gli input di frenata, accelerazione e velocità vengono calcolate media e deviazione standard.	
 	
-	La variabile relativa alla frenata non viene invece inclusa nell’analisi descrittiva, in quanto la sua natura binaria e la forte dipendenza dalle caratteristiche specifiche del singolo Gran Premio rendono poco informative misure sintetiche come media e deviazione standard. Tali indicatori risulterebbero infatti più rappresentativi del tracciato e delle condizioni di gara che dello stile di guida del pilota viene comunque presa in considerazione in modo latente dalla decelerazione.
 	
 	Per le variabili di tipo \texttt{\_lag$k$} vengono calcolate medie e deviazioni standard distinguendo tra variazioni positive e negative, così da evidenziare eventuali asimmetrie nel comportamento dinamico del pilota.\\
 	
@@ -195,7 +194,7 @@ citecolor=black       % Colore citazioni bibliografiche
 
 	
 		
-	Si arriva cosi ad ottenere un dataset contenente 22 variabili, che forniscono informazione sullo stile di guida del pilota nella specifica gara.
+	Si arriva cosi ad ottenere un dataset contenente 28 variabili, che forniscono informazione sullo stile di guida del pilota nella specifica gara.
 	
 	Infine, per rimuovere l'influenza del tracciato, si riscalano tutte le variabili nell'intervallo $[0,1]$.
 	
@@ -203,9 +202,9 @@ citecolor=black       % Colore citazioni bibliografiche
 	
 	\subsection{Analisi delle componenti principali}
 	
-	Per limitare i casi di multicollinearità ed eliminare il rumore, avendo correlazioni molto elevate ($cor(x,y)>0.9$)\footnote{Estratto del codice R consultabile nell'appendice \ref{correlazioni}}, si cerca di eliminare le variabili rindondanti. Questo processo di scrematura permette di ridurre la dimensionalità a 20 variabili.
+	Per limitare i casi di multicollinearità ed eliminare il rumore, avendo correlazioni molto elevate ($cor(x,y)>0.9$)\footnote{Estratto del codice R consultabile nell'appendice \ref{correlazioni}}, si cerca di eliminare le variabili rindondanti. Questo processo di scrematura permette di ridurre la dimensionalità a 26 variabili.
 	
-	Seppur la dimensionalità sia diminuita, 20 dimensioni sono eccessive sia ai fini di interpretabilità che per peso computazionale per un Model Base Clustering.
+	Seppur la dimensionalità sia diminuita, 26 dimensioni sono eccessive sia ai fini di interpretabilità che per peso computazionale per un Model Base Clustering.
 	
 	
 	Si effettua dunque un analisi delle componenti principali (PCA) ai fini di ridurre la dimensionalità.
@@ -217,8 +216,26 @@ citecolor=black       % Colore citazioni bibliografiche
 		\caption{Varianza Spiegata Cumulata}
 		\label{fig:pca}
 	\end{figure}
-	\subsubsection{Interpretazione delle componenti}
 	
+	
+	\subsubsection{Interpretazione delle componenti}
+	Attraverso l'analisi dei pesi associati alle componenti le si interpretano:
+	\begin{enumerate}
+		\item 	La prima componente ha pesi maggiori per le variabili che descrivono la variabilità della dinamica longitudinale, sono coinvolti i coefficienti di decelerazione ed accelerazione come anche le variazioni degli input come acceleratore, freno e velocità.
+		A valori alti viene quindi associata una guida più instabile, per valori bassi invece è associata una guida più progressiva e stabile.
+		\item  Per la seconda componente hanno pesi maggiori le variabili per lo più che descrivono la dinamica laterale insieme all'accelerazione longitudinale. A valori elevati è associata una maggiore variabilità, indicativa di intensità laterale più irregolare e impegnativa,spesso riguarda curve più accentuate. Valori bassi sono invece associati a una dinamica laterale più regolare e controllata  spesso compatibile con la percorrenza di curve con andamento costante.
+		\item Nella terza componente prevalgono le dinamiche sia di accelerazione longitudinale che laterale, per quanto riguarda le laterali, i coefficienti che riguardano i lag negativi hanno maggiore peso, la componente descrive quindi la dinamica transitoria,per esempio un passaggio da curva a rettilineo. A valori alti viene associata una guida più instabile mentre per bassi valori viene associata una guida più progressiva e stabile.
+		\item Per la quarta componente i contributi più significativi sia della dinamica longitudinale, in particolare delle variabili di accelerazione e decelerazione con lag positivi, sia della dinamica laterale e della velocità.
+		La componente descrive quindi fasi di guida dinamica in cui sono presenti variazioni coordinate di accelerazione, decelerazione e velocità, per esempio ingressi o uscite da curve.
+		A valori elevati corrisponde una maggiore variabilità complessiva, associabile a uno stile di guida più dinamico e meno uniforme, mentre valori bassi indicano una guida più regolare e costante.
+		\item La quinta componente è dominata dalla dinamica laterale, con contributi rilevanti delle accelerazioni laterali con lag positivi,sono incluse anche variabili legate all’acceleratore con lag positivi.
+		La componente può quindi essere interpretata come descrittiva di fasi di guida caratterizzate da una dinamica laterale sostenuta e prolungata.
+		Valori elevati sono associati a una maggiore variabilità laterale persistente, mentre valori bassi indicano una dinamica laterale più contenuta e regolare.
+		
+		
+	\end{enumerate}
+
+  
 	
 	
 	

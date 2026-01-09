@@ -116,7 +116,7 @@ tel_g <- tel.ex %>%
                values_to = "valore") %>%
   mutate(variabile = factor(variabile, 
                             levels = c("acc_y", "acc_x","speed","throttle"),
-                            labels = c(" Acc. lat (g)", " Acc. long g(0)", "Vel (km/s)","Acc. (%)" )))
+                            labels = c(" Acc. lat. ", " Acc. long. ", "Velocità","Acceleratore" )))
 
 
 pp <- ggplot(tel_g, aes(x = rel_distance, y = valore, color = pilota)) +
@@ -312,7 +312,7 @@ lag5 = ~round(
 
 Si calcolano ora le prime statistiche riassuntive delle variabili per valutare in che modo si possano definire delle variabili associate a un potenziale stile di guida, in particolare :
 
-Per le variabili *throttle* ,*acc_x*, *dec_x*, *acc_y* e \*\_lag\* (distintamente per variazioni positive e negative):
+Per le variabili *throttle* ,*acc_x*, *dec_x*, *acc_y* ,*speed*,*brake* e \*\_lag\* (distintamente per variazioni positive e negative):
 
 -   Media;
 -   Deviazione standard;
@@ -385,7 +385,7 @@ mean_cols <-tel.guida_summary %>%  names(.) %>% .[str_detect(., "mean")]
 
 tel.guida_summary.idx <- tel.guida_summary[sd_cols] / tel.guida_summary[mean_cols]
 
-names(tel.guida_summary.idx) <- str_replace(names(tel.guida_summary.idx), "sd", "sd_stand")
+names(tel.guida_summary.idx) <- str_replace(names(tel.guida_summary.idx), "sd", "CV")
 
 tel.guida_summary.idx$GP <- tel.guida_summary$GP                                          
 
@@ -418,53 +418,53 @@ tel.pca <- tel.guida_summary.idx %>% select(-all_of(variabili_dipendenti))
 
 Di seguito un'interpretazione delle variabili che verranno utilizzate per la PCA :
 
--   `throttle_sd_stand` : rappresenta un indicatore normalizzato della variabilità dell’input del pilota sul pedale dell’acceleratore. Valori più elevati sono associati a una maggiore modulazione del gas, mentre valori più bassi indicano un uso più stabile e costante.
+-   `throttle_CV` : rappresenta un indicatore normalizzato della variabilità dell’input del pilota sul pedale dell’acceleratore. Valori più elevati sono associati a una maggiore modulazione del gas, mentre valori più bassi indicano un uso più stabile e costante.
 
--   `acc_x_sd_stand` : rappresenta un indicatore normalizzato della variabilità dell’accelerazione longitudinale positiva. Valori elevati indicano una modulazione più marcata della trazione in uscita di curva, mentre valori bassi suggeriscono una spinta più uniforme e progressiva.
+-   `acc_x_CV` : rappresenta un indicatore normalizzato della variabilità dell’accelerazione longitudinale positiva. Valori elevati indicano una modulazione più marcata della trazione in uscita di curva, mentre valori bassi suggeriscono una spinta più uniforme e progressiva.
 
--   `acc_y_sd_stand` : rappresenta un indicatore normalizzato della variabilità della decelerazione in fase di frenata. Valori più elevati riflettono una maggiore modulazione del freno, mentre valori più bassi sono associati a frenate più stabili e regolari.
+-   `acc_y_CV` : rappresenta un indicatore normalizzato della variabilità della decelerazione in fase di frenata. Valori più elevati riflettono una maggiore modulazione del freno, mentre valori più bassi sono associati a frenate più stabili e regolari.
 
--   `dec_x_sd_stand` : rappresenta un indicatore normalizzato della variabilità dell’accelerazione laterale in curva. Valori più elevati descrivono una percorrenza curva più dinamica e variabile, mentre valori più bassi indicano forze laterali più uniformi e costanti.
+-   `dec_x_CV` : rappresenta un indicatore normalizzato della variabilità dell’accelerazione laterale in curva. Valori più elevati descrivono una percorrenza curva più dinamica e variabile, mentre valori più bassi indicano forze laterali più uniformi e costanti.
 
--   `brake_sd_stand`: rappresenta un indicatore normalizzato della variabilità dell’attivazione del freno. Valori elevati indicano un utilizzo del freno più intermittente o modulato, mentre valori bassi indicano un uso più stabile.
+-   `brake_CV`: rappresenta un indicatore normalizzato della variabilità dell’attivazione del freno. Valori elevati indicano un utilizzo del freno più intermittente o modulato, mentre valori bassi indicano un uso più stabile.
 
--   `speed_sd_stand`: rappresenta un indicatore normalizzato della variabilità della velocità. Valori elevati indicano variazioni di velocità più marcate, mentre valori bassi indicano velocità più costante lungo il giro.
+-   `speed_CV`: rappresenta un indicatore normalizzato della variabilità della velocità. Valori elevati indicano variazioni di velocità più marcate, mentre valori bassi indicano velocità più costante lungo il giro.
 
--   `throttle_lag1_sd_stand_pos` : rappresenta un indicatore normalizzato della variabilità delle variazioni positive dell’input dell’acceleratore al lag di 1 istante temporale. Valori più elevati indicano aumenti del gas meno uniformi e maggiormente modulati, mentre valori più bassi suggeriscono incrementi più progressivi e regolari.
+-   `throttle_lag1_CV_pos` : rappresenta un indicatore normalizzato della variabilità delle variazioni positive dell’input dell’acceleratore al lag di 1 istante temporale. Valori più elevati indicano aumenti del gas meno uniformi e maggiormente modulati, mentre valori più bassi suggeriscono incrementi più progressivi e regolari.
 
--   `throttle_lag5_sd_stand_pos` : rappresenta un indicatore normalizzato della variabilità delle variazioni positive dell’input dell’acceleratore osservate a un lag di 5 istanti temporali. Valori più elevati riflettono una modulazione del gas più dinamica nel medio periodo, mentre valori più bassi indicano aumenti dell’acceleratore più stabili e costanti.
+-   `throttle_lag5_CV_pos` : rappresenta un indicatore normalizzato della variabilità delle variazioni positive dell’input dell’acceleratore osservate a un lag di 5 istanti temporali. Valori più elevati riflettono una modulazione del gas più dinamica nel medio periodo, mentre valori più bassi indicano aumenti dell’acceleratore più stabili e costanti.
 
--   `acc_x_lag1_sd_stand_pos` : rappresenta un indicatore normalizzato della variabilità delle variazioni positive dell’accelerazione longitudinale (trazione) al lag di 1 istante. Valori elevati descrivono una spinta in accelerazione meno uniforme, mentre valori bassi indicano una trazione più progressiva e lineare.
+-   `acc_x_lag1_CV_pos` : rappresenta un indicatore normalizzato della variabilità delle variazioni positive dell’accelerazione longitudinale (trazione) al lag di 1 istante. Valori elevati descrivono una spinta in accelerazione meno uniforme, mentre valori bassi indicano una trazione più progressiva e lineare.
 
--   `acc_x_lag5_sd_stand_pos` : rappresenta un indicatore normalizzato della variabilità delle variazioni positive dell’accelerazione longitudinale al lag di 5 istanti. Valori elevati sono associati a una dinamica di accelerazione più variabile nel medio periodo, mentre valori bassi indicano una spinta più costante.
+-   `acc_x_lag5_CV_pos` : rappresenta un indicatore normalizzato della variabilità delle variazioni positive dell’accelerazione longitudinale al lag di 5 istanti. Valori elevati sono associati a una dinamica di accelerazione più variabile nel medio periodo, mentre valori bassi indicano una spinta più costante.
 
--   `acc_y_lag1_sd_stand_pos` :rappresenta un indicatore normalizzato della variabilità delle variazioni positive dell’accelerazione laterale al lag di 1 istante. Valori più elevati indicano cambiamenti laterali più dinamici in curva, mentre valori più bassi descrivono una percorrenza laterale più uniforme.
+-   `acc_y_lag1_CV_pos` :rappresenta un indicatore normalizzato della variabilità delle variazioni positive dell’accelerazione laterale al lag di 1 istante. Valori più elevati indicano cambiamenti laterali più dinamici in curva, mentre valori più bassi descrivono una percorrenza laterale più uniforme.
 
--   `acc_y_lag5_sd_stand_pos` : rappresenta un indicatore normalizzato della variabilità delle variazioni positive dell’accelerazione laterale al lag di 5 istanti. Valori elevati riflettono una maggiore eterogeneità delle forze laterali nel medio periodo, mentre valori bassi indicano una dinamica laterale più stabile.
+-   `acc_y_lag5_CV_pos` : rappresenta un indicatore normalizzato della variabilità delle variazioni positive dell’accelerazione laterale al lag di 5 istanti. Valori elevati riflettono una maggiore eterogeneità delle forze laterali nel medio periodo, mentre valori bassi indicano una dinamica laterale più stabile.
 
--   `dec_x_lag1_sd_stand_pos` : rappresenta un indicatore normalizzato della variabilità delle variazioni positive della decelerazione (fase di frenata) al lag di 1 istante. Valori elevati indicano una modulazione del freno più irregolare, mentre valori bassi sono associati a frenate più uniformi e controllate.
+-   `dec_x_lag1_CV_pos` : rappresenta un indicatore normalizzato della variabilità delle variazioni positive della decelerazione (fase di frenata) al lag di 1 istante. Valori elevati indicano una modulazione del freno più irregolare, mentre valori bassi sono associati a frenate più uniformi e controllate.
 
--   `dec_x_lag5_sd_stand_pos` : rappresenta un indicatore normalizzato della variabilità delle variazioni positive della decelerazione al lag di 5 istanti. Valori più elevati suggeriscono una gestione del freno più dinamica nel medio periodo, mentre valori più bassi descrivono frenate più stabili e ripetibili.
+-   `dec_x_lag5_CV_pos` : rappresenta un indicatore normalizzato della variabilità delle variazioni positive della decelerazione al lag di 5 istanti. Valori più elevati suggeriscono una gestione del freno più dinamica nel medio periodo, mentre valori più bassi descrivono frenate più stabili e ripetibili.
 
--   `throttle_lag1_sd_stand_neg` : rappresenta un indicatore normalizzato della variabilità delle variazioni negative dell’input dell’acceleratore al lag di 1 istante. Valori più elevati descrivono rilasci del gas più irregolari e discontinui, mentre valori più bassi indicano riduzioni dell’acceleratore più progressive.
+-   `throttle_lag1_CV_neg` : rappresenta un indicatore normalizzato della variabilità delle variazioni negative dell’input dell’acceleratore al lag di 1 istante. Valori più elevati descrivono rilasci del gas più irregolari e discontinui, mentre valori più bassi indicano riduzioni dell’acceleratore più progressive.
 
--    `speed_lag1_sd_stand_pos`: rappresenta un indicatore normalizzato della variabilità delle variazioni positive della velocità al lag di 1. Valori elevati indicano accelerazioni più irregolari, valori bassi accelerazioni più lineari.
+-    `speed_lag1_CV_pos`: rappresenta un indicatore normalizzato della variabilità delle variazioni positive della velocità al lag di 1. Valori elevati indicano accelerazioni più irregolari, valori bassi accelerazioni più lineari.
 
--    `speed_lag5_sd_stand_pos`: rappresenta un indicatore normalizzato della variabilità delle variazioni positive della velocità al lag di 5. Valori elevati indicano accelerazioni più dinamiche nel medio periodo, valori bassi velocità più costante.
+-    `speed_lag5_CV_pos`: rappresenta un indicatore normalizzato della variabilità delle variazioni positive della velocità al lag di 5. Valori elevati indicano accelerazioni più dinamiche nel medio periodo, valori bassi velocità più costante.
 
--   `acc_x_lag1_sd_stand_neg` : rappresenta un indicatore normalizzato della variabilità delle variazioni negative dell’accelerazione longitudinale al lag di 1 istante. Valori elevati suggeriscono riduzioni della spinta più variabili nel tempo, mentre valori bassi indicano una diminuzione più uniforme.
+-   `acc_x_lag1_CV_neg` : rappresenta un indicatore normalizzato della variabilità delle variazioni negative dell’accelerazione longitudinale al lag di 1 istante. Valori elevati suggeriscono riduzioni della spinta più variabili nel tempo, mentre valori bassi indicano una diminuzione più uniforme.
 
--   `acc_x_lag5_sd_stand_neg` : rappresenta un indicatore normalizzato della variabilità delle variazioni negative dell’accelerazione longitudinale al lag di 5 istanti. Valori elevati riflettono una riduzione della trazione più dinamica nel medio periodo, mentre valori bassi descrivono un calo di accelerazione più costante.
+-   `acc_x_lag5_CV_neg` : rappresenta un indicatore normalizzato della variabilità delle variazioni negative dell’accelerazione longitudinale al lag di 5 istanti. Valori elevati riflettono una riduzione della trazione più dinamica nel medio periodo, mentre valori bassi descrivono un calo di accelerazione più costante.
 
--   `acc_y_lag1_sd_stand_neg` : rappresenta un indicatore normalizzato della variabilità delle variazioni negative dell’accelerazione laterale al lag di 1 istante. Valori elevati descrivono cambiamenti laterali verso la riduzione della forza in curva più irregolari, mentre valori bassi indicano una dinamica laterale più graduale.
+-   `acc_y_lag1_CV_neg` : rappresenta un indicatore normalizzato della variabilità delle variazioni negative dell’accelerazione laterale al lag di 1 istante. Valori elevati descrivono cambiamenti laterali verso la riduzione della forza in curva più irregolari, mentre valori bassi indicano una dinamica laterale più graduale.
 
--   `acc_y_lag5_sd_stand_neg` : rappresenta un indicatore normalizzato della variabilità delle variazioni negative dell’accelerazione laterale al lag di 5 istanti. Valori elevati sono associati a una maggiore variabilità della riduzione delle forze laterali nel medio periodo, mentre valori bassi indicano variazioni più uniformi.
+-   `acc_y_lag5_CV_neg` : rappresenta un indicatore normalizzato della variabilità delle variazioni negative dell’accelerazione laterale al lag di 5 istanti. Valori elevati sono associati a una maggiore variabilità della riduzione delle forze laterali nel medio periodo, mentre valori bassi indicano variazioni più uniformi.
 
--   `dec_x_lag1_sd_stand_neg` : rappresenta un indicatore normalizzato della variabilità delle variazioni negative della decelerazione al lag di 1 istante. Valori più elevati indicano una riduzione meno uniforme dell’intensità frenante, mentre valori più bassi suggeriscono una modulazione del freno più stabile.
+-   `dec_x_lag1_CV_neg` : rappresenta un indicatore normalizzato della variabilità delle variazioni negative della decelerazione al lag di 1 istante. Valori più elevati indicano una riduzione meno uniforme dell’intensità frenante, mentre valori più bassi suggeriscono una modulazione del freno più stabile.
 
--    `speed_lag1_sd_stand_neg` : rappresenta un indicatore normalizzato della variabilità delle variazioni negative della velocità al lag di 1. Valori elevati indicano decelerazioni più irregolari, valori bassi più lineari.
+-    `speed_lag1_CV_neg` : rappresenta un indicatore normalizzato della variabilità delle variazioni negative della velocità al lag di 1. Valori elevati indicano decelerazioni più irregolari, valori bassi più lineari.
 
--    `speed_lag5_sd_stand_neg` : rappresenta un indicatore normalizzato della variabilità delle variazioni negative della velocità al lag di 5. Valori elevati indicano decelerazioni più dinamiche nel medio periodo, valori bassi decelerazioni più costanti.
+-    `speed_lag5_CV_neg` : rappresenta un indicatore normalizzato della variabilità delle variazioni negative della velocità al lag di 5. Valori elevati indicano decelerazioni più dinamiche nel medio periodo, valori bassi decelerazioni più costanti.
 
 Nota metodologica:
 
@@ -500,37 +500,34 @@ print(PCA$loadings,cutoff = 0)
 for (i in 1:5){
  p <- fviz_contrib(PCA, choice = "var", axes = i, top = 15)
  print(p)
- }
+}
 ```
-
-**RIFARE!!**
 
 
 Dai precedenti risultati si possono definire le componenti nel seguente modo :
 
--   `Comp.1` : Dinamica longitudinale complessiva e variabilità dell'utilizzo del gas. Descrive l’intensità e l’instabilità delle accelerazioni e decelerazioni longitudinali, in relazione alle variazioni del comando throttle.
+-   `Comp.1` : Dinamica longitudinale complessiva e variabilità dell'utilizzo del gas e del freno.
+    -   **Score elevati**: indicano una dinamica longitudinale più con maggiori variazioni di accelerazione e frenata e una modulazione più marcata del gas e del freno. Possono riflettere uno stile di guida più aggressivo.
 
-    -   **Score elevati**: indicano una dinamica longitudinale più irruenta, con maggiori variazioni di accelerazione e frenata e una modulazione più marcata del gas. Possono riflettere uno stile di guida aggressivo.
-
-    -   **Score bassi**: indicano accelerazioni e frenate più stabili e regolari, con un uso dell’acceleratore più costante. Sono coerenti con uno stile di guida più fluido.
+    -   **Score bassi**: indicano accelerazioni e frenate più stabili, regolari e progressive, con un uso dell’acceleratore più costante e del freno. Sono coerenti con uno stile di guida più fluido.
 
 -   `Comp.2` : Dinamica laterale globale. Rappresenta la variabilità associata all’accelerazione laterale e quindi ai trasferimenti di carico in curva.
 
-    -   **Score elevati**: indicano una dinamica laterale più intensa e variabile, associata a percorrenze in curva impegnative e a trasferimenti di carico trasversali marcati.
+    -   **Score elevati**: indicano una dinamica laterale più variabile, percorrenze in curva impegnative e a trasferimenti di carico trasversali marcati.
 
     -   **Score bassi**: indicano una dinamica laterale più contenuta e uniforme, tipica di tratti più lineari o di una guida più stabile.
 
--   `Comp.3` : Reattività del sistema agli input crescenti Cattura la rapidità e l’ampiezza delle variazioni positive dell'uso dell'accelleratore e delle corrispondenti risposte dinamiche del veicolo.
+-   `Comp.3` : Descrive dinamiche transitorie dal punto di vista longitudinale
 
-    -   **Score elevati**: descrivono una fase di accelerazione decisa (es. uscita curva), con variazioni rapide e consistenti.
+    -   **Score elevati**: descrive una face 
 
     -   **Score bassi**: indicano input più graduali e una dinamica più progressiva.
 
--   `Comp.4` : Dinamica in frenata e in ingresso curva.È associata alle variazioni di decelerazione e alla componente laterale che accompagna la frenata.
+-   `Comp.4` : Dinamica longitudinale e laterale in ingresso curva.È associata alle variazioni di decelerazione e alla componente laterale che accompagna la frenata.
 
-    -   **Score elevati**: indicano frenate intense e variabili, spesso in presenza di componente laterale significativa, caratterizzanti una fase di staccata e ingresso curva molto aggressiva e decisa.
+    -   **Score elevati**: indicano frenate variabili, spesso in presenza di componente laterale variabile, caratterizzanti una fase di staccata e ingresso curva molto aggressiva e decisa.
 
-    -   **Score bassi**: indicano frenate più progressive e stabili, con minori variazioni laterali, suggerendo un ingresso curva più controllato.
+    -   **Score bassi**: indicano frenate più progressive e stabili, con variazioni laterali tra, suggerendo un ingresso curva più stabile.
 
 -   `Comp.5`: Risposta della vettura a variazioni di carico. Riflette la sensibilità della dinamica laterale e longitudinale a variazioni progressive degli input, potenzialmente influenzata dal setup meccanico e aerodinamico.
 
@@ -543,6 +540,38 @@ Si filtra per le prime cinque componenti ottenute.
 
 ```{r}
 tel.comp <- as_tibble(PCA$scores[,c(1:5)])
+
+library(fmsb)
+for (i in 1:5){
+tel.load <- PCA$loadings[,i] 
+tel.load <- abs(tel.load)
+tel.load <- sort(tel.load, decreasing = TRUE)
+tel.load <- tel.load[1:10]
+
+df_load <- as.data.frame(t(tel.load))
+
+max <- max(df_load) * 1.2 
+min <- 0
+
+df_final <- rbind(rep(max, 10), rep(min, 10), df_load)
+
+radarchart(df_final,
+           axistype = 0,
+           pcol = "#E10600",           
+           plwd = 4,
+           vlcex = .7,
+           cglcol = "gray", cglty = 1, axislabcol = "gray",
+           title = paste("Profilo Componente Principale",i,"(Top 10 Loadings)"),
+           vlabels = c(ifelse(str_detect(colnames(df_final),"acc_x"),str_replace(colnames(df_final),"acc_x","acc_long"),
+                              ifelse(str_detect(colnames(df_final),"acc_y"),str_replace(colnames(df_final),"acc_y","acc_lat"),
+                                     ifelse(str_detect(colnames(df_final),"dec_x"),str_replace(colnames(df_final),"dec_x","dec"),
+                                            ifelse(str_detect(colnames(df_final),"throttle"),str_replace(colnames(df_final),"throttle","acceleratore"),
+                                                   ifelse(str_detect(colnames(df_final),"brake"),str_replace(colnames(df_final),"brake","freno"),
+                                                          ifelse(str_detect(colnames(df_final),"speed"),str_replace(colnames(df_final),"speed","velocità"),0))))))))
+}
+
+
+
 ```
 
 Si procede ora a effettuare un primo clustering
@@ -696,25 +725,23 @@ str(tel.data)
 
 
 set.seed(789)
-vec <- data.frame(CV=NA,BIC=NA,MODEL=NA,TOT_MISS=NA,PROP_MISS=NA,N=NA)
+vec <- data.frame(CV=NA,BIC=NA,MODEL=NA,TOT_MISS=NA,MISS=NA,N=NA)
 n_test <- list()
-for (s in seq(from=20,to=50,by=10)){
-  for (i in 1:2000){
-test.set <- sample(1:nrow(tel.data),s)
+
+   for (m in listmod){
+     for (i in 1:1000){
+test.set <- sample(1:nrow(tel.data),40)
 res <-  mixmodLearn(tel.data[-test.set,], tel.class[-test.set], 
-                  models=mixmodGaussianModel(listModels=listmod,equal.proportions=F),criterion= c("CV","BIC"))
+                  models=mixmodGaussianModel(listModels=m,equal.proportions=F),criterion= c("CV","BIC"))
    vec[i,1] <- res@bestResult@criterionValue[1]
    vec[i,2] <- res@bestResult@criterionValue[2]
-   vec[i,3] <- res@bestResult@model
-  
-  
 pred <-  mixmodPredict(tel.data[test.set,], classificationRule=res@bestResult)
-   vec[i,4] <- sum(pred@partition == tel.class[test.set])
-   vec[i,5] <- mean(pred@partition == tel.class[test.set])
-  }
-  cat(cat(paste("Progress",s,"\n")))
-  vec$N <- rep(s,2000)
-  n_test[[as.character(s)]]   <- vec 
+   vec[i,4] <- sum(pred@partition != tel.class[test.set])
+   vec[i,5] <- mean(pred@partition != tel.class[test.set])
+      }
+  cat(cat(paste("Progress",m,"\n")))
+  vec$MODEL <- rep(m,1000)
+  n_test[[as.character(m)]]   <- vec 
 }
 
 tot <- bind_rows(n_test)
