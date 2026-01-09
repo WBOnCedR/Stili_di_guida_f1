@@ -196,6 +196,7 @@ citecolor=black
 	\[\Delta=\dfrac{x_{t}-x_{t-k}}{x_{t-k}}\] 
 	indicando con $x_t$ l'unità statistica al tempo $t$ e $k=\{1,5\}$ numero di lag, per le misure di accelerazione e decelerazione. Nel caso in cui $x_{t-k}=0$ e $x_t=0$ non si applica la formula e la variabile \_lag assume 0 di default, quando invece si osserva solamente $x_{t-k}=0$ si sostituisce con $x_{t-k}=0.01$ per riuscire a mantenere la validità del calcolo e continuità delle dinamiche telemetriche.
 	
+	
 	\subsection{Statistiche riassuntive}
 	Vengono calcolate delle statistiche descrittive\footnote{Estratto codice R consultabile nell'appendice \ref{codice statistiche riassuntive}.} al fine di valutare in che modo le variabili possano essere associate allo stile di guida, considerando separatamente ciascun Gran Premio e Pilota.
 	
@@ -237,15 +238,17 @@ citecolor=black
 	\subsubsection{Interpretazione delle componenti}
 	Attraverso l'analisi dei pesi associati alle componenti (Figura \ref{fig:pesi}) le si interpretano:
 	\begin{enumerate}
-		\item \textbf{Prima componente}  : Separa i piloti che hanno un'alta variabilità (molte correzioni) nell'erogazione della potenza da quelli che hanno un'alta variabilità nella fase di decelerazione. A valori elevati corrisponde a uno stile di guida caratterizzato da una trazione più "sporca" o reattiva, con continue correzioni sul pedale dell'acceleratore che si contrappone uno stile caratterizzato da una frenata molto modulata e dinamica, mantenendo però un'uscita di curva molto composta e lineare nell'erogazione del gas.
+		\item \textbf{Prima componente}  : Separa stili stili di guida che hanno un'alta variabilità (molte correzioni) nell'erogazione della potenza da quelli che hanno un'alta variabilità nella fase di decelerazione. A valori elevati corrisponde a uno stile di guida caratterizzato da una trazione più "sporca" o reattiva, con continue correzioni sul pedale dell'acceleratore che si contrappone uno stile caratterizzato da una frenata molto modulata e dinamica, mantenendo però un'uscita di curva molto composta e lineare nell'erogazione del gas.
 		
-		\item \textbf{Seconda componente} : distungue tra piloti che lavorano di più in termini di velocità pura (avanti/dietro) contro chi ha maggiore di percorrenza (destra/sinistra). A valorio elevati corrisponde uno stile di guida a "V", dove il pilota punta tutto sulla frenata profonda e sulla ripartenza rapida, variando molto l'accelerazione longitudinale. Invece, per valori bassi contrappone uno stile di guida basato sulla velocità di percorrenza, che predilige la gestione del carico laterale.
+		\item \textbf{Seconda componente} : distungue stili di guida che lavorano di più in termini di velocità pura (avanti/dietro) contro chi ha maggiore di percorrenza (destra/sinistra). A valorio elevati corrisponde uno stile di guida a "V", dove il pilota punta tutto sulla frenata profonda e sulla ripartenza rapida, variando molto l'accelerazione longitudinale. Invece, per valori bassi contrappone uno stile di guida basato sulla velocità di percorrenza, che predilige la gestione del carico laterale.
 		
-		\item \textbf{Terza componente} : questa componente entra nel dettaglio delle fasi della curva. Discrimina piloti che prediligono un'ingresso più aggressivo rispetto all'uscita di curva e viceversa. In particolare, a valori alti corrisponde uno stile di guida caratterizzato da una gestione dinamica e correttiva della fase di uscita. Mentre a valori bassi corrisponde uno stile caratterizzato da un inserimento in curva molto incisivo e variabile, dove il pilota lavora molto sui transitori di carico iniziali per forzare l'auto in corda.
+		\item \textbf{Terza componente} : questa componente entra nel dettaglio delle fasi della curva. Discrimina stili di guida con bassa componente laterale in fase di percorrenza e alta componente di accellerazioni longitudinali e viceversa. In particolare, a valori alti corrisponde uno stile di guida caratterizzato forti staccate, forti accellerazioni in uscita curva e bassa velocità di percorrenza. Mentre a valori bassi corrisponde uno stile caratterizzato alte velocità di percorrenza, e poca variazione longitudinale.
 		
-		\item \textbf{Quarta componente} :  questa componente descrive fasi di guida mista ad alta energia cinetica. A valori elevati corrisponde una maggiore variabilità complessiva in manovre che combinano velocità sostenuta e forze laterali, mentre valori bassi indicano una guida più regolare e uniforme.
+		\item \textbf{Quarta componente} :  questa componente caratterizza la configurazione della pista. A valori elevati corrisponde una maggiore variabilità complessiva della velocità, mentre valori bassi indicano un'andamento più regolare e uniforme.
 		
 	\end{enumerate}
+	
+	\textbf{N.B.} Il circuito vincola il pilota a modificare il proprio stile di guida alla configurazione del tracciato, alternando fluidità e aggressività in base alle specifiche richieste aerodinamiche o meccaniche. Tale adattamento serve quindi esclusivamente a ottimizzare lo sfruttamento della massima aderenza disponibile in ogni circuito.
 	
 	\begin{figure}[H]
 		\centering
@@ -262,13 +265,13 @@ citecolor=black
 	
 	\begin{figure}[H]
 		\centering
-		\begin{subfigure}[b]{0.45\columnwidth}
+		\begin{subfigure}[b]{0.48\columnwidth}
 			\includegraphics[width=\textwidth]{C1_C2.pdf}
 			\caption{Componente 1 VS Componente 2}
 			\label{fig:12}
 		\end{subfigure}
 		\hfill
-		\begin{subfigure}[b]{0.45\columnwidth}
+		\begin{subfigure}[b]{0.48\columnwidth}
 			\includegraphics[width=\textwidth]{newplot.png}
 			\caption{Componente~1 VS~Componente~2 VS~Componente~4}
 			\label{fig:42}
@@ -276,12 +279,12 @@ citecolor=black
 		\caption{Confronto clustering}
 	\end{figure}
 	
-	Il valore della distanza di  Kullback-Leibler $(KL)$ del modello risulta essere pari a $ 89.622$. Ciò dà sostegno a quanto già osservato prima graficamente, ulteriormente supportato dall'incertezza pari a $0.0796$ che esclude una possibile situazione di sovrapposizione dei gruppi.
+	Il valore della distanza di  Kullback-Leibler $(KL)$ del modello risulta essere pari a $ 89.622$. Ciò dà sostegno a quanto già osservato graficamente, ulteriormente supportato dall'incertezza pari a $0.0796$ che esclude una possibile situazione di sovrapposizione dei gruppi.
 	
-	\begin{table*}[t]
+	\begin{table*}[h]
 		\centering
 		\small
-		\begin{tabular}{|c|c|c|c|c|p{7cm}|}
+		\begin{tabular}{|c|c|c|c|c|p{7.5cm}|}
 			\hline
 			\textbf{Classe} & \textbf{COMP 1} & \textbf{COMP 2} & \textbf{COMP 3} & \textbf{COMP 4} & \textbf{GP}\\ 
 			\hline
@@ -303,22 +306,28 @@ citecolor=black
 		\caption{Media delle Componenti Principali per Classe}
 		\label{tab:pca_means}
 	\end{table*}
-	\begin{itemize}
-		\item Classe 13: Questa classe identifica univocamente il Gran premio di Monaco. Il valore massimo della prima componente infatti si può associare ad un uso del gas continuo;
+	
+	\noindent\textbf{Interpretazione delle classi:}
+	\begin{itemize}[itemsep=2pt, topsep=4pt]
+		\item \textbf{Classe 13:} Questa classe identifica uno stile  il Gran premio di Monaco. Il valore molto elevato della prima componente infatti si può associare ad un uso del gas ritmico. 
 		
-		\item Classi 5 e 11: (Singapore, Messico, Ungheria) Queste classi raggruppano circuiti tortuosi ad alto carico. Condividono con Monaco la necessità di gestire l'acceleratore per gestire per esempio un uscita da una curva netta.
+		\item \textbf{Classi 5 e 11:} (Singapore, Messico, Ungheria) Queste classi raggruppano circuiti tortuosi ad alto carico. Condividono con Monaco la necessità di gestire l'acceleratore per gestire per esempio un uscita da una curva netta.
 		
-		\item La Classe 6: (Baku) mostra un'alta terza componente: le curve a 90° costringono  correzioni veloci della accelerazione laterale.
+		\item \textbf{Classe 6:} (Baku) Mostra un'alta terza componente: le curve a 90° costringono  correzioni veloci della accelerazione laterale.
 		
-		\item La Classe 4: (Las Vegas) e 12 (Miami) mostrano un'alta quarta componente: l'asfalto scivoloso a soprattutto a Las Vegas per la pioggia creano incertezza nel mantenere la velocità costante, costringendo a parzializzare il gas dove normalmente si andrebbe costanti.
+		\item \textbf{Classe 4 e 12:} (Las Vegas e Miami) Mostrano un'alta quarta componente: l'asfalto scivoloso a soprattutto a Las Vegas per la pioggia creano incertezza nel mantenere la velocità costante, costringendo a parzializzare il gas dove normalmente si andrebbe costanti.
 		
-		\item Classi 8 e 9: (Spa, Silverstone, Suzuka) Queste classi rappresentano i circuiti con prima componente fortemente negativa non c'è "nervosismo" sul gas dovuto anche alle curve più fluide dei tracciati. La seconda componente positiva distingue questi circuiti: indica che la variazione è dominata dalle forze longitudinali ad alta velocità.
+		\item \textbf{Classi 8 e 9:} (Spa, Silverstone, Suzuka) Queste classi rappresentano i circuiti con prima componente fortemente negativa dovuta all'assenza di frenate decise. La seconda componente positiva distingue questi circuiti: indica che la variazione è dominata dalle forze longitudinali ad alta velocità.
+	
+		\item \textbf{Classe 10:} (Cina, USA, Brasile) Raggruppa circuiti completi dal punto di vista del tracciato : alternano tratti veloci a tratti tecnici. Non risulta esserci una componente con pesi notevoli.
 		
-		\item Classe 10: (Cina, USA, Brasile) Raggruppa circuiti molto tecnici. La prima componente positiva qui non indica instabilità, ma la parzializzazione del gas dovuta a curve differenti sul tracciato. La terza componente negativa conferma che, nonostante la difficoltà tecnica, l'esecuzione è stabile, senza le correzioni tipiche dei cittadini.
+		\item \textbf{Classe 2 :} (Monza): La prima componente molto negativa. È una pista caratterizzata da staccate profonde con un'uscita di trazione pulita, inoltre la quarta componente abbastanza alta, dovuta alle elevate variazioni di velocità.
 		
-		\item Monza (Classe 2) e Bahrain/Canada (Classe 7): la prima componente molto negativa. Sono piste di staccata profonda con un'uscita di trazione pulita,seconda componente negativa.
+		\item \textbf{Classe 7 :} (Bahrain e Canada):  Sono circuiti caratterizzate da poche curve di alta velocità di percorrenza, evidenziato dal valore negativo della seconda componente.
 		
-		\item Imola (Classe 3) e Spagna (Classe 1): seconda componente negativa e prima bassa. Qui prevale la percorrenza e la gestione del carico laterale.
+		\item \textbf{Classe 1 :} (Australian, Abu Dhabi, Qatar,  Saudi, Spanish) È il gruppo più numeroso, caratteizzato da una prima componente negativa, quindi poche variazioni longitudinali e in generale fluidità nella percorrenza.
+		
+		\item \textbf{Classe 3 :} (Austrian, Emilia Romagna) Molto simile alla classe 1, ma con curve più accentuate e maggiori variazioni longitudinali.
 	\end{itemize}
 	
 	\section{Classificazione}
@@ -532,4 +541,4 @@ citecolor=black
 			print(p)
 		}
 	\end{lstlisting}
-\end{document}	
+\end{document}
