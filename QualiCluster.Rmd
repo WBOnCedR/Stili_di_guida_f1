@@ -144,7 +144,7 @@ pp <- ggplot(tel_g, aes(x = rel_distance, y = valore, color = pilota)) +
 print(pp)
 
 
-#ggsave("report/el_ex1.pdf", pp, width = 7, height = 5, device = cairo_pdf)
+ggsave("report/el_ex1.pdf", pp, width = 7, height = 5, device = cairo_pdf)
 ```
 
 ### Data cleaning
@@ -214,7 +214,7 @@ pp <- ggplot(tel_g
 print(pp)
 
 
-#ggsave("report/tel_ex2.pdf", pp, width = 7, height = 5, device = cairo_pdf)
+ggsave("report/tel_ex2.pdf", pp, width = 7, height = 5, device = cairo_pdf)
 ```
 
 ```{r}
@@ -487,7 +487,7 @@ p <- ggplot(cumulative, aes(x=Componenti,y=value))+
        y="Proporzione")+
   theme_minimal()
 print(p)
-#ggsave("report/tel_pca.pdf", p, width = 7, height = 5, device = cairo_pdf)
+ggsave("report/tel_pca.pdf", p, width = 7, height = 5, device = cairo_pdf)
 
 
 
@@ -506,8 +506,7 @@ for (i in 1:5){
 
 Dai precedenti risultati si possono definire le componenti nel seguente modo :
 
--   `Comp.1` : Dinamica longitudinale complessiva e variabilità dell'utilizzo del gas e del freno.
-    -   **Score elevati**: indicano una dinamica longitudinale più con maggiori variazioni di accelerazione e frenata e una modulazione più marcata del gas e del freno. Possono riflettere uno stile di guida più aggressivo.
+-   `Comp.1` : Dinamica longitudinale complessiva e variabilità dell'utilizzo del gas e del freno.-   **Score elevati**: indicano una dinamica longitudinale più con maggiori variazioni di accelerazione e frenata e una modulazione più marcata del gas e del freno. Possono riflettere uno stile di guida più aggressivo.
 
     -   **Score bassi**: indicano accelerazioni e frenate più stabili, regolari e progressive, con un uso dell’acceleratore più costante e del freno. Sono coerenti con uno stile di guida più fluido.
 
@@ -535,7 +534,7 @@ Dai precedenti risultati si possono definire le componenti nel seguente modo :
     -   **Score bassi** : indicano una risposta più smorzata e filtrata, coerente con un comportamento più stabile e prevedibile. Possono essere associati a setup più morbidi o a regolazioni che riducono la sensibilità alle variazioni di carico, privilegiando la stabilità rispetto alla reattività.
 
 ```{r}
-loadings <- as.data.frame(PCA$loadings[, 1:5])
+loadings <- as.data.frame(PCA$loadings[, 1:4])
 
 
 loadings$Variable <- rownames(loadings)
@@ -544,17 +543,17 @@ loadings_long <- loadings %>%
                names_to = "component", 
                values_to = "peso")
 
-p <- ggplot(loadings_long, aes(x = component, y = Variable, fill = abs(peso))) +
+p <- ggplot(loadings_long, aes(x = component, y = Variable, fill = peso)) +
   geom_tile(color = "white") +
-  geom_text(aes(label = round(abs(peso), 2)), size = 2.5, color = "black")+
-  scale_fill_gradient(low = "white", high = "#E10600", name = "Pesi") +
+  geom_text(aes(label = round(peso, 2)), size = 2.5, color = "black")+
+  scale_fill_gradient2(low = "blue", mid = "white", high = "#E10600", name = "Pesi") +
   theme_minimal() +
   labs(x = "Componenti",
        y = "Variabili") 
 
 print(p)
 
-#ggsave("Loadings.pdf", p, width = 7, height = 5, device = cairo_pdf)
+ggsave("report/Loadings.pdf", p, width = 7, height = 5, device = cairo_pdf)
 ```
 ## Clustering
 
@@ -603,7 +602,7 @@ p <- ggplot(tel.comp.labels, aes(x = Comp.2, y = Comp.1, color = class)) +
   )+theme_minimal()
 
 print(p)
-ggsave("C1_C2.pdf", p, width = 7, height = 5, device = cairo_pdf)
+ggsave("report/C1_C2.pdf", p, width = 7, height = 5, device = cairo_pdf)
 
 ```
 
@@ -684,11 +683,12 @@ p <- ggplot(tel.comp.labels, aes(x = Comp.2, y = Comp.1)) +
   coord_cartesian(xlim = c(-5,5), ylim = c(-7,7)) +
   labs(title = paste0("Plot Comp.2 vs Comp.1 ", gp),
        colour = "Classe") +
-  guides(colour = guide_legend(override.aes = list(alpha = 1, size = 5, shape = 19)))
+  guides(colour = guide_legend(override.aes = list(alpha = 1, size = 5, shape = 19))) +
+  theme_minimal()
 
 print(p)
 
-#ggsave("Loadings.pdf", p, width = 7, height = 5, device = cairo_pdf)
+ggsave("report/Loadings.pdf", p, width = 7, height = 5, device = cairo_pdf)
 
 ```
 

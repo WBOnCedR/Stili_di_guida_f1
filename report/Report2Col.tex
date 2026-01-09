@@ -1,49 +1,61 @@
-\documentclass[a4paper, 10pt]{article}
+\documentclass[a4paper, 10pt, twocolumn]{article}
 
-\usepackage{titlesec}
-% Riduci drasticamente lo spazio sopra e sotto i titoli
-\titlespacing*{\section}{0pt}{6pt plus 2pt minus 2pt}{4pt plus 2pt minus 2pt}
-\titlespacing*{\subsection}{0pt}{4pt plus 2pt minus 2pt}{2pt plus 2pt minus 2pt}
-\titlespacing*{\subsubsection}{0pt}{3pt plus 2pt minus 2pt}{1pt plus 2pt minus 2pt}
-% --- IMPOSTAZIONI DI PAGINA (CRUCIALE PER LE 6 PAGINE) ---
-% Margini ridotti a 2cm per guadagnare spazio vitale
-\usepackage[left=2cm, right=2cm, top=2cm, bottom=2cm]{geometry}
+% --- PACCHETTI PER FORMATO BICOLONNARE ---
+\usepackage{multicol}
+\usepackage{balance}
+
+% --- IMPOSTAZIONI DI PAGINA ---
+\usepackage[left=1.8cm, right=1.8cm, top=2.2cm, bottom=2.2cm, columnsep=0.6cm]{geometry}
 
 % --- LINGUA E CODIFICA ---
 \usepackage[utf8]{inputenc}
 \usepackage[T1]{fontenc}
-\usepackage[italian]{babel}     % Traduce "Figure", "Table", ecc.
-\usepackage{microtype}          % Migliora la spaziatura e la sillabazione (aspetto più professionale)
+\usepackage[italian]{babel}
+\usepackage{microtype}
 
 % --- MATEMATICA E TABELLE ---
-\usepackage{amsmath, amssymb}   % Simboli matematici
-\usepackage{booktabs}           % Per tabelle professionali (senza linee verticali)
+\usepackage{amsmath, amssymb}
+\usepackage{booktabs}
 \usepackage{array}
 
 % --- GRAFICI E IMMAGINI ---
 \usepackage{graphicx}
-\usepackage{subcaption}         % Fondamentale per mettere grafici affiancati (Fig 1a, 1b)
-\usepackage{float} 				   % Per usare [H] e bloccare le immagini dove vuoi tu
-\usepackage{wrapfig}          
-\usepackage[colorlinks=true,      % Attiva i colori invece dei riquadri
-linkcolor=black,      % Colore link interni (es. Indice, Figure) - meglio black per stampare
-urlcolor=blue,        % Colore link web (es. il tuo dataset)
-citecolor=black       % Colore citazioni bibliografiche
-]{hyperref}% Per link cliccabili (es. fonte dataset) senza rettangoli rossi
+\usepackage{subcaption}
+\usepackage{float}
+\usepackage[colorlinks=true,
+linkcolor=black,
+urlcolor=blue,
+citecolor=black
+]{hyperref}
 
-% --- CONFIGURAZIONE CODICE R (PER APPENDICE) ---
+% --- CONFIGURAZIONE CODICE R ---
 \usepackage{listings}
 \usepackage{xcolor}
 \usepackage{lmodern}
 \usepackage{enumitem}
 \usepackage{placeins}
 
+% --- TITOLI CON SPAZIATURA OTTIMIZZATA ---
+\usepackage{titlesec}
+\titlespacing*{\section}{0pt}{8pt plus 2pt minus 2pt}{4pt plus 2pt minus 2pt}
+\titlespacing*{\subsection}{0pt}{6pt plus 2pt minus 2pt}{3pt plus 2pt minus 2pt}
+\titlespacing*{\subsubsection}{0pt}{4pt plus 2pt minus 2pt}{2pt plus 2pt minus 2pt}
 
+% Formato titoli più compatto
+\titleformat{\section}
+{\normalfont\large\bfseries}{\thesection}{1em}{}
+\titleformat{\subsection}
+{\normalfont\normalsize\bfseries}{\thesubsection}{1em}{}
+\titleformat{\subsubsection}
+{\normalfont\small\bfseries}{\thesubsubsection}{1em}{}
+
+% --- CONFIGURAZIONE COLORI CODICE ---
 \definecolor{codegreen}{rgb}{0,0.6,0}
 \definecolor{codegray}{rgb}{0.5,0.5,0.5}
 \definecolor{codepurple}{rgb}{0.58,0,0.82}
 \definecolor{backcolour}{rgb}{0.95,0.95,0.92}
 
+% --- STILE LISTINGS ---
 \lstset{ 
 	language=R,
 	alsoletter={.,_},
@@ -52,43 +64,41 @@ citecolor=black       % Colore citazioni bibliografiche
 	keywordstyle=\color{blue},
 	numberstyle=\tiny\color{codegray},
 	stringstyle=\color{codepurple},
-	basicstyle=\footnotesize\ttfamily, % Font piccolo monospaziato
+	basicstyle=\scriptsize\ttfamily,
 	breakatwhitespace=false,         
-	breaklines=true,                 % Va a capo se la riga è troppo lunga
+	breaklines=true,
 	captionpos=b,                    
 	keepspaces=true,                 
-	numbers=left,                    % Numeri di riga a sinistra
-	numbersep=5pt,                  
+	numbers=left,
+	numbersep=3pt,                  
 	showspaces=false,                
 	showstringspaces=false,
 	showtabs=false,                  
 	tabsize=2,
 	frame=single      
-	}
+}
 
-% --- INIZIO DEL DOCUMENTO ---
+% --- INIZIO DOCUMENTO ---
 \begin{document}
 	
-	% --- INTESTAZIONE COMPATTA (Custom Header) ---
-	% Non uso \maketitle standard perché occupa mezza pagina inutile.
-	\begin{center}
-		% Nome del gruppo (evocativo come richiesto)
-		{\Large \textbf{GRUPPO: CORES}} \\ 
-		\vspace{0.2cm}
-		% Titolo del corso e Report
-		{\large \textsc{Statistica computazionale -- Report Finale}} \\
-		\vspace{0.1cm}
-		% Membri del gruppo
-		\small
-		\begin{tabular}{c c c}
-			Maccianti Federico & Rapacioli Nicola & Riva Pietro \\
-			(909656) & (915439) & (908813) 
-		\end{tabular}
-	\end{center}
-	
-	\hrule
-	\vspace{0.5cm}
-	
+	% --- INTESTAZIONE A TUTTA PAGINA ---
+	\twocolumn[
+	\begin{@twocolumnfalse}
+		\begin{center}
+			{\LARGE \textbf{GRUPPO: CORES}} \\ 
+			\vspace{0.3cm}
+			{\Large \textsc{Statistica computazionale -- Report Finale}} \\
+			\vspace{0.2cm}
+			\small
+			\begin{tabular}{c c c}
+				Maccianti Federico & Rapacioli Nicola & Riva Pietro \\
+				(909656) & (915439) & (908813) 
+			\end{tabular}
+		\end{center}
+		\hrule
+		\vspace{0.4cm}
+	\end{@twocolumnfalse}
+	]
 	
 	\section{Introduzione}
 	Il seguente studio, si pone come obiettivo quello di individuare i diversi stili di guida presenti nella Formula 1, tramite l'analisi dei dati di telemetria (\href{https://github.com/TracingInsights/2025.git}{TracingInsights}\footnote{Codice di estrazione dati nell'appendice \ref{estrazione}.}) di ciascun pilota.
@@ -96,70 +106,74 @@ citecolor=black       % Colore citazioni bibliografiche
 	
 	
 	Il dataset originale include le seguenti variabili:
-	\begin{center}
-		\begin{tabular}{llll}
-			\hline
-			\textbf{Variabile} & \textbf{Unità di misura} & \textbf{Supporto} & \textbf{Tipo} \\
-			\hline
-			Gran premio & -- & $\{\text{Nomi GP}\}$  & \texttt{character} \\
-			Pilota & --   & $\{\text{Sigle Piloti}\}$  & \texttt{character} \\
-			Tempo dal via  & $\mathrm{s}$  & $\mathbb{R^+}$  & \texttt{numeric} \\
-			Distanza percorsa  & $\mathrm{m}$ & $\mathbb{R^+}$  & \texttt{numeric} \\
-			Distanza relativa  & --  & $[0, 1]$    & \texttt{numeric} \\
-			Velocità  & $\mathrm{km/h}$  &  $\mathbb{N}$   & \texttt{numeric} \\
-			Regime motore & RPM   & $\mathbb{N}$  & \texttt{numeric} \\
-			Marcia    & --   & $\{1, \dots, 8\}$  & \texttt{integer} \\
-			Freno     & --    & $\{0, 1\}$   & \texttt{factor} \\
-			Acceleratore  & $\%$   & $[0, 100]$    & \texttt{numeric} \\
-			DRS  & --     & $\{0, 1\}$     & \texttt{factor} \\
-			Accelerazione laterale e longitudinale    & $\mathrm{g}$ &$\mathbb{R}$ & \texttt{numeric} \\
-			Coordinate spaziali x,y,z  & $\mathrm{m}$   & $\mathbb{R}$     & \texttt{numeric} \\
-			Tempo Giro       &$\mathrm{s}$  & $\mathbb{R^+}$ &\texttt{numeric}\\
-			
-								
-			\hline
-		\end{tabular}
-	\end{center}
+	
+	{\scriptsize
+		\begin{center}
+			\begin{tabular}{p{2.2cm}p{1.2cm}p{1.8cm}p{1.2cm}}
+				\hline
+				\textbf{Variabile} & \textbf{Unità} & \textbf{Supporto} & \textbf{Tipo} \\
+				\hline
+				Gran premio & -- & $\{\text{Nomi GP}\}$  & \texttt{char} \\
+				Pilota & --   & $\{\text{Sigle}\}$  & \texttt{char} \\
+				Tempo dal via  & $\mathrm{s}$  & $\mathbb{R^+}$  & \texttt{num} \\
+				Distanza percorsa  & $\mathrm{m}$ & $\mathbb{R^+}$  & \texttt{num} \\
+				Distanza relativa  & --  & $[0, 1]$    & \texttt{num} \\
+				Velocità  & $\mathrm{km/h}$  &  $\mathbb{N}$   & \texttt{num} \\
+				Regime motore & RPM   & $\mathbb{N}$  & \texttt{num} \\
+				Marcia    & --   & $\{1, \dots, 8\}$  & \texttt{int} \\
+				Freno     & --    & $\{0, 1\}$   & \texttt{fac} \\
+				Acceleratore  & $\%$   & $[0, 100]$    & \texttt{num} \\
+				DRS  & --     & $\{0, 1\}$     & \texttt{fac} \\
+				Acc. lat./long.    & $\mathrm{g}$ &$\mathbb{R}$ & \texttt{num} \\
+				Coord. x,y,z  & $\mathrm{m}$   & $\mathbb{R}$     & \texttt{num} \\
+				Tempo Giro       &$\mathrm{s}$  & $\mathbb{R^+}$ &\texttt{num}\\
+				\hline
+			\end{tabular}
+		\end{center}
+	}
 	
 	Il dataset presenta le seguenti codifiche: le feature binarie assumono valore $0$ in assenza dell'evento e $1$ in sua presenza. La telemetria dell'acceleratore misura l'intensità dell'input del pilota, mentre per le distanze indicano la posizione progressiva rispetto allo start.
 	
 	\section{Analisi Esplorativa}
 	\subsection{Considerazioni sulle variabili}
-		
-	Poiché lo stile di guida non è riconducibile a variabili di tipo posizionale, le coordinate spaziali e le misure di distanza, sia assolute che relative, vengono escluse dall’analisi.
+	
+	Poiché lo stile di guida non è riconducibile a variabili di tipo posizionale, le coordinate spaziali e le misure di distanza, sia assolute che relative, vengono escluse dall'analisi.
 	
 	
-	In questa fase preliminare, lo stile di guida viene descritto attraverso variabili dinamiche, quali l’utilizzo dell’acceleratore, del freno, la velocità e le seguenti accelerazioni longitudinali e laterali, che consentono, per esempio, di valutare rispettivamente le modalità di decelerazione in ingresso curva, l’intensità con cui la curva viene affrontata tutte caratteristiche che fanno riferimento allo stile di guida.
-	A sostegno delle ipotesi sopra citate, si riporta la Figura \ref{fig:confronto} che confronta nel Gran Premio degli USA le accelerazioni e velocità per i piloti: Charles Leclerc, Lando Norris, Max Verstappen e Franco Colapinto.\begin{figure}[H]
+	In questa fase preliminare, lo stile di guida viene descritto attraverso variabili dinamiche, quali l'utilizzo dell'acceleratore, del freno, la velocità e le seguenti accelerazioni longitudinali e laterali, che consentono, per esempio, di valutare rispettivamente le modalità di decelerazione in ingresso curva, l'intensità con cui la curva viene affrontata tutte caratteristiche che fanno riferimento allo stile di guida.
+	A sostegno delle ipotesi sopra citate, si riporta la Figura \ref{fig:confronto} che confronta nel Gran Premio degli USA le accelerazioni e velocità per i piloti: Charles Leclerc, Lando Norris, Max Verstappen e Franco Colapinto.
+	
+	\begin{figure}[H]
 		\centering
-		\includegraphics[width=.65\textwidth]{tel_ex1.pdf}
+		\includegraphics[width=\columnwidth]{tel_ex1.pdf}
 		\caption{Accelerazioni VER, LEC, NOR, COL.}
 		\label{fig:confronto}
 	\end{figure}
+	
 	Si nota infatti come nelle variazioni repentine si possano già individuare differenze significative tra piloti.
 	
 	
 	Dalle prime analisi descrittive sul dataset\footnote{Estratto codice R consultabile nell'appendice \ref{codice preliminare}.\label{appendice 2}}, viene osservato come per il pilota Russell al Gran Premio di Miami siano presenti degli \texttt{NA} nella variabile \texttt{distanza relativa}. Osservando i dati grezzi si può notare come ciò sia riconducibile al malfunzionamento  dei sensori telemetrici - presenza di molti zeri in molte variabili e accelerazioni costanti durante l'intero giro. Per i motivi elencati sopra, si procede dunque ad eliminare i record.
 	
-	\begin{wrapfigure}{r}{0.5 \textwidth }
-		\includegraphics[width=.4\textwidth]{tel_ex2.pdf}
-		\caption{Confronto Australia Bearman}
-		\label{fig:confronto2}
-	\end{wrapfigure}
-	
 	Infine, osservando la variabile \texttt{Tempo Giro}, alcuni piloti riportano alcuni valori \texttt{NA}. Osservando i dati\textsuperscript{\ref{appendice 2}}, ciò si verifica per i piloti Tsunoda, Bearman e Hadjar rispettivamente nei Gran premi di Emilia Romagna, Australia e Stati Uniti.
 	
+	\begin{figure}[h]
+		\centering
+		\includegraphics[width=0.7\columnwidth]{tel_ex2.pdf}
+		\caption{Confronto Australia Bearman}
+		\label{fig:confronto2}
+	\end{figure}
 	
 	Effettuando un'analisi di tipo qualitativo, si scopre che ciò è riconducibile ad un incidente durante il giro di qualifica. Le uniche telemetrie disponibili sono infatti riconducibili al giro di riscaldamento delle gomme, come si nota nella figura \ref{fig:confronto2}. Al fine di eliminare rumore nell'analisi si rimuovono queste osservazioni.
 	
-
+	
 	
 	Sempre per quanto riguarda la variabile \texttt{tempo giro}, considerando il regolamento della \textbf{FIA} (\href{https://www.fia.com/sites/default/files/fia_2025_formula_1_sporting_regulations_-_issue_1_-_2024-07-31.pdf}{39.4.b.i ; PAG:47}), secondo il quale se un pilota supera il $107\%$ del tempo giro minore viene escluso dalle qualifiche, si uniforma il dataset. Incriminati risultano essere i piloti Hamilton, Tsunoda, Antonelli, Albon e Bortoleto nel Las Vegas Grand Prix e Stroll nel Dutch Grand Prix.
 	
 	Analizzando il contesto, si nota che a Las Vegas i tempi più elevati sono imputabili alle condizioni meteo avverse (pioggia intensa), seguite da un progressivo asciugamento della pista che ha avvantaggiato gli altri piloti. Nel caso di Stroll, invece, il dato si riferisce a al primo giro di lancio completo, poiché nel momento del giro di qualifica non è stato completato il giro per un incidente.
 	
 	Di conseguenza per eliminare il rumore, si elimina soltanto l'occorrenza di Stroll, poiché il giro non rappresenta il "migliore" ma solamente il quello di lancio.\\
-
+	
 	
 	\subsubsection{Trasformazione e creazione di nuove variabili}
 	Per quanto riguarda l'analisi della variabile di \texttt{accelerazione laterale}, viene trasformata tramite valore assoluto. Così da ottenere una misura dell'intensità complessiva (magnitudo)\footnote{Estratto codice R consultabile nell'appendice \ref{trattamento variabili}.\label{appendice_3}}.
@@ -168,10 +182,10 @@ citecolor=black       % Colore citazioni bibliografiche
 	\begin{itemize}
 		\item 	\texttt{Accelerazione}, che comprende tutti i valori positivi;
 		\item 	\texttt{Decelerazione} che al contrario della precedente comprende, tutti i valori negativi; 
-	
+		
 	\end{itemize}
 	Successivamente viene applicato il valore assoluto e per le restanti variabili telemetriche si mantiene invece la forma originaria.
-		
+	
 	Si creano per le variabili \texttt{velocità, acceleratore, decelerazione e accelerazioni}, nuove variabili di variazione percentuali\footnote{Estratto codice R consultabile nell'appendice \ref{creazione variabili}}, per catturare l'intensità di variazione delle variabili che aiutano a distinguere lo stile di guida dei piloti, nei vari istanti di tempo:
 	
 	\begin{itemize}[noitemsep, topsep=0pt]
@@ -181,7 +195,6 @@ citecolor=black       % Colore citazioni bibliografiche
 	che vengono calcolate come:
 	\[\Delta=\dfrac{x_{t}-x_{t-k}}{x_{t-k}}\] 
 	indicando con $x_t$ l'unità statistica al tempo $t$ e $k=\{1,5\}$ numero di lag, per le misure di accelerazione e decelerazione. Nel caso in cui $x_{t-k}=0$ e $x_t=0$ non si applica la formula e la variabile \_lag assume 0 di default, quando invece si osserva solamente $x_{t-k}=0$ si sostituisce con $x_{t-k}=0.01$ per riuscire a mantenere la validità del calcolo e continuità delle dinamiche telemetriche.
-	
 	
 	\subsection{Statistiche riassuntive}
 	Vengono calcolate delle statistiche descrittive\footnote{Estratto codice R consultabile nell'appendice \ref{codice statistiche riassuntive}.} al fine di valutare in che modo le variabili possano essere associate allo stile di guida, considerando separatamente ciascun Gran Premio e Pilota.
@@ -193,10 +206,10 @@ citecolor=black       % Colore citazioni bibliografiche
 	
 	Una volta calcolate media e deviazione standard, è possibile combinare questi valori per ottenere il coefficiente di variazione (CV):
 	\[CV=\dfrac{sd(x)}{mean(x)}\]
-	che misura la variabilità relativa di una variabile rispetto alla sua media. L’impiego di tale coefficiente permette di ridurre l’influenza del setup della vettura, rendendo confrontabili tra loro variabili che, in valore assoluto, dipendono dalle regolazioni meccaniche e aerodinamiche.
-
+	che misura la variabilità relativa di una variabile rispetto alla sua media. L'impiego di tale coefficiente permette di ridurre l'influenza del setup della vettura, rendendo confrontabili tra loro variabili che, in valore assoluto, dipendono dalle regolazioni meccaniche e aerodinamiche.
 	
-		
+	
+	
 	Si arriva cosi ad ottenere un dataset contenente 28 variabili, che forniscono informazione sullo stile di guida del pilota nella specifica gara.
 	
 	Infine, per rimuovere l'influenza del tracciato, si riscalano tutte le variabili nell'intervallo $[0,1]$.
@@ -210,12 +223,12 @@ citecolor=black       % Colore citazioni bibliografiche
 	Nonostante tale riduzione, una dimensionalità pari a 26 risulta ancora essere  sia ai fini di interpretabilità che per costo computazionale per un Model Base Clustering.
 	
 	
-	Si effettua dunque un analisi delle componenti principali (PCA) con l’obiettivo di ottenere un’ulteriore riduzione dimensionale.
+	Si effettua dunque un analisi delle componenti principali (PCA) con l'obiettivo di ottenere un'ulteriore riduzione dimensionale.
 	I risultati ottenuti tramite PCA\footnote{Estratto del codice R consultabile nell'appendice \ref{PCA}} mostrano come le prime 4 componenti spieghino più del $60\%$ della varianza, come illustrato in figura \ref{fig:pca}.
 	
 	\begin{figure}[H]
 		\centering
-		\includegraphics[width=.5\textwidth]{tel_pca.pdf}
+		\includegraphics[width=\columnwidth]{tel_pca.pdf}
 		\caption{Varianza Spiegata Cumulata}
 		\label{fig:pca}
 	\end{figure}
@@ -224,21 +237,19 @@ citecolor=black       % Colore citazioni bibliografiche
 	\subsubsection{Interpretazione delle componenti}
 	Attraverso l'analisi dei pesi associati alle componenti (Figura \ref{fig:pesi}) le si interpretano:
 	\begin{enumerate}
-		\item \textbf{Prima componente}  : Separa stili stili di guida che hanno un'alta variabilità (molte correzioni) nell'erogazione della potenza da quelli che hanno un'alta variabilità nella fase di decelerazione. A valori elevati corrisponde a uno stile di guida caratterizzato da una trazione più "sporca" o reattiva, con continue correzioni sul pedale dell'acceleratore che si contrappone uno stile caratterizzato da una frenata molto modulata e dinamica, mantenendo però un'uscita di curva molto composta e lineare nell'erogazione del gas.
+		\item \textbf{Prima componente}  : Separa i piloti che hanno un'alta variabilità (molte correzioni) nell'erogazione della potenza da quelli che hanno un'alta variabilità nella fase di decelerazione. A valori elevati corrisponde a uno stile di guida caratterizzato da una trazione più "sporca" o reattiva, con continue correzioni sul pedale dell'acceleratore che si contrappone uno stile caratterizzato da una frenata molto modulata e dinamica, mantenendo però un'uscita di curva molto composta e lineare nell'erogazione del gas.
 		
-		\item \textbf{Seconda componente} : distungue stili di guida che lavorano di più in termini di velocità pura (avanti/dietro) contro chi ha maggiore di percorrenza (destra/sinistra). A valorio elevati corrisponde uno stile di guida a "V", dove il pilota punta tutto sulla frenata profonda e sulla ripartenza rapida, variando molto l'accelerazione longitudinale. Invece, per valori bassi contrappone uno stile di guida basato sulla velocità di percorrenza, che predilige la gestione del carico laterale.
+		\item \textbf{Seconda componente} : distungue tra piloti che lavorano di più in termini di velocità pura (avanti/dietro) contro chi ha maggiore di percorrenza (destra/sinistra). A valorio elevati corrisponde uno stile di guida a "V", dove il pilota punta tutto sulla frenata profonda e sulla ripartenza rapida, variando molto l'accelerazione longitudinale. Invece, per valori bassi contrappone uno stile di guida basato sulla velocità di percorrenza, che predilige la gestione del carico laterale.
 		
-		\item \textbf{Terza componente} : questa componente entra nel dettaglio delle fasi della curva. Discrimina stili di guida con bassa componente laterale in fase di percorrenza e alta componente di accellerazioni longitudinali e viceversa. In particolare, a valori alti corrisponde uno stile di guida caratterizzato forti staccate, forti accellerazioni in uscita curva e bassa velocità di percorrenza. Mentre a valori bassi corrisponde uno stile caratterizzato alte velocità di percorrenza, e poca variazione longitudinale.
+		\item \textbf{Terza componente} : questa componente entra nel dettaglio delle fasi della curva. Discrimina piloti che prediligono un'ingresso più aggressivo rispetto all'uscita di curva e viceversa. In particolare, a valori alti corrisponde uno stile di guida caratterizzato da una gestione dinamica e correttiva della fase di uscita. Mentre a valori bassi corrisponde uno stile caratterizzato da un inserimento in curva molto incisivo e variabile, dove il pilota lavora molto sui transitori di carico iniziali per forzare l'auto in corda.
 		
-		\item \textbf{Quarta componente} :  questa componente caratterizza la configurazione della pista. A valori elevati corrisponde una maggiore variabilità complessiva della velocità, mentre valori bassi indicano un'andamento più regolare e uniforme.
+		\item \textbf{Quarta componente} :  questa componente descrive fasi di guida mista ad alta energia cinetica. A valori elevati corrisponde una maggiore variabilità complessiva in manovre che combinano velocità sostenuta e forze laterali, mentre valori bassi indicano una guida più regolare e uniforme.
 		
 	\end{enumerate}
-		
-	\textbf{N.B.} Il circuito vincola il pilota a modificare il proprio stile di guida alla configurazione del tracciato, alternando fluidità e aggressività in base alle specifiche richieste aerodinamiche o meccaniche. Tale adattamento serve quindi esclusivamente a ottimizzare lo sfruttamento della massima aderenza disponibile in ogni circuito.
 	
 	\begin{figure}[H]
 		\centering
-		\includegraphics[width=.6\textwidth]{Loadings.pdf}
+		\includegraphics[width=\columnwidth]{Loadings.pdf}
 		\caption{Pesi componenti}
 		\label{fig:pesi}
 	\end{figure}
@@ -246,18 +257,18 @@ citecolor=black       % Colore citazioni bibliografiche
 	\section{Model Based Clustering}
 	L'analisi di Clustering Model-Based, condotta sulle prime quattro componenti, ha permesso di identificare un modello \textit{VII} (\textit{Volume variabile}, \textit{forma sferica} e \textit{orientamento identico}) a tredici classi, con un totale di $77$ parametri stimati e $BIC$ pari a $-7108.435$.
 	
-	Il raggruppamento dei dati risulta già chiaramente distinguibile nella rappresentazione bidimensionale ottenuta dal confronto tra la prima e la seconda componente principale (Figura \ref{fig:12}), sebbene sia ancora presente una certa sovrapposizione visiva, interpretabile come “rumore” grafico. Tale effetto è attribuibile principalmente all’informazione contenuta nelle componenti principali rimanenti. Ciò è ulteriormente evidenziato dalla Figura \ref{fig:42}, in cui il confronto congiunto tra la quarta, la prima e la seconda componente consente di distinguere in modo più netto i cluster, migliorandone la separabilità rispetto alla rappresentazione bidimensionale.
-
-
+	Il raggruppamento dei dati risulta già chiaramente distinguibile nella rappresentazione bidimensionale ottenuta dal confronto tra la prima e la seconda componente principale (Figura \ref{fig:12}), sebbene sia ancora presente una certa sovrapposizione visiva, interpretabile come "rumore" grafico. Tale effetto è attribuibile principalmente all'informazione contenuta nelle componenti principali rimanenti. Ciò è ulteriormente evidenziato dalla Figura \ref{fig:42}, in cui il confronto congiunto tra la quarta, la prima e la seconda componente consente di distinguere in modo più netto i cluster, migliorandone la separabilità rispetto alla rappresentazione bidimensionale.
+	
+	
 	\begin{figure}[H]
 		\centering
-		\begin{subfigure}[b]{0.45\textwidth}
+		\begin{subfigure}[b]{0.45\columnwidth}
 			\includegraphics[width=\textwidth]{C1_C2.pdf}
 			\caption{Componente 1 VS Componente 2}
 			\label{fig:12}
 		\end{subfigure}
 		\hfill
-		\begin{subfigure}[b]{0.45\textwidth}
+		\begin{subfigure}[b]{0.45\columnwidth}
 			\includegraphics[width=\textwidth]{newplot.png}
 			\caption{Componente~1 VS~Componente~2 VS~Componente~4}
 			\label{fig:42}
@@ -265,11 +276,12 @@ citecolor=black       % Colore citazioni bibliografiche
 		\caption{Confronto clustering}
 	\end{figure}
 	
-	Il valore della distanza di  Kullback-Leibler $(KL)$ del modello risulta essere pari a $ 89.622$. Ciò dà sostegno a quanto già osservato graficamente, ulteriormente supportato dall'incertezza pari a $0.0796$ che esclude una possibile situazione di sovrapposizione dei gruppi.
+	Il valore della distanza di  Kullback-Leibler $(KL)$ del modello risulta essere pari a $ 89.622$. Ciò dà sostegno a quanto già osservato prima graficamente, ulteriormente supportato dall'incertezza pari a $0.0796$ che esclude una possibile situazione di sovrapposizione dei gruppi.
 	
-	\begin{table}[ht]
+	\begin{table*}[t]
 		\centering
-		\begin{tabular}{|c|c|c|c|c|r|}
+		\small
+		\begin{tabular}{|c|c|c|c|c|p{7cm}|}
 			\hline
 			\textbf{Classe} & \textbf{COMP 1} & \textbf{COMP 2} & \textbf{COMP 3} & \textbf{COMP 4} & \textbf{GP}\\ 
 			\hline
@@ -290,27 +302,23 @@ citecolor=black       % Colore citazioni bibliografiche
 		\end{tabular}
 		\caption{Media delle Componenti Principali per Classe}
 		\label{tab:pca_means}
-	\end{table}
+	\end{table*}
 	\begin{itemize}
-		\item Classe 13: Questa classe identifica uno stile  il Gran premio di Monaco. Il valore molto elevato della prima componente infatti si può associare ad un uso del gas ritmico. 
+		\item Classe 13: Questa classe identifica univocamente il Gran premio di Monaco. Il valore massimo della prima componente infatti si può associare ad un uso del gas continuo;
 		
 		\item Classi 5 e 11: (Singapore, Messico, Ungheria) Queste classi raggruppano circuiti tortuosi ad alto carico. Condividono con Monaco la necessità di gestire l'acceleratore per gestire per esempio un uscita da una curva netta.
 		
-		\item La Classe 6: (Baku) Mostra un'alta terza componente: le curve a 90° costringono  correzioni veloci della accelerazione laterale.
+		\item La Classe 6: (Baku) mostra un'alta terza componente: le curve a 90° costringono  correzioni veloci della accelerazione laterale.
 		
-		\item La Classe 4 e 12: (Las Vegas e Miami) Mostrano un'alta quarta componente: l'asfalto scivoloso a soprattutto a Las Vegas per la pioggia creano incertezza nel mantenere la velocità costante, costringendo a parzializzare il gas dove normalmente si andrebbe costanti.
+		\item La Classe 4: (Las Vegas) e 12 (Miami) mostrano un'alta quarta componente: l'asfalto scivoloso a soprattutto a Las Vegas per la pioggia creano incertezza nel mantenere la velocità costante, costringendo a parzializzare il gas dove normalmente si andrebbe costanti.
 		
-		\item Classi 8 e 9: (Spa, Silverstone, Suzuka) Queste classi rappresentano i circuiti con prima componente fortemente negativa dovuta all'assenza di frenate decise. La seconda componente positiva distingue questi circuiti: indica che la variazione è dominata dalle forze longitudinali ad alta velocità.
+		\item Classi 8 e 9: (Spa, Silverstone, Suzuka) Queste classi rappresentano i circuiti con prima componente fortemente negativa non c'è "nervosismo" sul gas dovuto anche alle curve più fluide dei tracciati. La seconda componente positiva distingue questi circuiti: indica che la variazione è dominata dalle forze longitudinali ad alta velocità.
 		
-		\item Classe 10: (Cina, USA, Brasile) Raggruppa circuiti completi dal punto di vista del tracciato : alternano tratti veloci a tratti tecnici. Non risulta esserci una componente con pesi notevoli.
+		\item Classe 10: (Cina, USA, Brasile) Raggruppa circuiti molto tecnici. La prima componente positiva qui non indica instabilità, ma la parzializzazione del gas dovuta a curve differenti sul tracciato. La terza componente negativa conferma che, nonostante la difficoltà tecnica, l'esecuzione è stabile, senza le correzioni tipiche dei cittadini.
 		
-		\item Classe 2 : (Monza): La prima componente molto negativa. È una pista caratterizzata da staccate profonde con un'uscita di trazione pulita, inoltre la quarta componente abbastanza alta, dovuta alle elevate variazioni di velocità.
+		\item Monza (Classe 2) e Bahrain/Canada (Classe 7): la prima componente molto negativa. Sono piste di staccata profonda con un'uscita di trazione pulita,seconda componente negativa.
 		
-		\item Classe 7 : (Bahrain e Canada):  Sono circuiti caratterizzate da poche curve di alta velocità di percorrenza, evidenziato dal valore negativo della seconda componente.
-		
-		\item Classe 1 : (Australian, Abu Dhabi, Qatar,  Saudi, Spanish) È il gruppo più numeroso, caratteizzato da una prima componente negativa, quindi poche variazioni longitudinali e in generale fluidità nella percorrenza.
-		
-		\item Classe 3 : (Austrian, Emilia Romagna) Molto simile alla classe 1, ma con curve più accentuate e maggiori variazioni longitudinali.
+		\item Imola (Classe 3) e Spagna (Classe 1): seconda componente negativa e prima bassa. Qui prevale la percorrenza e la gestione del carico laterale.
 	\end{itemize}
 	
 	\section{Classificazione}
@@ -318,6 +326,7 @@ citecolor=black       % Colore citazioni bibliografiche
 	
 	
 	\clearpage
+	\onecolumn
 	\appendix
 	\title{Appendice}
 	\section{Codice R Commentato Estrazione dei dati}
@@ -384,9 +393,9 @@ citecolor=black       % Colore citazioni bibliografiche
 		summary(tel)
 		# Sistemazione delle variabili
 		tel$throttle <- ifelse(tel$throttle > 100, 100, tel$throttle)
-	
+		
 		#Trattamento degli NA e None
-	
+		
 		tel[which(is.na(tel$rel_distance)),]
 		tel <- tel %>% filter(pilota != "RUS" & GP != "Miami Grand Prix")
 		
@@ -399,13 +408,13 @@ citecolor=black       % Colore citazioni bibliografiche
 	\section{Codice R Commentato Trattemento variabili}
 	\label{trattamento variabili}
 	\begin{lstlisting}
-	tel.guida <- tel %>%  
-	group_by(GP,pilota) %>% 
-	mutate(
-	dec_x = if_else(acc_x < 0, abs(acc_x), 0),
-	acc_x = if_else(acc_x > 0, acc_x, 0),
-	acc_y = abs(acc_y)) %>% 
-	ungroup()
+		tel.guida <- tel %>%  
+		group_by(GP,pilota) %>% 
+		mutate(
+		dec_x = if_else(acc_x < 0, abs(acc_x), 0),
+		acc_x = if_else(acc_x > 0, acc_x, 0),
+		acc_y = abs(acc_y)) %>% 
+		ungroup()
 	\end{lstlisting}
 	\section{Codice R Commentato Creazione variabili}
 	\label{creazione variabili}
@@ -496,31 +505,31 @@ citecolor=black       % Colore citazioni bibliografiche
 	\section{Codice R Commentato Analisi delle correlazioni}
 	\label{correlazioni}
 	\begin{lstlisting}
-	corr <- round(cor(tel.guida_summary %>% select(where(is.numeric))),4)
-	
-	#Ricerca di variabili dipendenti
-	
-	variabili_dipendenti <- findCorrelation(corr, cutoff = 0.9, names = TRUE, exact = T,verbose = T)
-	
-	print(variabili_dipendenti)
-	
-	tel.pca <- tel.guida_summary %>% select(-all_of(variabili_dipendenti))
-	
+		corr <- round(cor(tel.guida_summary %>% select(where(is.numeric))),4)
+		
+		#Ricerca di variabili dipendenti
+		
+		variabili_dipendenti <- findCorrelation(corr, cutoff = 0.9, names = TRUE, exact = T,verbose = T)
+		
+		print(variabili_dipendenti)
+		
+		tel.pca <- tel.guida_summary %>% select(-all_of(variabili_dipendenti))
+		
 	\end{lstlisting}
 	\section{Codice R Commentato Analisi delle componenti principali}
 	\label{PCA}
 	\begin{lstlisting}
-	PCA <- princomp(tel.pca %>%
-	select(where(is.numeric)))
-	
-	fviz_screeplot(PCA,choice= "variance")
-	
-	summary(PCA)
-	print(PCA$loadings,cutoff = 0)
-	
-	for (i in 1:6){
-		p <- fviz_contrib(PCA, choice = "var", axes = i, top = 15)
-		print(p)
-	}
+		PCA <- princomp(tel.pca %>%
+		select(where(is.numeric)))
+		
+		fviz_screeplot(PCA,choice= "variance")
+		
+		summary(PCA)
+		print(PCA$loadings,cutoff = 0)
+		
+		for (i in 1:6){
+			p <- fviz_contrib(PCA, choice = "var", axes = i, top = 15)
+			print(p)
+		}
 	\end{lstlisting}
-\end{document}
+\end{document}	
