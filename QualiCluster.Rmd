@@ -144,7 +144,7 @@ pp <- ggplot(tel_g, aes(x = rel_distance, y = valore, color = pilota)) +
 print(pp)
 
 
-#ggsave("tel_ex1.pdf", pp, width = 7, height = 5, device = cairo_pdf)
+#ggsave("report/el_ex1.pdf", pp, width = 7, height = 5, device = cairo_pdf)
 ```
 
 ### Data cleaning
@@ -214,7 +214,7 @@ pp <- ggplot(tel_g
 print(pp)
 
 
-#ggsave("tel_ex2.pdf", pp, width = 7, height = 5, device = cairo_pdf)
+#ggsave("report/tel_ex2.pdf", pp, width = 7, height = 5, device = cairo_pdf)
 ```
 
 ```{r}
@@ -487,7 +487,7 @@ p <- ggplot(cumulative, aes(x=Componenti,y=value))+
        y="Proporzione")+
   theme_minimal()
 print(p)
-#ggsave("tel_pca.pdf", p, width = 7, height = 5, device = cairo_pdf)
+#ggsave("report/tel_pca.pdf", p, width = 7, height = 5, device = cairo_pdf)
 
 
 
