@@ -669,7 +669,7 @@ print(p)
 
 ```
 
-La clusterizzazione tramite Model Based clustering, ha evidenziato due cluster: - il *primo* nel quale i piloti hanno un atteggiamento più progressivo,graduale e *stabile*, nella guida. - il *secondo* nel quale si ha un atteggiamento più *instabile* e aggressivo
+La clusterizzazione tramite Model Based clustering, ha evidenziato quattro cluster: 
 
 - Il *primo* cluster comprende prevalentemente Gran Premi con piste caratterizzate da numerose curve a medio-bassa velocità, nei quali i piloti mostrano una gestione longitudinale relativamente costante e una maggiore variabilità della dinamica laterale.
 
