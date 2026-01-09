@@ -1,5 +1,10 @@
-\documentclass[a4paper, 11pt]{article}
+\documentclass[a4paper, 10pt]{article}
 
+\usepackage{titlesec}
+% Riduci drasticamente lo spazio sopra e sotto i titoli
+\titlespacing*{\section}{0pt}{6pt plus 2pt minus 2pt}{4pt plus 2pt minus 2pt}
+\titlespacing*{\subsection}{0pt}{4pt plus 2pt minus 2pt}{2pt plus 2pt minus 2pt}
+\titlespacing*{\subsubsection}{0pt}{3pt plus 2pt minus 2pt}{1pt plus 2pt minus 2pt}
 % --- IMPOSTAZIONI DI PAGINA (CRUCIALE PER LE 6 PAGINE) ---
 % Margini ridotti a 2cm per guadagnare spazio vitale
 \usepackage[left=2cm, right=2cm, top=2cm, bottom=2cm]{geometry}
@@ -125,21 +130,19 @@ citecolor=black       % Colore citazioni bibliografiche
 	
 	
 	In questa fase preliminare, lo stile di guida viene descritto attraverso variabili dinamiche, quali l’utilizzo dell’acceleratore, del freno, la velocità e le seguenti accelerazioni longitudinali e laterali, che consentono, per esempio, di valutare rispettivamente le modalità di decelerazione in ingresso curva, l’intensità con cui la curva viene affrontata tutte caratteristiche che fanno riferimento allo stile di guida.
-	A sostegno delle ipotesi sopra citate, si riporta la Figura \ref{fig:confronto} che confronta nel Gran Premio degli USA le accelerazioni e velocità per i piloti: Charles Leclerc, Lando Norris, Max Verstappen e Franco Colapinto. 
-	
-	\begin{figure}[H]
+	A sostegno delle ipotesi sopra citate, si riporta la Figura \ref{fig:confronto} che confronta nel Gran Premio degli USA le accelerazioni e velocità per i piloti: Charles Leclerc, Lando Norris, Max Verstappen e Franco Colapinto.\begin{figure}[H]
 		\centering
-		\includegraphics[width=.85\textwidth]{tel_ex1.pdf}
+		\includegraphics[width=.65\textwidth]{tel_ex1.pdf}
 		\caption{Accelerazioni VER, LEC, NOR, COL.}
 		\label{fig:confronto}
 	\end{figure}
-	Si nota infatti come nelle variazioni repentine si possano già individuare differenze significative tra piloti.\\
+	Si nota infatti come nelle variazioni repentine si possano già individuare differenze significative tra piloti.
 	
 	
 	Dalle prime analisi descrittive sul dataset\footnote{Estratto codice R consultabile nell'appendice \ref{codice preliminare}.\label{appendice 2}}, viene osservato come per il pilota Russell al Gran Premio di Miami siano presenti degli \texttt{NA} nella variabile \texttt{distanza relativa}. Osservando i dati grezzi si può notare come ciò sia riconducibile al malfunzionamento  dei sensori telemetrici - presenza di molti zeri in molte variabili e accelerazioni costanti durante l'intero giro. Per i motivi elencati sopra, si procede dunque ad eliminare i record.
-	\\
+	
 	\begin{wrapfigure}{r}{0.5 \textwidth }
-		\includegraphics[width=.6\textwidth]{tel_ex2.pdf}
+		\includegraphics[width=.4\textwidth]{tel_ex2.pdf}
 		\caption{Confronto Australia Bearman}
 		\label{fig:confronto2}
 	\end{wrapfigure}
@@ -149,7 +152,7 @@ citecolor=black       % Colore citazioni bibliografiche
 	
 	Effettuando un'analisi di tipo qualitativo, si scopre che ciò è riconducibile ad un incidente durante il giro di qualifica. Le uniche telemetrie disponibili sono infatti riconducibili al giro di riscaldamento delle gomme, come si nota nella figura \ref{fig:confronto2}. Al fine di eliminare rumore nell'analisi si rimuovono queste osservazioni.
 	
-	\clearpage
+
 	
 	Sempre per quanto riguarda la variabile \texttt{tempo giro}, considerando il regolamento della \textbf{FIA} (\href{https://www.fia.com/sites/default/files/fia_2025_formula_1_sporting_regulations_-_issue_1_-_2024-07-31.pdf}{39.4.b.i ; PAG:47}), secondo il quale se un pilota supera il $107\%$ del tempo giro minore viene escluso dalle qualifiche, si uniforma il dataset. Incriminati risultano essere i piloti Hamilton, Tsunoda, Antonelli, Albon e Bortoleto nel Las Vegas Grand Prix e Stroll nel Dutch Grand Prix.
 	
@@ -208,7 +211,7 @@ citecolor=black       % Colore citazioni bibliografiche
 	
 	
 	Si effettua dunque un analisi delle componenti principali (PCA) ai fini di ridurre la dimensionalità.
-	I risultati ottenuti tramite PCA\footnote{Estratto del codice R consultabile nell'appendice \ref{PCA}} mostrano come le prime 5 componenti spiegano più del $70\%$ della varianza, come si nota nella figura \ref{fig:pca}.
+	I risultati ottenuti tramite PCA\footnote{Estratto del codice R consultabile nell'appendice \ref{PCA}} mostrano come le prime 4 componenti spiegano più del $60\%$ della varianza, come si nota nella figura \ref{fig:pca}.
 	
 	\begin{figure}[H]
 		\centering
@@ -219,7 +222,7 @@ citecolor=black       % Colore citazioni bibliografiche
 	
 	
 	\subsubsection{Interpretazione delle componenti}
-	Attraverso l'analisi dei pesi associati alle componenti le si interpretano:
+	Attraverso l'analisi dei pesi associati alle componenti (Figura \ref{fig:pesi}) le si interpretano:
 	\begin{enumerate}
 		\item 	La prima componente ha pesi maggiori per le variabili che descrivono la variabilità della dinamica longitudinale, sono coinvolti i coefficienti di decelerazione ed accelerazione come anche le variazioni degli input come acceleratore, freno e velocità.
 		A valori alti viene quindi associata una guida più instabile, per valori bassi invece è associata una guida più progressiva e stabile.
@@ -228,44 +231,79 @@ citecolor=black       % Colore citazioni bibliografiche
 		\item Per la quarta componente i contributi più significativi sia della dinamica longitudinale, in particolare delle variabili di accelerazione e decelerazione con lag positivi, sia della dinamica laterale e della velocità.
 		La componente descrive quindi fasi di guida dinamica in cui sono presenti variazioni coordinate di accelerazione, decelerazione e velocità, per esempio ingressi o uscite da curve.
 		A valori elevati corrisponde una maggiore variabilità complessiva, associabile a uno stile di guida più dinamico e meno uniforme, mentre valori bassi indicano una guida più regolare e costante.
-		\item La quinta componente è dominata dalla dinamica laterale, con contributi rilevanti delle accelerazioni laterali con lag positivi,sono incluse anche variabili legate all’acceleratore con lag positivi.
-		La componente può quindi essere interpretata come descrittiva di fasi di guida caratterizzate da una dinamica laterale sostenuta e prolungata.
-		Valori elevati sono associati a una maggiore variabilità laterale persistente, mentre valori bassi indicano una dinamica laterale più contenuta e regolare.
-		
-		
 	\end{enumerate}
-
-  
+		
+	\begin{figure}[H]
+		\centering
+		\includegraphics[width=.6\textwidth]{Loadings.pdf}
+		\caption{Pesi componenti}
+		\label{fig:pesi}
+	\end{figure}
 	
-	
-	
-	
-	\clearpage
-	Come si evince dalla Figura \ref{fig:istogrammi_iniziali}, la distribuzione \dots
-	
-	% Esempio placeholder per due grafici affiancati (risparmio spazio)
-	\begin{figure}[ht]
+	\section{Model Based Clustering}
+	L'analisi di Clustering Model-Based, condotta sulle prime quattro componenti principali, ha permesso di identificare tredici classi tramite un modello con vincoli su matrice di covarianza pari a; Volume variabile, forma sferica tra i gruppi stimando un totale di $77$ parametri e $BIC$ pari a $-7108.435$. Il raggruppamento risulta più distinguibile in due dimensioni confrontando graficamente prima componente con la seconda (figura \ref{fig:12}) anche se è presente del "rumore" grafico. Il che è dovuto per la maggior parte alle altre componenti come si nota nella figura \ref{fig:42} dove si distingue meglio il cluster $4$ nel confronto grafico tra  quarta,prima e seconda componente.
+	\begin{figure}[H]
 		\centering
 		\begin{subfigure}[b]{0.45\textwidth}
-			% \includegraphics[width=\textwidth]{tuo_grafico_1.pdf}
-			\rule{\textwidth}{3cm} % Rimuovi questa riga e usa includegraphics
-			\caption{Distribuzione Variabile X}
+			\includegraphics[width=\textwidth]{C1_C2.pdf}
+			\caption{Componente 1 VS Componente 2}
+			\label{fig:12}
 		\end{subfigure}
 		\hfill
 		\begin{subfigure}[b]{0.45\textwidth}
-			% \includegraphics[width=\textwidth]{tuo_grafico_2.pdf}
-			\rule{\textwidth}{3cm} % Rimuovi questa riga e usa includegraphics
-			\caption{Scatterplot X vs Y}
+			\includegraphics[width=\textwidth]{newplot.png}
+			\caption{Componente 1 VS Componente 2 VS Componente 4}
+			\label{fig:42}
 		\end{subfigure}
-		\caption{Analisi esplorativa iniziale delle variabili principali.}
-		\label{fig:istogrammi_iniziali}
+		\caption{Confronto clustering}
 	\end{figure}
 	
-	\section{Modellazione}
-	Abbiamo applicato un modello di regressione lineare:
-	\begin{equation}
-		Y_i = \beta_0 + \beta_1 X_{1i} + \epsilon_i
-	\end{equation}
+	Dato che il modello ha un $ICL$ pari a $-7198.058$ confrontandolo con il $BIC$ la distanza di  Kullback-Leibler$(KL)$ risulta pari a $ 89.622$questo conferma che la struttura delle classi è ben distinta, il fatto viene confermato anche da un'incertezza attesa pari a $0.0796$ si esclude quindi una possibile situazione di sovrapposizione dei gruppi.
+	\begin{table}[ht]
+		\centering
+		\caption{Media delle Componenti Principali per Classe}
+		\begin{tabular}{|c|c|c|c|c|c|}
+			\hline
+			\textbf{Classe} & \textbf{COMP 1} & \textbf{COMP 2} & \textbf{COMP 3} & \textbf{COMP 4} & \textbf{GP}\\ 
+			\hline
+			1 & -2.3544521 & -0.4336353 & -0.3267068 & -1.04304992 & Australian, Abu Dhabi, Qatar,  Saudi, Spanish\\
+			2 & -4.6485671 & -1.9013751 & 0.3596806 & 1.50701769 & Italian \\
+			3 & -0.5809494 & -1.9670107 & 0.3270949 & -0.50006776 & Austrian, Emilia Romagna\\
+			4 & 1.9782712 & 1.0854711 & -1.4384612 & 3.35259093 & Las Vegas\\
+			5 & 3.3611817 & -0.7988630 & 0.3854497 & -0.58053173 & Mexico, Singapore\\
+			6 & 1.6093561 & -2.9926369 & 3.1763503 & 1.47207130 & Azerbaijan\\
+			7 & 0.6601369 & -1.8975598 & -1.5433976 & 0.33120784 & Canadian, Bahrain \\
+			8 & -3.5929136 & 1.8655423 & 1.9612523 & 0.21243282 & Belgian\\
+			9 & -1.7581531 & 3.1354654 & 0.7971459 & -0.15900006 & British, Japanese \\
+			10 & 1.0999736 & 1.0575898 & -1.2098464 & 0.04385535 &United States, São Paulo, Chinese, Dutch\\
+			11 & 2.5236924 & 1.0020324 & -0.4849935 & -1.88106300&  Hungarian, Dutch\\
+			12 & -0.6392196 & 0.7454101 & 0.5008869 & 1.58845641 &  Miami\\
+			13 & 5.8976535 & 0.5075088 & 1.8048374 & -0.47820303& Monaco\\
+			\hline
+		\end{tabular}
+		\label{tab:pca_means}
+	\end{table}
+	\begin{itemize}
+		\item Classe 13: Questa classe identifica univocamente il Gran premio di Monaco. Il valore massimo della prima componente infatti si può associare ad un uso del gas continuo;
+		
+		\item Classi 5 e 11: (Singapore, Messico, Ungheria) Queste classi raggruppano circuiti tortuosi ad alto carico. Condividono con Monaco la necessità di gestire l'acceleratore per gestire per esempio un uscita da una curva netta.
+		
+		\item La Classe 6: (Baku) mostra un'alta terza componente: le curve a 90° costringono  correzioni veloci della accelerazione laterale.
+		
+		\item La Classe 4: (Las Vegas) e 12 (Miami) mostrano un'alta quarta componente: l'asfalto scivoloso a soprattutto a Las Vegas per la pioggia creano incertezza nel mantenere la velocità costante, costringendo a parzializzare il gas dove normalmente si andrebbe costanti.
+		
+		\item Classi 8 e 9: (Spa, Silverstone, Suzuka) Queste classi rappresentano i circuiti con prima componente fortemente negativa non c'è "nervosismo" sul gas dovuto anche alle curve più fluide dei tracciati. La seconda componente positiva distingue questi circuiti: indica che la variazione è dominata dalle forze longitudinali ad alta velocità.
+		
+		\item Classe 10: (Cina, USA, Brasile) Raggruppa circuiti molto tecnici. La prima componente positiva qui non indica instabilità, ma la parzializzazione del gas dovuta a curve differenti sul tracciato. La terza componente negativa conferma che, nonostante la difficoltà tecnica, l'esecuzione è stabile, senza le correzioni tipiche dei cittadini.
+		
+		\item Monza (Classe 2) e Bahrain/Canada (Classe 7): la prima componente molto negativa. Sono piste di staccata profonda con un'uscita di trazione pulita,seconda componente negativa.
+		
+		\item Imola (Classe 3) e Spagna (Classe 1): seconda componente negativa e prima bassa. Qui prevale la percorrenza e la gestione del carico laterale.
+	\end{itemize}
+	
+	\section{Classificazione}
+	
+	
 	
 	\clearpage
 	\appendix

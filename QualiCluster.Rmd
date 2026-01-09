@@ -165,7 +165,7 @@ Inoltre sono presenti alcune osservazioni `NA`. Analizzando il dataset originale
 tel[which(is.na(tel$rel_distance)),]
 
 
-tel <- tel %>% filter(pilota != "RUS" & GP != "Miami Grand Prix")
+tel <- tel %>% filter(!(pilota == "RUS" & GP == "Miami Grand Prix"))
 ```
 
 Un ultimo accorgimento riguarda la variabile *laptime*. Essa infatti è pari a `None` per i piloti Tsunoda, Bearman e Hadjar rispettivamente nei GP Emilia Romagna, Australian e Usa a causa del fatto che non hanno terminato il giro di qualifica quindi non c'è un tempo del giro, ma comunque si è registrata la telemetria. Al fine di eliminare rumore nell'analisi si rimuovono queste osservazioni.
@@ -534,100 +534,121 @@ Dai precedenti risultati si possono definire le componenti nel seguente modo :
     -   **Score elevati** : indicano un veicolo e un sistema pilota–vettura molto reattivi alle variazioni di carico, con una dinamica che risponde in modo marcato anche a cambiamenti progressivi. Valori alti possono riflettere un setup più rigido o una configurazione aerodinamica che amplifica la reattività della vettura.
     -   **Score bassi** : indicano una risposta più smorzata e filtrata, coerente con un comportamento più stabile e prevedibile. Possono essere associati a setup più morbidi o a regolazioni che riducono la sensibilità alle variazioni di carico, privilegiando la stabilità rispetto alla reattività.
 
+```{r}
+loadings <- as.data.frame(PCA$loadings[, 1:5])
+
+
+loadings$Variable <- rownames(loadings)
+loadings_long <- loadings %>%
+  pivot_longer(cols = starts_with("Comp"), 
+               names_to = "component", 
+               values_to = "peso")
+
+p <- ggplot(loadings_long, aes(x = component, y = Variable, fill = abs(peso))) +
+  geom_tile(color = "white") +
+  geom_text(aes(label = round(abs(peso), 2)), size = 2.5, color = "black")+
+  scale_fill_gradient(low = "white", high = "#E10600", name = "Pesi") +
+  theme_minimal() +
+  labs(x = "Componenti",
+       y = "Variabili") 
+
+print(p)
+
+#ggsave("Loadings.pdf", p, width = 7, height = 5, device = cairo_pdf)
+```
 ## Clustering
 
 Si filtra per le prime cinque componenti ottenute.
-
 ```{r}
-tel.comp <- as_tibble(PCA$scores[,c(1:5)])
-
-library(fmsb)
-for (i in 1:5){
-tel.load <- PCA$loadings[,i] 
-tel.load <- abs(tel.load)
-tel.load <- sort(tel.load, decreasing = TRUE)
-tel.load <- tel.load[1:10]
-
-df_load <- as.data.frame(t(tel.load))
-
-max <- max(df_load) * 1.2 
-min <- 0
-
-df_final <- rbind(rep(max, 10), rep(min, 10), df_load)
-
-radarchart(df_final,
-           axistype = 0,
-           pcol = "#E10600",           
-           plwd = 4,
-           vlcex = .7,
-           cglcol = "gray", cglty = 1, axislabcol = "gray",
-           title = paste("Profilo Componente Principale",i,"(Top 10 Loadings)"),
-           vlabels = c(ifelse(str_detect(colnames(df_final),"acc_x"),str_replace(colnames(df_final),"acc_x","acc_long"),
-                              ifelse(str_detect(colnames(df_final),"acc_y"),str_replace(colnames(df_final),"acc_y","acc_lat"),
-                                     ifelse(str_detect(colnames(df_final),"dec_x"),str_replace(colnames(df_final),"dec_x","dec"),
-                                            ifelse(str_detect(colnames(df_final),"throttle"),str_replace(colnames(df_final),"throttle","acceleratore"),
-                                                   ifelse(str_detect(colnames(df_final),"brake"),str_replace(colnames(df_final),"brake","freno"),
-                                                          ifelse(str_detect(colnames(df_final),"speed"),str_replace(colnames(df_final),"speed","velocità"),0))))))))
-}
-
-
-
+tel.comp <- as_tibble(PCA$scores[,1:4])
 ```
+
+
 
 Si procede ora a effettuare un primo clustering
 
 ```{r}
-clust <- Mclust(tel.comp)
-summary(clust)
-plot(clust, what="classification")
-plot(clust, what="uncertainty")
-plot(clust, what = "BIC", legendArgs = list(x = "bottomleft"))
-clust$BIC
-```
-
-Metriche di valutazione
-
-```{r}
-cat("KL distance \n")
-KL <- clust$icl - clust$bic; KL
-
-cat("Incertezza attesa \n")
-mean(clust$uncertainty)
-```
-
-Il modello trovato è un VEE 9 con BIC pari a -7949.208 il con KL pari a 50
-
-Notando come le componenti 1 e 2 siano le più discriminanti per il clustering, si prova quindi ad applicare il Model Base Clustering solo sulle prime due componenti 
-
-```{r}
-tel.comp <- tel.comp %>% select(Comp.2,Comp.1)
-
-
-clust <- Mclust(tel.comp)
+clust <- Mclust(tel.comp,G=1:15)
 summary(clust)
 plot(clust, what="classification")
 plot(clust, what="uncertainty")
 plot(clust, what = "BIC", legendArgs = list(x = "bottomleft"))
 clust$BIC
 
-
 ```
-Il modello trovato è un EEV 5 con BIC pari a -3752.150, molto superiore rispetto al modello precedente, e graficamente più distinti i gruppi tra di loro con KL circa pari a 100 di conseguenza si predilige il seguente modello al precedente.
 
 
 
 ```{r}
-comp.class <- unlist ( clust$classification )
 tel.comp.labels <- tel.comp
-tel.comp.labels["class"] <- clust$classification
+tel.comp.labels$class <- as.factor(clust$classification)
 tel.comp.labels$pilota <- tel.pca$pilota
 tel.comp.labels$GP <- tel.pca$GP
 
 tel.comp.labels$laptime <- tel2$laptime
 
 tel.comp.labels <- tel.comp.labels %>% arrange(laptime,GP,pilota,)
+
+colori <- c("red", "blue", "green", "orange", "purple", "cyan", "brown", "pink", "black","grey","yellow","darkblue","darkred")
+
+p <- ggplot(tel.comp.labels, aes(x = Comp.2, y = Comp.1, color = class)) +
+  geom_point(size = 2) +
+  scale_color_manual(values = colori)+
+  labs(
+    title =  "Comp1 vs Comp2",
+    x = "Componente 2",
+    y = "Componente 1",
+    color = "Cluster",
+    shape = "Cluster"
+  )+theme_minimal()
+
+print(p)
+ggsave("C1_C2.pdf", p, width = 7, height = 5, device = cairo_pdf)
+
 ```
 
+```{r}
+library(plotly)
+
+
+
+p_3d <- plot_ly(tel.comp.labels, 
+                x = ~Comp.2, 
+                y = ~Comp.1, 
+                z = ~Comp.4, 
+                color = ~class, 
+                colors = colori,
+                type = 'scatter3d', 
+                mode = 'markers',
+                marker = list(size = 3)) %>%
+  layout(
+    title = "Comp1 vs Comp2 vs Comp4",
+    scene = list(
+      xaxis = list(title = 'Componente 2'),
+      yaxis = list(title = 'Componente 1'),
+      zaxis = list(title = 'Componente 4')
+    )
+  )
+
+
+p_3d
+
+
+```
+
+
+
+Metriche di valutazione
+
+```{r}
+cat("KL distance \n")
+KL <- round(abs(clust$icl - clust$bic),3); KL
+
+cat("Incertezza attesa \n")
+round(mean(clust$uncertainty),4)
+```
+
+Il modello trovato è un VEE 9 con BIC pari a -7949.208 il con KL pari a 50
 
 ------------------------------------------------------------------------
 
@@ -646,7 +667,7 @@ for (gp in unique_GP) {
   
    p <- ggplot(tel.comp.labels %>% filter(GP == gp), aes(x = Comp.2, y = Comp.1)) +
   geom_text(aes(label = pilota,colour  = as.factor(class)), vjust = -1, size = 3, check_overlap = F) + 
-  scale_color_brewer(palette = "Set1") +
+  scale_color_manual(values=colori) +
   coord_cartesian(xlim = x_lim, ylim = y_lim)+
   theme_minimal() +
   labs(title = paste0("Plot Comp.2 vs Comp.1 ", gp),
@@ -659,13 +680,15 @@ p <- ggplot(tel.comp.labels, aes(x = Comp.2, y = Comp.1)) +
     geom_point(aes(colour = as.factor(class)), alpha = 0) + 
     geom_text(aes(label = GP, colour = as.factor(class)), 
             vjust = -1, size = 3, check_overlap = T,show.legend = F) + 
-  scale_color_brewer(palette = "Set1", type = "qual") +
+  scale_color_manual(values = colori) +
   coord_cartesian(xlim = c(-5,5), ylim = c(-7,7)) +
   labs(title = paste0("Plot Comp.2 vs Comp.1 ", gp),
        colour = "Classe") +
   guides(colour = guide_legend(override.aes = list(alpha = 1, size = 5, shape = 19)))
 
 print(p)
+
+#ggsave("Loadings.pdf", p, width = 7, height = 5, device = cairo_pdf)
 
 ```
 
@@ -694,7 +717,7 @@ summary <- tel.comp.labels %>%
   )), .groups = "drop"
   )
 summary2 <- tel.comp.labels %>%
-  group_by(pilota,GP,class) %>%
+  group_by(GP,class) %>%
   summarize(
     across(where(is.numeric),
     list(
@@ -719,44 +742,21 @@ listmod=c("Gaussian_pk_L_I","Gaussian_pk_Lk_I","Gaussian_pk_L_B","Gaussian_pk_Lk
           "Gaussian_pk_L_Dk_A_Dk","Gaussian_pk_Lk_Dk_A_Dk","Gaussian_pk_L_Ck","Gaussian_pk_Lk_Ck")
 tel.data <- tel.comp[,c(1,2)]
 tel.comp.labels$class <- as.factor(tel.comp.labels$class)
-tel.class <- unlist( tel.comp.labels[,3] )
+tel.class <- unlist( tel.comp.labels[,5] )
 str(tel.class)
 str(tel.data)
 
 
-set.seed(789)
-vec <- data.frame(CV=NA,BIC=NA,MODEL=NA,TOT_MISS=NA,MISS=NA,N=NA)
-n_test <- list()
+set.seed(321)
+res <-  mixmodLearn(tel.data, tel.class, 
+                  models=mixmodGaussianModel(listModels=listmod,equal.proportions=F),criterion= c("CV","BIC"))
 
-   for (m in listmod){
-     for (i in 1:1000){
-test.set <- sample(1:nrow(tel.data),40)
-res <-  mixmodLearn(tel.data[-test.set,], tel.class[-test.set], 
-                  models=mixmodGaussianModel(listModels=m,equal.proportions=F),criterion= c("CV","BIC"))
-   vec[i,1] <- res@bestResult@criterionValue[1]
-   vec[i,2] <- res@bestResult@criterionValue[2]
-pred <-  mixmodPredict(tel.data[test.set,], classificationRule=res@bestResult)
-   vec[i,4] <- sum(pred@partition != tel.class[test.set])
-   vec[i,5] <- mean(pred@partition != tel.class[test.set])
-      }
-  cat(cat(paste("Progress",m,"\n")))
-  vec$MODEL <- rep(m,1000)
-  n_test[[as.character(m)]]   <- vec 
-}
 
-tot <- bind_rows(n_test)
+pred <-  mixmodPredict(.., classificationRule=res@bestResult)
+   
 
-sort(rowSums(table(tot$MODEL,tot$N)),decreasing = T)
 
 ```
 
 
-
-
-```{r}
-fit <- stepFlexmix(Comp.1 ~ Comp.2 ,data=tel.comp.labels , k=2:4,verbose = TRUE, drop = F, unique = FALSE,FLXMRglm=(formula= .~. , family="gaussian"))
-
-fit
-
-```
 
