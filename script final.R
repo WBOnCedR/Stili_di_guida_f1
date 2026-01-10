@@ -17,7 +17,7 @@ library(GGally)
 library(Rmixmod)
 library(dotenv)
 library(flexmix)
-
+library(plotly)
 options(warn = -1) 
 
 load_dot_env()
@@ -28,6 +28,101 @@ data_path24 <- "C:/Users/feder/Documents/datasets/Computazionale/F1/data/dataset
 data_path25 <-  "C:/Users/feder/Documents/datasets/Computazionale/F1/data/dataset_completo_best_tel2025.rds"
 
 # Esplorazione del dataset
+
+tel4 <- readRDS(data_path24)
+tel5 <- readRDS(data_path25)
+
+
+tel.ex <- tel4 %>% filter(GP == "United States Grand Prix" & (pilota == "VER" |pilota == "LEC"|pilota== "COL"|pilota=="BEA"))
+colori_team <- c("VER" = "#0600EF", "LEC" = "#EF1A2D", "COL" = "#FF8700","BEA"="#000000")
+
+
+
+tel_g <- tel.ex %>%
+  select(rel_distance, pilota, acc_y, acc_x,speed,brake,throttle) %>%
+  pivot_longer(cols = c(acc_y, acc_x,speed,throttle), 
+               names_to = "variabile", 
+               values_to = "valore") %>%
+  mutate(variabile = factor(variabile, 
+                            levels = c("acc_y", "acc_x","speed","throttle"),
+                            labels = c(" Acc. lat. ", " Acc. long. ", "Velocità","Acceleratore" )))
+
+
+pp <- ggplot(tel_g, aes(x = rel_distance, y = valore, color = pilota)) +
+  geom_hline(yintercept = 0, linetype = "dashed", color = "gray70", linewidth = 0.4) +
+  geom_line(size = 0.6, alpha = 0.8) +
+  facet_grid(variabile ~ ., scales = "free_y", switch = "y") + 
+  scale_color_manual(values = colori_team) +
+  theme_minimal(base_size = 12) +
+  labs(
+    x = "Distanza relativa",
+    y = NULL,
+    color = "Pilota"
+  ) +
+  theme(
+    strip.placement = "outside", 
+    strip.text.y = element_text(face = "bold", size = 7),
+    strip.background = element_rect(fill = "gray96", color = NA),
+    legend.position = "top",
+    panel.spacing = unit(1.2, "lines"),
+    panel.grid.minor = element_blank(),
+    plot.title = element_text(face = "bold", size = 16, margin = margin(b = 5)),
+    plot.subtitle = element_text(size = 11, color = "gray30", margin = margin(b = 15))
+  )
+
+print(pp)
+
+#ggsave("report/el_ex1.pdf", pp, width = 7, height = 5, device = cairo_pdf)
+
+
+
+
+tel.ex <- tel5 %>% filter(GP == "United States Grand Prix" & (pilota == "VER" |pilota == "LEC"|pilota== "COL"|pilota=="BEA"))
+colori_team <- c("VER" = "#0600EF", "LEC" = "#EF1A2D", "COL" = "#FF8700","BEA"="#000000")
+
+
+
+tel_g <- tel.ex %>%
+  select(rel_distance, pilota, acc_y, acc_x,speed,brake,throttle) %>%
+  pivot_longer(cols = c(acc_y, acc_x,speed,throttle), 
+               names_to = "variabile", 
+               values_to = "valore") %>%
+  mutate(variabile = factor(variabile, 
+                            levels = c("acc_y", "acc_x","speed","throttle"),
+                            labels = c(" Acc. lat. ", " Acc. long. ", "Velocità","Acceleratore" )))
+
+
+pp <- ggplot(tel_g, aes(x = rel_distance, y = valore, color = pilota)) +
+  geom_hline(yintercept = 0, linetype = "dashed", color = "gray70", linewidth = 0.4) +
+  geom_line(size = 0.6, alpha = 0.8) +
+  facet_grid(variabile ~ ., scales = "free_y", switch = "y") + 
+  scale_color_manual(values = colori_team) +
+  theme_minimal(base_size = 12) +
+  labs(
+    x = "Distanza relativa",
+    y = NULL,
+    color = "Pilota"
+  ) +
+  theme(
+    strip.placement = "outside", 
+    strip.text.y = element_text(face = "bold", size = 7),
+    strip.background = element_rect(fill = "gray96", color = NA),
+    legend.position = "top",
+    panel.spacing = unit(1.2, "lines"),
+    panel.grid.minor = element_blank(),
+    plot.title = element_text(face = "bold", size = 16, margin = margin(b = 5)),
+    plot.subtitle = element_text(size = 11, color = "gray30", margin = margin(b = 15))
+  )
+
+print(pp)
+
+
+#ggsave("report/el_ex1.pdf", pp, width = 7, height = 5, device = cairo_pdf)
+
+
+
+
+
 
 
 
@@ -152,7 +247,7 @@ process <- function(data_path) {
    tel.guida_summary.idx$GP <- tel.guida_summary$GP                                          
    
    tel.guida_summary.idx$pilota <- tel.guida_summary$pilota 
-   tel.guida_summary.idx <- tel.guida_summary.idx %>% arrange(pilota,GP) 
+   tel.guida_summary.idx <- tel.guida_summary.idx %>% arrange(GP,pilota) 
    tel2 <- tel2 %>% arrange(pilota,GP) 
    tel.guida_summary.idx$laptime <- tel2$laptime
    cat("Completato \n")
@@ -188,6 +283,48 @@ tel25 %>% group_by(GP) %>% select(pilota,GP,everything()) %>% filter(laptime > 1
 #Nel GP di Las Vegas, durante la Q1 la pista era inizialmente bagnata, ma si è progressivamente asciugata nel corso delle qualifiche. Poiché il dataset considera per ogni pilota solo il miglior tempo registrato, i piloti eliminati in Q1 possono avere tempi che non rispecchiano la condizione tipica della sessione (cioè tempi influenzati dalla pista bagnata) e, di conseguenza, non vengono esclusi dal dataset. In contrasto, nel GP di Olanda, il pilota Strole ha avuto un incidente in Q1 e il suo miglior tempo disponibile risulta quindi quello di un giro di riscaldamento, che non rappresenta le prestazioni reali in qualifica.
 tel25 <- tel25 %>% filter(!(pilota=="STR" & GP=="Dutch Grand Prix"))%>% select(-laptime)
 
+tel.ex <- tel5 %>% filter(GP == "Australian Grand Prix" & (pilota == "BEA" |pilota == "HAM"|pilota== "TSU"))
+colori_team <- c("BEA" = "#0600EF", "HAM" = "#EF1A2D", "TSU" = "#FDD900")
+
+
+
+tel_g <- tel.ex %>%
+  select(rel_distance, pilota, acc_y, acc_x) %>%
+  pivot_longer(cols = c(acc_y, acc_x), 
+               names_to = "variabile", 
+               values_to = "valore") %>%
+  mutate(variabile = factor(variabile, 
+                            levels = c("acc_y", "acc_x"),
+                            labels = c(" Accelerazione laterale (g)", " Accelerazione longitudinale (g)")))
+
+
+pp <- ggplot(tel_g
+             , aes(x = rel_distance, y = valore, color = pilota)) +
+  geom_hline(yintercept = 0, linetype = "dashed", color = "gray70", linewidth = 0.4) +
+  geom_line(size = 0.6, alpha = 0.8) +
+  facet_grid(variabile ~ ., scales = "free_y", switch = "y") + 
+  scale_color_manual(values = colori_team) +
+  theme_minimal(base_size = 12) +
+  labs(
+    x = "Distanza relativa",
+    y = NULL,
+    color = "Pilota"
+  ) +
+  theme(
+    strip.placement = "outside", 
+    strip.text.y = element_text(face = "bold", size = 7),
+    strip.background = element_rect(fill = "gray96", color = NA),
+    legend.position = "top",
+    panel.spacing = unit(1.2, "lines"),
+    panel.grid.minor = element_blank(),
+    plot.title = element_text(face = "bold", size = 16, margin = margin(b = 5)),
+    plot.subtitle = element_text(size = 11, color = "gray30", margin = margin(b = 15))
+  )
+
+print(pp)
+
+
+#ggsave("report/tel_ex2.pdf", pp, width = 7, height = 5, device = cairo_pdf)
 
 ### PCA
 
@@ -233,6 +370,7 @@ p <- ggplot(cumulative, aes(x=Componenti,y=value))+
   theme_minimal()
 print(p)
 #ggsave("report/tel_pca.pdf", p, width = 7, height = 5, device = cairo_pdf)
+
 summary(PCA)
 
 
@@ -262,6 +400,8 @@ print(p)
 
 
 tel.comp <- as_tibble(PCA$scores[,1:4])
+
+set.seed(126)
 
 clust <- Mclust(tel.comp,G=1:15)
 summary(clust)
@@ -300,7 +440,7 @@ print(p)
 #ggsave("report/C1_C2.pdf", p, width = 7, height = 5, device = cairo_pdf)
 
 
-library(plotly)
+
 
 
 
@@ -342,23 +482,6 @@ round(mean(clust$uncertainty),4)
 
 unique_GP <- unique(tel.comp.labels$GP)
 
-x_lim <- range(tel.comp.labels$Comp.2, na.rm = TRUE)
-y_lim <- range(tel.comp.labels$Comp.1, na.rm = TRUE)
-
-
-
-for (gp in unique_GP) {
-  
-   p <- ggplot(tel.comp.labels %>% filter(GP == gp), aes(x = Comp.2, y = Comp.1)) +
-  geom_text(aes(label = pilota,colour  = as.factor(class)), vjust = -1, size = 3, check_overlap = F) + 
-  scale_color_manual(values=colori) +
-  coord_cartesian(xlim = x_lim, ylim = y_lim)+
-  theme_minimal() +
-  labs(title = paste0("Plot Comp.2 vs Comp.1 ", gp),
-       colour = "Classe") 
-   print(p)
-}
-
 
 p <- ggplot(tel.comp.labels, aes(x = Comp.2, y = Comp.1)) +
     geom_point(aes(colour = as.factor(class)), alpha = 0) + 
@@ -366,7 +489,7 @@ p <- ggplot(tel.comp.labels, aes(x = Comp.2, y = Comp.1)) +
             vjust = -1, size = 3, check_overlap = T,show.legend = F) + 
   scale_color_manual(values = colori) +
   coord_cartesian(xlim = c(-5,5), ylim = c(-7,7)) +
-  labs(title = paste0("Plot Comp.2 vs Comp.1 ", gp),
+  labs(title = paste("Plot Comp.2 vs Comp.1 "),
        colour = "Classe") +
   guides(colour = guide_legend(override.aes = list(alpha = 1, size = 5, shape = 19))) +
   theme_minimal()
@@ -383,14 +506,6 @@ summary <- tel.comp.labels %>%
            list(
              mean = ~mean(.x, na.rm=T)
            )), .groups = "drop"
-  )
-summary2 <- tel.comp.labels %>%
-  group_by(GP,class) %>%
-  summarize(
-    across(where(is.numeric),
-           list(
-             mean = ~mean(.x, na.rm=T)
-           )),n() ,.groups = "drop"
   )
 
 table(tel.comp.labels$GP,tel.comp.labels$class)
@@ -462,40 +577,28 @@ for (i in sample(1:100000, 2000, replace = FALSE)) {
   }
   cat(paste("Progress",f/20,"% \n"))
 }
+
 modell <- bind_rows(results)
 
 
-modell$Model <- as.factor(modell$Model)
+modell$model <- as.factor(modell$model)
 
-sort(table(modell$Model,modell$n),decreasing = T)
+sort(table(modell$model),decreasing = T)
 
-res <-  mixmodLearn(tel.data[-test.set.labels,], tel.class[-test.set.labels], 
-                    models=mixmodGaussianModel(listModels="Gaussian_pk_Lk_B" ,equal.proportions=T),criterion= "CV")
-
-
-summary(res)
+prop.table(table(modell$model, modell$ntest), 2)
 
 
-
-pred <-  mixmodPredict(test_set %>% select(Comp.1,Comp.2,Comp.3,Comp.4), classificationRule=res@bestResult)
-
-test_set$class <- pred@partition
-
-mean(test_set$label!= test_set$class)
-
-pp <- ggplot(test_set, aes(x = Comp.2, y = Comp.1)) +
-  geom_point(aes(colour = as.factor(class)), alpha = 0) + 
-  geom_text(aes(label = GP, colour = as.factor(class)), 
-            vjust = -1, size = 3, check_overlap = T,show.legend = F) + 
-  scale_color_manual(values = colori) +
-  coord_cartesian(xlim = c(-5,5), ylim = c(-7,7)) +
-  labs(title = paste0("Plot Comp.2 vs Comp.1 ", gp),
-       colour = "Classe") +
-  guides(colour = guide_legend(override.aes = list(alpha = 1, size = 5, shape = 19))) +
-  theme_minimal()
+res <- mixmodLearn(
+  tel.data,
+  tel.class,
+  models = mixmodGaussianModel(
+    listModels = "Gaussian_pk_L_B",
+    equal.proportions = FALSE
+  ),
+  criterion = "CV"
+)
 
 
-print(p)
-print(pp)
+res
 
-str(tel.data)
+

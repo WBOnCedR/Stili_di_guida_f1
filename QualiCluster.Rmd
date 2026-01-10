@@ -1,7 +1,7 @@
 ---
 title: "QualiCluster"
 author: "Pietro Riva, Federico Maccianti, Nicola Rapacioli"
-date: "2025-12-30"
+date: "2026-01-10"
 output: html_document
 ---
 
@@ -541,7 +541,7 @@ loadings_g <- loadings %>%
                names_to = "component", 
                values_to = "peso")
 
-p <- ggplot(loadings_long, aes(x = component, y = Variable, fill = peso)) +
+p <- ggplot(loadings_g, aes(x = component, y = Variable, fill = peso)) +
   geom_tile(color = "white") +
   geom_text(aes(label = round(peso, 2)), size = 2.5, color = "black")+
   scale_fill_gradient2(low = "blue", mid = "white", high = "#E10600", name = "Pesi") +
@@ -645,8 +645,6 @@ KL <- round(abs(clust$icl - clust$bic),3); KL
 cat("Incertezza attesa \n")
 round(mean(clust$uncertainty),4)
 ```
-
-Il modello trovato è un VEE 9 con BIC pari a -7949.208 il con KL pari a 50
 
 ------------------------------------------------------------------------
 
