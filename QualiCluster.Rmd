@@ -560,6 +560,7 @@ ggsave("report/Loadings.pdf", p, width = 7, height = 5, device = cairo_pdf)
 Si filtra per le prime cinque componenti ottenute.
 ```{r}
 tel.comp <- as_tibble(PCA$scores[,1:4])
+
 ```
 
 
