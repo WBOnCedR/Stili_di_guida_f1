@@ -570,7 +570,7 @@ summary <- tel.comp.fit %>%
 
 
 summary2 <- tel.comp.fit %>%
-  group_by(class,pilota) %>%
+  group_by(class,pilota,GP) %>%
   summarize(cont=n(), .groups = "drop"
   )
 
