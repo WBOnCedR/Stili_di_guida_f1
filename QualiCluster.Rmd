@@ -366,8 +366,6 @@ tel2 <- tel %>%
               summarize(laptime=max(lap_time),strategy=(max(strategy)),gomma=(max(gomma)),.groups = "drop") 
 
 tel.guida_summary$laptime <- as.numeric(tel2$laptime)
-tel.guida_summary$strategy <- tel2$strategy
-tel.guida_summary$gomma <- tel2$gomma
 
 ```
 
@@ -487,7 +485,7 @@ p <- ggplot(cumulative, aes(x=Componenti,y=value))+
        y="Proporzione")+
   theme_minimal()
 print(p)
-ggsave("report/tel_pca.pdf", p, width = 7, height = 5, device = cairo_pdf)
+#ggsave("report/tel_pca.pdf", p, width = 7, height = 5, device = cairo_pdf)
 
 
 
@@ -538,7 +536,7 @@ loadings <- as.data.frame(PCA$loadings[, 1:4])
 
 
 loadings$Variable <- rownames(loadings)
-loadings_long <- loadings %>%
+loadings_g <- loadings %>%
   pivot_longer(cols = starts_with("Comp"), 
                names_to = "component", 
                values_to = "peso")
@@ -553,7 +551,7 @@ p <- ggplot(loadings_long, aes(x = component, y = Variable, fill = peso)) +
 
 print(p)
 
-ggsave("report/Loadings.pdf", p, width = 7, height = 5, device = cairo_pdf)
+#ggsave("report/Loadings.pdf", p, width = 7, height = 5, device = cairo_pdf)
 ```
 ## Clustering
 
@@ -587,7 +585,7 @@ tel.comp.labels$GP <- tel.pca$GP
 
 tel.comp.labels$laptime <- tel2$laptime
 
-tel.comp.labels <- tel.comp.labels %>% arrange(laptime,GP,pilota,)
+tel.comp.labels <- tel.comp.labels %>% arrange(laptime,GP,pilota)
 
 colori <- c("red", "blue", "green", "orange", "purple", "cyan", "brown", "pink", "black","grey","yellow","darkblue","darkred")
 

@@ -325,11 +325,13 @@ citecolor=black       % Colore citazioni bibliografiche
 	\begin{lstlisting}
 		library(jsonlite)
 		library(tidyverse)
-		rm(list=ls())
-		#Cartella origine
-		cartella <- "C:/Users/feder/Documents/datasets/Computazionale/2025"
+		library(dotenv)
 		
-		#filtro sui file con i giri e poi qualifiche
+		rm(list=ls())
+		
+		json_path <- Sys.getenv("JSON_PATH")
+		cartella <- json_path
+		
 		file_giri <- list.files(path = cartella, 
 		pattern = "laptimes\\.json$", 
 		full.names = TRUE, 
@@ -338,14 +340,13 @@ citecolor=black       % Colore citazioni bibliografiche
 		files_qualifiche_lap <- file_giri[grepl("Qualifying", file_giri) & !grepl("Sprint",file_giri)]
 		lista_dati <- list()
 		
-		#Ciclo di estrazione 
-		
 		for(i in 1:length(files_qualifiche_lap)) {
 			
 			cartella_giro <- files_qualifiche_lap[i]
 			
 			laptimes_data <- fromJSON(cartella_giro)
 			
+			#Selezione giro migliore
 			giro <- as.numeric(laptimes_data$lap[which.min(laptimes_data$time)])
 			
 			cartella_pilota <- dirname(cartella_giro)
@@ -368,15 +369,17 @@ citecolor=black       % Colore citazioni bibliografiche
 			json_data$lap_time <- rep(laptimes_data$time[giro],nrow(json_data))
 			lista_dati[[i]] <- json_data
 		}
-		#merge dei dati
+		
 		dataset_completo <- bind_rows(lista_dati)
-		#pulizia
+		
 		dataset_completo <- dataset_completo %>%
 		select(-dataKey)
+		
 		setwd("C:/Users/feder/Documents/datasets/Computazionale/F1/data")
 		saveRDS(dataset_completo, file = "dataset_completo_best_tel.rds")
+	
 	\end{lstlisting}
-	\clearpage
+
 	\section{Codice R Commentato Esplorazione iniziale}
 	\label{codice preliminare}
 	\begin{lstlisting}
@@ -388,13 +391,27 @@ citecolor=black       % Colore citazioni bibliografiche
 		#Trattamento degli NA e None
 	
 		tel[which(is.na(tel$rel_distance)),]
-		tel <- tel %>% filter(pilota != "RUS" & GP != "Miami Grand Prix")
+		tel <- tel %>% filter(!(pilota == "RUS" & GP == "Miami Grand Prix"))
 		
+		
+		
+		#Rimozione NA di lap_time
+				
 		tel %>% 
-		group_by(GP,pilota) %>% 
-		filter(lap_time == "None") %>% summarize(n(),lap_time=max(lap_time))
+		group_by(GP, pilota) %>% 
+		filter(is.na(lap_time)) %>% 
+		summarize(n = n(), .groups = "drop")
 		
-		tel <- tel %>% filter(lap_time !="None")
+		tel <- tel %>% filter(!is.na(lap_time))
+		
+		#Applicazione regola 107 %
+		
+		tel %>% group_by(GP) %>% filter(lap_time > 1.07*min(lap_time))
+		
+		tel <- tel %>% filter(!(pilota=="STR" & GP=="Dutch Grand Prix"))
+		
+		
+	
 	\end{lstlisting}
 	\section{Codice R Commentato Trattemento variabili}
 	\label{trattamento variabili}
@@ -410,15 +427,21 @@ citecolor=black       % Colore citazioni bibliografiche
 	\section{Codice R Commentato Creazione variabili}
 	\label{creazione variabili}
 	\begin{lstlisting}
-		#Creazione delle variabili lag
+		#Variabili lag creazione 
+		
 		tel.guida <- tel.guida %>%
-		select(GP,pilota,throttle,acc_x,acc_y,dec_x,rel_distance) %>% 
+		
+		select(GP,pilota,throttle,acc_x,acc_y,dec_x,brake,speed,rel_distance) %>% 
+		
 		arrange(GP,pilota,rel_distance) %>%
+		
 		group_by(GP,pilota) %>%
+		
 		mutate(
 		across(
-		c(throttle, acc_x, acc_y,dec_x),
+		c(throttle, acc_x, acc_y,dec_x,speed),
 		list(
+		
 		lag1 = ~round(
 		ifelse(
 		lag(.x, 1) == 0 & .x == 0,
@@ -428,19 +451,32 @@ citecolor=black       % Colore citazioni bibliografiche
 		(.x-0.01)/0.01,
 		(.x - lag(.x, 1)) / lag(.x, 1))
 		),
-		4),
-		...
+		4
+		),
+		
+		lag5 = ~round(
+		ifelse(
+		lag(.x, 5) == 0 & .x == 0,
+		0,
+		ifelse(
+		lag(.x, 5) == 0,
+		(.x-0.01)/0.01,
+		(.x - lag(.x, 5)) / lag(.x, 5))
+		),
+		4
+		)
+		
 		),
 		.names = "{.col}_{.fn}"
 		)
-		)  %>% 
+		)  %>%  
 		ungroup() %>% 
 		select(-rel_distance)
 	\end{lstlisting}
-	\clearpage
 	\section{Codice R Commentato Statistiche Riassuntive}
 	\label{codice statistiche riassuntive}
 	\begin{lstlisting}
+		#Statistiche descrittive 
 		tel.guida_summary <- tel.guida %>% 
 		group_by(GP, pilota) %>%
 		{
@@ -448,14 +484,14 @@ citecolor=black       % Colore citazioni bibliografiche
 			
 			summarise(.,
 			across(
-			c(throttle, acc_x, acc_y,dec_x), 
+			c(throttle, acc_x, acc_y,dec_x,brake,speed), 
 			list(
 			mean = ~round(mean(.x, na.rm = TRUE), 4),
 			sd = ~round(sd(.x, na.rm = TRUE), 4)
 			),
 			.names = "{.col}_{.fn}"
 			),
-			
+			#Divisione lag positivi e negativi
 			across(
 			all_of(lag_cols),
 			~round(mean(.x[.x > 0], na.rm = TRUE), 4),
@@ -483,44 +519,181 @@ citecolor=black       % Colore citazioni bibliografiche
 			.groups = "drop"
 			)
 		}
-		
 		tel2 <- tel %>% 
-		group_by(GP,pilota) %>% 
-		summarize(laptime=max(lap_time),strategy=(max(strategy)),gomma=(max(gomma)),.groups = "drop") 
-		
+				group_by(GP,pilota) %>% 
+						summarize(laptime=max(lap_time)),.groups = "drop") 
 		tel.guida_summary$laptime <- as.numeric(tel2$laptime)
-		tel.guida_summary$strategy <- tel2$strategy
-		tel.guida_summary$gomma <- tel2$gomma
 	\end{lstlisting}
-	\clearpage
+	
+	\section{Codice R Commentato Creazione Coefficienti di Variazione}
+	\label{CV}
+	\begin{lstlisting}
+		#Divisione variabili in medie e varianze 
+		
+		sd_cols <-tel.guida_summary %>% names(.) %>% .[str_detect(., "sd")]
+		mean_cols <-tel.guida_summary %>%  names(.) %>% .[str_detect(., "mean")]
+		
+		tel.guida_summary.idx <- tel.guida_summary[sd_cols] / tel.guida_summary[mean_cols]
+		
+		names(tel.guida_summary.idx) <- str_replace(names(tel.guida_summary.idx), "sd", "CV")
+		
+		tel.guida_summary.idx$GP <- tel.guida_summary$GP                                          
+		
+		tel.guida_summary.idx$pilota <- tel.guida_summary$pilota   
+	\end{lstlisting}
 	\section{Codice R Commentato Analisi delle correlazioni}
 	\label{correlazioni}
 	\begin{lstlisting}
-	corr <- round(cor(tel.guida_summary %>% select(where(is.numeric))),4)
+	
+	tel.guida_summary.idx <- tel.guida_summary.idx %>% 
+	
+				mutate(across(where(is.numeric),~rescale(.,to=c(0,1))))
+		
+		
+	corr <- round(cor(tel.guida_summary.idx %>% select(where(is.numeric))),4)
 	
 	#Ricerca di variabili dipendenti
 	
 	variabili_dipendenti <- findCorrelation(corr, cutoff = 0.9, names = TRUE, exact = T,verbose = T)
 	
-	print(variabili_dipendenti)
-	
-	tel.pca <- tel.guida_summary %>% select(-all_of(variabili_dipendenti))
+	tel.pca <- tel.guida_summary %>% 
+				select(-all_of(variabili_dipendenti))
 	
 	\end{lstlisting}
 	\section{Codice R Commentato Analisi delle componenti principali}
 	\label{PCA}
 	\begin{lstlisting}
 	PCA <- princomp(tel.pca %>%
-	select(where(is.numeric)))
-	
-	fviz_screeplot(PCA,choice= "variance")
-	
+	select(where(is.numeric)),cor=T)
+		
+		
 	summary(PCA)
+	
 	print(PCA$loadings,cutoff = 0)
 	
-	for (i in 1:6){
-		p <- fviz_contrib(PCA, choice = "var", axes = i, top = 15)
-		print(p)
-	}
+	tel.comp <- as_tibble(PCA$scores[,1:4])
+	
+	\end{lstlisting}
+	\section{Codice R Commentato Model Base Clustering}
+	\begin{lstlisting}
+		#Clustering
+		
+		clust <- Mclust(tel.comp,G=1:15)
+		
+		summary(clust)
+		
+		plot(clust, what="classification")
+		
+		plot(clust, what="uncertainty")
+		
+		plot(clust, what = "BIC", legendArgs = list(x = "bottomleft"))
+		
+		clust$BIC
+		
+		#Metriche di valutazione 
+		KL <- round(abs(clust$icl - clust$bic),3); KL
+				
+		round(mean(clust$uncertainty),4)
+		
+		tel.comp.labels <- tel.comp
+		
+		tel.comp.labels$class <- as.factor(clust$classification)
+		
+		tel.comp.labels$pilota <- tel.pca$pilota
+		
+		tel.comp.labels$GP <- tel.pca$GP
+		
+		tel.comp.labels$laptime <- tel2$laptime
+		
+		tel.comp.labels <- tel.comp.labels %>% 
+									arrange(laptime,GP,pilota)
+		
+		
+				
+		
+		
+		
+		#Interpretazione delle classi
+		
+		summary <- tel.comp.labels %>%
+						group_by(class) %>%
+							summarize(
+							across(where(is.numeric),
+							list(
+							mean = ~mean(.x, na.rm=T)
+							)), .groups = "drop")
+		
+		table(tel.comp.labels$GP,tel.comp.labels$class)
+		
+	\end{lstlisting}
+	\section{Codice R Commentato Classificazione}
+	\label{classificazione}
+	\begin{lstlisting}
+		#Classificazione
+		
+		
+		center_2025 <- PCA$center
+		sd_2025 <- PCA$scale
+		
+		tel.pca24 <- scale(tel.pca24 %>% select(where(is.numeric)),center = center_2025,scale = sd_2025)
+		
+		test_set <- as_tibble(tel.pca24 %*% PCA$loadings)[,1:4]
+		
+		
+		test_set$GP <- tel24$GP 
+		test_set$pilota <- tel24$pilota
+		test_set$label <- ifelse(test_set$GP == "Monaco Grand Prix", 13,
+		ifelse(test_set$GP == "Italian Grand Prix", 8, 2))
+		test_set <- test_set %>% 
+		filter(GP == "Monaco Grand Prix"| GP== "Italian Grand Prix"| GP == "Azerbaijan Grand Prix")
+		
+		listmod=c("Gaussian_pk_L_I","Gaussian_pk_Lk_I","Gaussian_pk_L_B","Gaussian_pk_Lk_B","Gaussian_pk_L_Bk",
+		"Gaussian_pk_Lk_Bk","Gaussian_pk_L_C","Gaussian_pk_Lk_C","Gaussian_pk_L_D_Ak_D","Gaussian_pk_Lk_D_Ak_D",
+		"Gaussian_pk_L_Dk_A_Dk","Gaussian_pk_Lk_Dk_A_Dk","Gaussian_pk_L_Ck","Gaussian_pk_Lk_Ck")
+		tel.data <- tel.comp
+		tel.comp.labels$class <- as.factor(tel.comp.labels$class)
+		tel.class <- unlist( tel.comp.labels[,5] )
+		str(tel.class)
+		str(tel.data)
+		
+		
+		model <- list()
+		set.seed(123)
+		f=0
+		n <- nrow(tel.data)
+		for (i in sample(1:100000,2000,replace = F)){
+			f <- f+1
+			set.seed(i)
+			for (c in c(10,15,30,40,50)){
+				test.set.labels<-sample(1:n,c)
+				res <-  mixmodLearn(tel.data[-test.set.labels,], tel.class[-test.set.labels], 
+				models=mixmodGaussianModel(listModels=listmod,equal.proportions=T),criterion= "CV")
+				model[[as.character(i)]]$Model <- res@bestResult@model
+				model[[as.character(i)]]$CV <-    res@bestResult@criterionValue
+				model[[as.character(i)]]$n <-    c
+			}
+			cat(paste("Progress ",f/200,"% \n"))
+		}
+		
+		
+		modell <- bind_rows(model)
+		
+		modell$Model <- as.factor(modell$Model)
+		
+		sort(table(modell$Model,modell$n),decreasing = T)
+		
+		res <-  mixmodLearn(tel.data[-test.set.labels,], tel.class[-test.set.labels], 
+		models=mixmodGaussianModel(listModels="Gaussian_pk_Lk_B" ,equal.proportions=T),criterion= "CV")
+		
+		
+		summary(res)
+		
+		
+		
+		pred <-  mixmodPredict(test_set %>% select(Comp.1,Comp.2,Comp.3,Comp.4), classificationRule=res@bestResult)
+		
+		test_set$class <- pred@partition
+		
+		mean(test_set$label!= test_set$class)
 	\end{lstlisting}
 \end{document}

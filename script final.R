@@ -417,10 +417,15 @@ test_set <- test_set %>%
 listmod=c("Gaussian_pk_L_I","Gaussian_pk_Lk_I","Gaussian_pk_L_B","Gaussian_pk_Lk_B","Gaussian_pk_L_Bk",
           "Gaussian_pk_Lk_Bk","Gaussian_pk_L_C","Gaussian_pk_Lk_C","Gaussian_pk_L_D_Ak_D","Gaussian_pk_Lk_D_Ak_D",
           "Gaussian_pk_L_Dk_A_Dk","Gaussian_pk_Lk_Dk_A_Dk","Gaussian_pk_L_Ck","Gaussian_pk_Lk_Ck")
+
 tel.data <- tel.comp
+
 tel.comp.labels$class <- as.factor(tel.comp.labels$class)
+
 tel.class <- unlist( tel.comp.labels[,5] )
+
 str(tel.class)
+
 str(tel.data)
 
 
@@ -428,22 +433,37 @@ model <- list()
 set.seed(123)
 f=0
 n <- nrow(tel.data)
-for (i in sample(1:100000,2000,replace = F)){
+results <- vector("list", length = 2000 * 5)
+k <- 0
+
+for (i in sample(1:100000, 2000, replace = FALSE)) {
+  set.seed(i)
   f <- f+1
-set.seed(i)
-  for (c in c(10,15,30,40,50)){
-  test.set.labels<-sample(1:n,c)
-  res <-  mixmodLearn(tel.data[-test.set.labels,], tel.class[-test.set.labels], 
-                    models=mixmodGaussianModel(listModels=listmod,equal.proportions=T),criterion= "CV")
-  model[[as.character(i)]]$Model <- res@bestResult@model
-  model[[as.character(i)]]$CV <-    res@bestResult@criterionValue
-  model[[as.character(i)]]$n <-    c
+  for (c in c(10, 15, 30, 40, 50)) {
+    k <- k + 1
+    test.set.labels <- sample(1:n, c)
+    
+    res <- mixmodLearn(
+      tel.data[-test.set.labels, ],
+      tel.class[-test.set.labels],
+      models = mixmodGaussianModel(
+        listModels = listmod,
+        equal.proportions = TRUE
+      ),
+      criterion = "CV"
+    )
+    
+    results[[k]] <- tibble(
+      seed  = i,
+      ntest = c,
+      model = res@bestResult@model,
+      CV    = res@bestResult@criterionValue
+    )
   }
-  cat(paste("Progress ",f/200,"% \n"))
-  }
+  cat(paste("Progress",f/20,"% \n"))
+}
+modell <- bind_rows(results)
 
-
-modell <- bind_rows(model)
 
 modell$Model <- as.factor(modell$Model)
 
