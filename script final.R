@@ -200,7 +200,7 @@ process <- function(data_path) {
    return(tel.guida_summary.idx)
 }
 
-tel.summary <- process(data_path25)
+tel.summary <- process(data_path)
 
 #Eliminazione dei casi limite
 
@@ -452,7 +452,6 @@ points(x = which.min(ICL(final.vv)),min(ICL(final.vv)),col='red',pch=20)
 fit <- getModel(final.vv)
 
 summary(fit)
-getModel(fit)
 KLdiv(fit)
 fit@cluster
 labs<-fit@cluster
