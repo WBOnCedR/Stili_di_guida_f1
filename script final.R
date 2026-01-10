@@ -15,69 +15,17 @@ library(caret)
 library(factoextra)
 library(GGally)
 library(Rmixmod)
-library(dotenv)
 library(flexmix)
 library(plotly)
-options(warn = -1) 
-
-load_dot_env()
-setwd(Sys.getenv("WORK_DIR"))
-
-data_path24 <- "C:/Users/feder/Documents/datasets/Computazionale/F1/data/dataset_completo_best_tel2024.rds"
 
 data_path25 <-  "C:/Users/feder/Documents/datasets/Computazionale/F1/data/dataset_completo_best_tel2025.rds"
 
 # Esplorazione del dataset
 
-tel4 <- readRDS(data_path24)
-tel5 <- readRDS(data_path25)
+tel <- readRDS(data_path25)
 
 
-tel.ex <- tel4 %>% filter(GP == "United States Grand Prix" & (pilota == "VER" |pilota == "LEC"|pilota== "COL"|pilota=="BEA"))
-colori_team <- c("VER" = "#0600EF", "LEC" = "#EF1A2D", "COL" = "#FF8700","BEA"="#000000")
-
-
-
-tel_g <- tel.ex %>%
-  select(rel_distance, pilota, acc_y, acc_x,speed,brake,throttle) %>%
-  pivot_longer(cols = c(acc_y, acc_x,speed,throttle), 
-               names_to = "variabile", 
-               values_to = "valore") %>%
-  mutate(variabile = factor(variabile, 
-                            levels = c("acc_y", "acc_x","speed","throttle"),
-                            labels = c(" Acc. lat. ", " Acc. long. ", "Velocità","Acceleratore" )))
-
-
-pp <- ggplot(tel_g, aes(x = rel_distance, y = valore, color = pilota)) +
-  geom_hline(yintercept = 0, linetype = "dashed", color = "gray70", linewidth = 0.4) +
-  geom_line(size = 0.6, alpha = 0.8) +
-  facet_grid(variabile ~ ., scales = "free_y", switch = "y") + 
-  scale_color_manual(values = colori_team) +
-  theme_minimal(base_size = 12) +
-  labs(
-    x = "Distanza relativa",
-    y = NULL,
-    color = "Pilota"
-  ) +
-  theme(
-    strip.placement = "outside", 
-    strip.text.y = element_text(face = "bold", size = 7),
-    strip.background = element_rect(fill = "gray96", color = NA),
-    legend.position = "top",
-    panel.spacing = unit(1.2, "lines"),
-    panel.grid.minor = element_blank(),
-    plot.title = element_text(face = "bold", size = 16, margin = margin(b = 5)),
-    plot.subtitle = element_text(size = 11, color = "gray30", margin = margin(b = 15))
-  )
-
-print(pp)
-
-#ggsave("report/el_ex1.pdf", pp, width = 7, height = 5, device = cairo_pdf)
-
-
-
-
-tel.ex <- tel5 %>% filter(GP == "United States Grand Prix" & (pilota == "VER" |pilota == "LEC"|pilota== "COL"|pilota=="BEA"))
+tel.ex <- tel %>% filter(GP == "United States Grand Prix" & (pilota == "VER" |pilota == "LEC"|pilota== "COL"|pilota=="BEA"))
 colori_team <- c("VER" = "#0600EF", "LEC" = "#EF1A2D", "COL" = "#FF8700","BEA"="#000000")
 
 
@@ -118,10 +66,6 @@ print(pp)
 
 
 #ggsave("report/el_ex1.pdf", pp, width = 7, height = 5, device = cairo_pdf)
-
-
-
-
 
 
 
@@ -254,36 +198,26 @@ process <- function(data_path) {
    return(tel.guida_summary.idx)
 }
 
-tel24 <- process(data_path24)
-tel25 <- process(data_path25)
+tel.summary <- process(data_path25)
 
 #Eliminazione dei casi limite
-tel24 %>% 
-  group_by(pilota) %>% 
-  select(pilota,GP,everything())%>% 
-  filter(is.na(throttle_CV))
-
-tel24 %>% group_by(GP) %>% select(pilota,GP,laptime) %>% filter(laptime > 1.07*min(laptime))
-#Nei GP di gran bretagna la pista si è andata ad asciugare nel tempo e piloti che non hanno avuto la possibilità di fare un giro con la pista asciutta hanno fatto ovviamente un tempo peggiore per cui non si eliminano i record.
-#Per quanto riguarda il Brasile invece le condizioni di visibilità erano molto poco favorevoli quindi si ha una variabilità dei tempi molto alta
-#invece Zhou in arabia saudita si è incidentato quindi non si considera nell'analisi 
-tel24 <- tel24 %>% filter(!(pilota=="ZHO" & GP=="Saudi Arabian Grand Prix")) %>% select(-laptime)
 
 
-tel25 %>% 
+
+tel.summary %>% 
   group_by(pilota) %>% 
     select(pilota,GP,everything())%>% 
         filter(is.na(throttle_CV))
 
-tel25 <- tel25 %>% 
+tel.summary <- tel.summary %>% 
             filter(!(pilota=="RUS" & GP=="Miami Grand Prix"))
 
-tel25 %>% group_by(GP) %>% select(pilota,GP,everything()) %>% filter(laptime > 1.07*min(laptime)) %>% select(-laptime)
+tel.summary %>% group_by(GP) %>% select(pilota,GP,everything()) %>% filter(laptime > 1.07*min(laptime)) %>% select(-laptime)
 
 #Nel GP di Las Vegas, durante la Q1 la pista era inizialmente bagnata, ma si è progressivamente asciugata nel corso delle qualifiche. Poiché il dataset considera per ogni pilota solo il miglior tempo registrato, i piloti eliminati in Q1 possono avere tempi che non rispecchiano la condizione tipica della sessione (cioè tempi influenzati dalla pista bagnata) e, di conseguenza, non vengono esclusi dal dataset. In contrasto, nel GP di Olanda, il pilota Strole ha avuto un incidente in Q1 e il suo miglior tempo disponibile risulta quindi quello di un giro di riscaldamento, che non rappresenta le prestazioni reali in qualifica.
-tel25 <- tel25 %>% filter(!(pilota=="STR" & GP=="Dutch Grand Prix"))%>% select(-laptime)
+tel.summary <- tel.summary %>% filter(!(pilota=="STR" & GP=="Dutch Grand Prix"))%>% select(-laptime)
 
-tel.ex <- tel5 %>% filter(GP == "Australian Grand Prix" & (pilota == "BEA" |pilota == "HAM"|pilota== "TSU"))
+tel.ex <- tel %>% filter(GP == "Australian Grand Prix" & (pilota == "BEA" |pilota == "HAM"|pilota== "TSU"))
 colori_team <- c("BEA" = "#0600EF", "HAM" = "#EF1A2D", "TSU" = "#FDD900")
 
 
@@ -328,32 +262,20 @@ print(pp)
 
 ### PCA
 
-tel24 <- tel24 %>% mutate(across(where(is.numeric),~rescale(.,to=c(0,1))))
+##!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! LA TENIAMO O NO ORA NON HA PIU SENSO!!!!!!!!!!!!!!!!!!!!!!!!!!
+#tel.summary <- tel.summary %>% mutate(across(where(is.numeric),~rescale(.,to=c(0,1))))
 
-corr24 <- round(cor(tel24 %>% select(where(is.numeric))),4)
+corr <- round(cor(tel.summary %>% select(where(is.numeric))),4)
 
-variabili_dipendenti24 <- findCorrelation(corr24, cutoff = 0.9, names = TRUE, exact = T,verbose = T)
+variabili_dipendenti <- findCorrelation(corr, cutoff = 0.9, names = TRUE, exact = T,verbose = T)
 
-print(variabili_dipendenti24)
-
-
-tel.pca24 <- tel24 %>% select(-all_of(variabili_dipendenti24))
+print(variabili_dipendenti)
 
 
-
-tel25 <- tel25 %>% mutate(across(where(is.numeric),~rescale(.,to=c(0,1))))
-
-corr25 <- round(cor(tel25 %>% select(where(is.numeric))),4)
-
-variabili_dipendenti25 <- findCorrelation(corr25, cutoff = 0.9, names = TRUE, exact = T,verbose = T)
-
-print(variabili_dipendenti25)
+tel.pca <- tel.summary %>% select(-all_of(variabili_dipendenti))
 
 
-tel.pca25 <- tel25 %>% select(-all_of(variabili_dipendenti25))
-
-
-PCA <- princomp(tel.pca25 %>%
+PCA <- princomp(tel.pca %>%
                   select(where(is.numeric)),cor=T)
 
 
@@ -417,8 +339,8 @@ clust$BIC
 
 tel.comp.labels <- tel.comp
 tel.comp.labels$class <- as.factor(clust$classification)
-tel.comp.labels$pilota <- tel.pca25$pilota
-tel.comp.labels$GP <- tel.pca25$GP
+tel.comp.labels$pilota <- tel.pca$pilota
+tel.comp.labels$GP <- tel.pca$GP
 
 
 tel.comp.labels <- tel.comp.labels %>% arrange(GP,pilota,)
@@ -511,94 +433,142 @@ summary <- tel.comp.labels %>%
 table(tel.comp.labels$GP,tel.comp.labels$class)
 
 
-#Classificazione
+
+#Regressione
+set.seed(12320)
+final.vv <- stepFlexmix(cbind(Comp.1, Comp.2, Comp.3) ~ Comp.4, 
+                        data = tel.comp, 
+                        k = 2:8,
+                        nrep = 10, 
+                        model = FLXMCmvnorm())
+
+par(mfrow=c(1,1))
+plot(BIC(final.vv),type='b',ylab='BIC')
+points(x = which.min(BIC(final.vv)),min(BIC(final.vv)),col='red',pch=20)
+
+plot(ICL(final.vv),type='b',ylab='ICL')
+points(x = which.min(ICL(final.vv)),min(ICL(final.vv)),col='red',pch=20)
+
+#Minimizza il bic con k=3
+set.seed(12320)
+fit <- flexmix(cbind(Comp.1, Comp.2, Comp.3) ~ Comp.4, 
+               data = tel.comp, 
+               k = 3, 
+               model = FLXMCmvnorm())
+summary(fit)
+KLdiv(fit)
+fit@cluster
+labs<-fit@cluster
+
+plot(fit)
+
+tel.comp.fit <- tel.comp
+tel.comp.fit$class <- labs
+tel.comp.fit$GP <- tel.pca$GP
+tel.comp.fit$pilota <- tel.pca$pilota
+
+#Analisi grafica
 
 
-center_2025 <- PCA$center
-sd_2025 <- PCA$scale
+ggplot(data=tel.comp, mapping = aes(x=Comp.4, y=Comp.2,color=factor(labs)))+
+  geom_point()+ 
+  geom_smooth(method="lm", se=F, size=1)
 
-tel.pca24 <- scale(tel.pca24 %>% select(where(is.numeric)),center = center_2025,scale = sd_2025)
+ggplot(data=tel.comp, mapping = aes(x=Comp.4, y=Comp.1,color=factor(labs)))+
+  geom_point()+ 
+  geom_smooth(method="lm", se=F, size=1)
 
-test_set <- as_tibble(tel.pca24 %*% PCA$loadings)[,1:4]
-
-
-test_set$GP <- tel24$GP 
-test_set$pilota <- tel24$pilota
-test_set$label <- ifelse(test_set$GP == "Monaco Grand Prix", 13,
-                                   ifelse(test_set$GP == "Italian Grand Prix", 8, 2))
-test_set <- test_set %>% 
-              filter(GP == "Monaco Grand Prix"| GP== "Italian Grand Prix"| GP == "Azerbaijan Grand Prix")
-
-listmod=c("Gaussian_pk_L_I","Gaussian_pk_Lk_I","Gaussian_pk_L_B","Gaussian_pk_Lk_B","Gaussian_pk_L_Bk",
-          "Gaussian_pk_Lk_Bk","Gaussian_pk_L_C","Gaussian_pk_Lk_C","Gaussian_pk_L_D_Ak_D","Gaussian_pk_Lk_D_Ak_D",
-          "Gaussian_pk_L_Dk_A_Dk","Gaussian_pk_Lk_Dk_A_Dk","Gaussian_pk_L_Ck","Gaussian_pk_Lk_Ck")
-
-tel.data <- tel.comp
-
-tel.comp.labels$class <- as.factor(tel.comp.labels$class)
-
-tel.class <- unlist( tel.comp.labels[,5] )
-
-str(tel.class)
-
-str(tel.data)
+ggplot(data=tel.comp, mapping = aes(x=Comp.4, y=Comp.3,color=factor(labs)))+
+  geom_point()+ 
+  geom_smooth(method="lm", se=F, size=1)
 
 
-model <- list()
-set.seed(123)
-f=0
-n <- nrow(tel.data)
-results <- vector("list", length = 2000 * 5)
-k <- 0
+# in due dimensioni risulta molto poco interpretabile e graficamente si prova un plot in 3 
+x_range <- seq(min(tel.comp$Comp.4), max(tel.comp$Comp.4), length.out = 100)
+newdata <- data.frame(Comp.4 = x_range)
 
-for (i in sample(1:100000, 2000, replace = FALSE)) {
-  set.seed(i)
-  f <- f+1
-  for (c in c(10, 15, 30, 40, 50)) {
-    k <- k + 1
-    test.set.labels <- sample(1:n, c)
-    
-    res <- mixmodLearn(
-      tel.data[-test.set.labels, ],
-      tel.class[-test.set.labels],
-      models = mixmodGaussianModel(
-        listModels = listmod,
-        equal.proportions = TRUE
-      ),
-      criterion = "CV"
-    )
-    
-    results[[k]] <- tibble(
-      seed  = i,
-      ntest = c,
-      model = res@bestResult@model,
-      CV    = res@bestResult@criterionValue
-    )
-  }
-  cat(paste("Progress",f/20,"% \n"))
+
+pred_lines <- list()
+
+
+for(k in 1:3) {
+
+    sub_data <- tel.comp[labs == k, ]
+  
+
+    m_comp1 <- lm(Comp.1 ~ Comp.4, data = sub_data)
+    m_comp2 <- lm(Comp.2 ~ Comp.4, data = sub_data)
+  
+
+    pred_lines[[k]] <- data.frame(
+    Comp.4 = x_range,
+    Comp.1 = predict(m_comp1, newdata = newdata),
+    Comp.2 = predict(m_comp2, newdata = newdata),
+    Cluster = as.factor(k)
+  )
 }
 
-modell <- bind_rows(results)
+plot_lines_df <- do.call(rbind, pred_lines)
 
 
-modell$model <- as.factor(modell$model)
+tel.comp.labels$labs_factor <- as.factor(labs) 
 
-sort(table(modell$model),decreasing = T)
-
-prop.table(table(modell$model, modell$ntest), 2)
+plot_lines_df$Cluster <- as.factor(plot_lines_df$Cluster)
 
 
-res <- mixmodLearn(
-  tel.data,
-  tel.class,
-  models = mixmodGaussianModel(
-    listModels = "Gaussian_pk_L_B",
-    equal.proportions = FALSE
-  ),
-  criterion = "CV"
-)
+colore <- c("#1f77b4", "#ff7f0e", "#2ca02c")
 
 
-res
+p_3d <- plot_ly() %>%
+  
+  # --- TRACCIA 1: I PUNTI (Markers) ---
+  add_trace(data = tel.comp.labels, 
+            x = ~Comp.4, 
+            y = ~Comp.1, 
+            z = ~Comp.2, 
+            color = ~labs_factor,   
+            colors = colore,          
+            type = 'scatter3d', 
+            mode = 'markers',
+            marker = list(size = 3, opacity = 0.6),
+            name = ~paste("Cluster", labs)) %>%
+  
+  # --- TRACCIA 2: LE LINEE DI REGRESSIONE ---
+  add_trace(data = plot_lines_df,
+            x = ~Comp.4,
+            y = ~Comp.1,
+            z = ~Comp.2,
+            color = ~Cluster,         
+            colors = colore,        
+            type = 'scatter3d',
+            mode = 'lines',
+            line = list(width = 6),
+            showlegend = FALSE) %>% 
+  
+  layout(
+    title = "Comp1 vs Comp2 vs Comp4 (con regressioni)",
+    scene = list(
+      xaxis = list(title = 'Comp.4 (Predittore)'),
+      yaxis = list(title = 'Comp.1'),
+      zaxis = list(title = 'Comp.3')
+    )
+  )
+
+p_3d
+
+#Interpretazione dei risultati
+
+summary <- tel.comp.fit %>%
+  group_by(class) %>%
+  summarize(
+    across(where(is.numeric),
+           list(
+             mean = ~mean(.x, na.rm=T)
+           )), .groups = "drop"
+  )
 
 
+summary2 <- tel.comp.fit %>%
+  group_by(class,pilota) %>%
+  summarize(cont=n(), .groups = "drop"
+  )
