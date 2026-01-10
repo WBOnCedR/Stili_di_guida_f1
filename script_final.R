@@ -67,7 +67,7 @@ pp <- ggplot(tel_g, aes(x = rel_distance, y = valore, color = pilota)) +
 
 print(pp)
 
-#ggsave("report/el_ex1.pdf", pp, width = 7, height = 5, device = cairo_pdf)
+ggsave("report/el_ex1.pdf", pp, width = 7, height = 5, device = cairo_pdf)
 
 
 
@@ -202,7 +202,7 @@ process <- function(data_path) {
 
 tel.summary <- process(data_path)
 
-#Eliminazione dei casi limite
+# Eliminazione dei casi limite
 
 tel.summary %>% 
   group_by(pilota) %>% 
@@ -214,7 +214,7 @@ tel.summary <- tel.summary %>%
 
 tel.summary %>% group_by(GP) %>% select(pilota,GP,everything()) %>% filter(laptime > 1.07*min(laptime)) %>% select(-laptime)
 
-#Nel GP di Las Vegas, durante la Q1 la pista era inizialmente bagnata, ma si è progressivamente asciugata nel corso delle qualifiche. Poiché il dataset considera per ogni pilota solo il miglior tempo registrato, i piloti eliminati in Q1 possono avere tempi che non rispecchiano la condizione tipica della sessione (cioè tempi influenzati dalla pista bagnata) e, di conseguenza, non vengono esclusi dal dataset. In contrasto, nel GP di Olanda, il pilota Strole ha avuto un incidente in Q1 e il suo miglior tempo disponibile risulta quindi quello di un giro di riscaldamento, che non rappresenta le prestazioni reali in qualifica.
+# Nel GP di Las Vegas, durante la Q1 la pista era inizialmente bagnata, ma si è progressivamente asciugata nel corso delle qualifiche. Poiché il dataset considera per ogni pilota solo il miglior tempo registrato, i piloti eliminati in Q1 possono avere tempi che non rispecchiano la condizione tipica della sessione (cioè tempi influenzati dalla pista bagnata) e, di conseguenza, non vengono esclusi dal dataset. In contrasto, nel GP di Olanda, il pilota Strole ha avuto un incidente in Q1 e il suo miglior tempo disponibile risulta quindi quello di un giro di riscaldamento, che non rappresenta le prestazioni reali in qualifica.
 
 tel.summary <- tel.summary %>% filter(!(pilota=="STR" & GP=="Dutch Grand Prix"))%>% select(-laptime)
 
@@ -256,7 +256,7 @@ pp <- ggplot(tel_g
 
 print(pp)
 
-#ggsave("report/tel_ex2.pdf", pp, width = 7, height = 5, device = cairo_pdf)
+ggsave("report/tel_ex2.pdf", pp, width = 7, height = 5, device = cairo_pdf)
 
 ### PCA
 
@@ -288,7 +288,7 @@ p <- ggplot(cumulative, aes(x=Componenti,y=value))+
        fill= "Perc")+
   theme_minimal()
 print(p)
-#ggsave("report/tel_pca.pdf", p, width = 7, height = 5, device = cairo_pdf)
+ggsave("report/tel_pca.pdf", p, width = 7, height = 5, device = cairo_pdf)
 
 summary(PCA)
 
@@ -314,7 +314,7 @@ p <- ggplot(loadings_long, aes(x = component, y = Variable, fill = peso)) +
 
 print(p)
 
-#ggsave("report/Loadings.pdf", p, width = 7, height = 5, device = cairo_pdf)
+ggsave("report/Loadings.pdf", p, width = 7, height = 5, device = cairo_pdf)
 
 
 
@@ -357,7 +357,7 @@ p <- ggplot(tel.comp.labels, aes(x = C_SHAPE, y = IN_OUT, color = class)) +
   )+theme_minimal()
 
 print(p)
-#ggsave("report/C1_C2.pdf", p, width = 7, height = 5, device = cairo_pdf)
+ggsave("report/C1_C2.pdf", p, width = 7, height = 5, device = cairo_pdf)
 
 
 
@@ -388,7 +388,7 @@ p_3d
 
 
 
-#Metriche di valutazione
+# Metriche di valutazione
 KL <- round(abs(clust$icl - clust$bic),3); KL
 
 round(mean(clust$uncertainty),4)
@@ -413,7 +413,7 @@ p <- ggplot(tel.comp.labels, aes(x = C_SHAPE, y = IN_OUT)) +
 
 print(p)
 
-#ggsave("report/Loadings.pdf", p, width = 7, height = 5, device = cairo_pdf)
+ggsave("report/C_SHAPE__IN_OUT__GP.pdf", p, width = 7, height = 5, device = cairo_pdf)
 
 
 summary <- tel.comp.labels %>%
@@ -434,7 +434,7 @@ table(tel.comp.labels$GP,tel.comp.labels$class)
 
 
 
-#Regressione
+# Clustering with covariates
 set.seed(12320)
 final.vv <- stepFlexmix(cbind(IN_OUT, C_SHAPE, TRANS) ~ TRACK, 
                         data = tel.comp, 
@@ -463,7 +463,7 @@ tel.comp.fit$class <- labs
 tel.comp.fit$GP <- tel.pca$GP
 tel.comp.fit$pilota <- tel.pca$pilota
 
-#Analisi grafica
+# Analisi grafica
 colore <- c("#1f77b4", "#ff7f0e", "#2ca02c","red")
 
 p <- ggplot(data=tel.comp, mapping = aes(x=TRACK, y=C_SHAPE,color=factor(labs)))+
@@ -471,7 +471,7 @@ p <- ggplot(data=tel.comp, mapping = aes(x=TRACK, y=C_SHAPE,color=factor(labs)))
   scale_color_manual(values=colore)+
   geom_smooth(method="lm", se=F, size=1)+
   theme_minimal()
-#ggsave("report/C1_C4_R.pdf", p, width = 7, height = 5, device = cairo_pdf)
+ggsave("report/C1_C4_R.pdf", p, width = 7, height = 5, device = cairo_pdf)
 
 ggplot(data=tel.comp, mapping = aes(x=TRACK, y=IN_OUT,color=factor(labs)))+
   geom_point()+ 
@@ -522,8 +522,6 @@ colore <- c("#1f77b4", "#ff7f0e", "#2ca02c","red")
 
 
 p_3d <- plot_ly() %>%
-  
-  # --- TRACCIA 1: I PUNTI (Markers) ---
   add_trace(data = tel.comp.labels, 
             x = ~TRACK, 
             y = ~IN_OUT, 
@@ -534,8 +532,6 @@ p_3d <- plot_ly() %>%
             mode = 'markers',
             marker = list(size = 3, opacity = 0.6),
             name = ~paste("Cluster", labs)) %>%
-  
-  # --- TRACCIA 2: LE LINEE DI REGRESSIONE ---
   add_trace(data = plot_lines_df,
             x = ~TRACK,
             y = ~IN_OUT,
