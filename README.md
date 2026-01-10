@@ -20,10 +20,13 @@ Lo studio parte dall'analisi di file JSON contenenti i tempi sul giro e le telem
 
 - **Data Ingestion**: Caricamento e parsing di file JSON (laptimes e telemetry).
 - **Pre-processing**: Pulizia dei dati, gestione dei valori mancanti e filtraggio dei giri non validi.
-- **Feature Engineering**: Calcolo di accelerazioni (positive/negative), lag temporali (breve/medio periodo) e Coefficienti di Variazione (CV).
+- **Feature Engineering**: 
+  - Separazione dell'accelerazione longitudinale in `acc_x` (valori positivi) e `dec_x` (valori negativi in modulo)
+  - Trasformazione di `acc_y` in valore assoluto per catturare l'intensità delle forze laterali
+  - Calcolo di variazioni percentuali lag (breve/medio periodo) e Coefficienti di Variazione (CV)
 - **Analisi Esplorativa**: Visualizzazione delle telemetrie e correlazioni.
-- **PCA**: Riduzione delle variabili correlate in 5 componenti principali interpretabili.
-- **Clustering**: Identificazione di cluster di piloti (es. stile "Aggressivo", "Fluido", ecc.) tramite Gaussian Mixture Models.
+- **PCA**: Riduzione delle variabili correlate in 4 componenti principali interpretabili.
+- **Clustering**: Identificazione di cluster di stili di guida tramite Gaussian Mixture Models (Model-Based Clustering).
 - **Classificazione**: Modelli per predire l'appartenenza di nuove osservazioni.
 
 ## 📁 Struttura del Progetto

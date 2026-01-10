@@ -224,13 +224,13 @@ citecolor=black       % Colore citazioni bibliografiche
 	\subsubsection{Interpretazione delle componenti}
 	Attraverso l'analisi dei pesi associati alle componenti (Figura \ref{fig:pesi}) le si interpretano:
 	\begin{enumerate}
-		\item \textbf{Prima componente}  : Separa stili stili di guida che hanno un'alta variabilità (molte correzioni) nell'erogazione della potenza da quelli che hanno un'alta variabilità nella fase di decelerazione. A valori elevati corrisponde a uno stile di guida caratterizzato da una trazione più "sporca" o reattiva, con continue correzioni sul pedale dell'acceleratore che si contrappone uno stile caratterizzato da una frenata molto modulata e dinamica, mantenendo però un'uscita di curva molto composta e lineare nell'erogazione del gas.
+		\item \textbf{Prima componente} (IN\_OUT)  : Separa stili stili di guida che hanno un'alta variabilità (molte correzioni) nell'erogazione della potenza da quelli che hanno un'alta variabilità nella fase di decelerazione. A valori elevati corrisponde a uno stile di guida caratterizzato da una trazione più "sporca" o reattiva, con continue correzioni sul pedale dell'acceleratore che si contrappone uno stile caratterizzato da una frenata molto modulata e dinamica, mantenendo però un'uscita di curva molto composta e lineare nell'erogazione del gas.
 		
-		\item \textbf{Seconda componente} : distungue stili di guida che lavorano di più in termini di velocità pura (avanti/dietro) contro chi ha maggiore di percorrenza (destra/sinistra). A valorio elevati corrisponde uno stile di guida a "V", dove il pilota punta tutto sulla frenata profonda e sulla ripartenza rapida, variando molto l'accelerazione longitudinale. Invece, per valori bassi contrappone uno stile di guida basato sulla velocità di percorrenza, che predilige la gestione del carico laterale.
+		\item \textbf{Seconda componente} (C\_SHAPE) : distungue stili di guida che lavorano di più in termini di velocità pura (avanti/dietro) contro chi ha maggiore di percorrenza (destra/sinistra). A valorio elevati corrisponde uno stile di guida a "V", dove il pilota punta tutto sulla frenata profonda e sulla ripartenza rapida, variando molto l'accelerazione longitudinale. Invece, per valori bassi contrappone uno stile di guida basato sulla velocità di percorrenza, che predilige la gestione del carico laterale.
 		
-		\item \textbf{Terza componente} : questa componente entra nel dettaglio delle fasi della curva. Discrimina stili di guida con bassa componente laterale in fase di percorrenza e alta componente di accellerazioni longitudinali e viceversa. In particolare, a valori alti corrisponde uno stile di guida caratterizzato forti staccate, forti accellerazioni in uscita curva e bassa velocità di percorrenza. Mentre a valori bassi corrisponde uno stile caratterizzato alte velocità di percorrenza, e poca variazione longitudinale.
+		\item \textbf{Terza componente} (TRANS) : questa componente entra nel dettaglio delle fasi della curva. Discrimina stili di guida con bassa componente laterale in fase di percorrenza e alta componente di accellerazioni longitudinali e viceversa. In particolare, a valori alti corrisponde uno stile di guida caratterizzato forti staccate, forti accellerazioni in uscita curva e bassa velocità di percorrenza. Mentre a valori bassi corrisponde uno stile caratterizzato alte velocità di percorrenza, e poca variazione longitudinale.
 		
-		\item \textbf{Quarta componente} :  questa componente caratterizza la configurazione della pista. A valori elevati corrisponde una maggiore variabilità complessiva della velocità, mentre valori bassi indicano un'andamento più regolare e uniforme.
+		\item \textbf{Quarta componente} (TRACK) :  questa componente caratterizza la configurazione della pista. A valori elevati corrisponde una maggiore variabilità complessiva della velocità, mentre valori bassi indicano un'andamento più regolare e uniforme.
 		
 	\end{enumerate}
 		
@@ -266,57 +266,71 @@ citecolor=black       % Colore citazioni bibliografiche
 	\end{figure}
 	
 	Il valore della distanza di  Kullback-Leibler $(KL)$ del modello risulta essere pari a $ 89.622$. Ciò dà sostegno a quanto già osservato graficamente, ulteriormente supportato dall'incertezza pari a $0.0796$ che esclude una possibile situazione di sovrapposizione dei gruppi.
-	
-	\begin{table}[ht]
-		\centering
-		\begin{tabular}{|c|c|c|c|c|r|}
-			\hline
-			\textbf{Classe} & \textbf{COMP 1} & \textbf{COMP 2} & \textbf{COMP 3} & \textbf{COMP 4} & \textbf{GP}\\ 
-			\hline
-			1 & -2.3544521 & -0.4336353 & -0.3267068 & -1.04304992 & Australian, Abu Dhabi, Qatar,  Saudi, Spanish\\
-			2 & -4.6485671 & -1.9013751 & 0.3596806 & 1.50701769 & Italian \\
-			3 & -0.5809494 & -1.9670107 & 0.3270949 & -0.50006776 & Austrian, Emilia Romagna\\
-			4 & 1.9782712 & 1.0854711 & -1.4384612 & 3.35259093 & Las Vegas\\
-			5 & 3.3611817 & -0.7988630 & 0.3854497 & -0.58053173 & Mexico, Singapore\\
-			6 & 1.6093561 & -2.9926369 & 3.1763503 & 1.47207130 & Azerbaijan\\
-			7 & 0.6601369 & -1.8975598 & -1.5433976 & 0.33120784 & Canadian, Bahrain \\
-			8 & -3.5929136 & 1.8655423 & 1.9612523 & 0.21243282 & Belgian\\
-			9 & -1.7581531 & 3.1354654 & 0.7971459 & -0.15900006 & British, Japanese \\
-			10 & 1.0999736 & 1.0575898 & -1.2098464 & 0.04385535 &United States, São Paulo, Chinese, Dutch\\
-			11 & 2.5236924 & 1.0020324 & -0.4849935 & -1.88106300&  Hungarian, Dutch\\
-			12 & -0.6392196 & 0.7454101 & 0.5008869 & 1.58845641 &  Miami\\
-			13 & 5.8976535 & 0.5075088 & 1.8048374 & -0.47820303& Monaco\\
-			\hline
-		\end{tabular}
-		\caption{Media delle Componenti Principali per Classe}
-		\label{tab:pca_means}
-	\end{table}
 	\begin{itemize}
-		\item Classe 13: Questa classe identifica uno stile  il Gran premio di Monaco. Il valore molto elevato della prima componente infatti si può associare ad un uso del gas ritmico. 
+		\item Classe 13: Questa classe identifica il Gran premio di Monaco. Il valore molto elevato della prima componente infatti si può associare ad un uso del gas ritmico. 
 		
 		\item Classi 5 e 11: (Singapore, Messico, Ungheria) Queste classi raggruppano circuiti tortuosi ad alto carico. Condividono con Monaco la necessità di gestire l'acceleratore per gestire per esempio un uscita da una curva netta.
 		
 		\item La Classe 6: (Baku) Mostra un'alta terza componente: le curve a 90° costringono  correzioni veloci della accelerazione laterale.
 		
-		\item La Classe 4 e 12: (Las Vegas e Miami) Mostrano un'alta quarta componente: l'asfalto scivoloso a soprattutto a Las Vegas per la pioggia creano incertezza nel mantenere la velocità costante, costringendo a parzializzare il gas dove normalmente si andrebbe costanti.
+		\item La Classe 4 e 12: (Las Vegas e Miami) Mostrano un'alta quarta componente: l'asfalto scivoloso soprattutto a Las Vegas per la pioggia che crea incertezza nel mantenere la velocità costante, costringendo a parzializzare il gas dove normalmente si andrebbe costanti.
 		
 		\item Classi 8 e 9: (Spa, Silverstone, Suzuka) Queste classi rappresentano i circuiti con prima componente fortemente negativa dovuta all'assenza di frenate decise. La seconda componente positiva distingue questi circuiti: indica che la variazione è dominata dalle forze longitudinali ad alta velocità.
 		
-		\item Classe 10: (Cina, USA, Brasile) Raggruppa circuiti completi dal punto di vista del tracciato : alternano tratti veloci a tratti tecnici. Non risulta esserci una componente con pesi notevoli.
+		\item Classe 10: (Cina, USA, Brasile) Raggruppa circuiti completi dal punto di vista del tracciato : alternando tratti veloci a tratti tecnici. Non risulta esserci una componente con pesi notevoli.
 		
 		\item Classe 2 : (Monza): La prima componente molto negativa. È una pista caratterizzata da staccate profonde con un'uscita di trazione pulita, inoltre la quarta componente abbastanza alta, dovuta alle elevate variazioni di velocità.
 		
-		\item Classe 7 : (Bahrain e Canada):  Sono circuiti caratterizzate da poche curve di alta velocità di percorrenza, evidenziato dal valore negativo della seconda componente.
+		\item Classe 7 : (Bahrain e Canada):  Sono circuiti caratterizzati da poche curve di alta velocità di percorrenza, evidenziati dal valore negativo della seconda componente.
 		
 		\item Classe 1 : (Australian, Abu Dhabi, Qatar,  Saudi, Spanish) È il gruppo più numeroso, caratteizzato da una prima componente negativa, quindi poche variazioni longitudinali e in generale fluidità nella percorrenza.
 		
 		\item Classe 3 : (Austrian, Emilia Romagna) Molto simile alla classe 1, ma con curve più accentuate e maggiori variazioni longitudinali.
 	\end{itemize}
-	
-	\section{Classificazione}
-	
-	
-	
+
+	\section{Model Based Clusering with Covariates}
+	I risultati ottenuti dal precedente modello, sebbene chiari e definiti, non rispecchiano tuttavia l'obiettivo iniziale dell'analisi. Ciò è dato dal fatto che la quarta componente discrimina le classi per la tipologia di tracciato e non per lo stile di guida. Si prova quindi a ridurre l'effetto della pista, condizionando i parametri della distribuzione alla quarta componente.
+
+	Per far ciò si applica un $MEM$ (\texttt{Mixture of Experts Models}), utilizzando una regressione normale multivariata con variabili :
+	\begin{itemize}
+		\item \textbf{Dipendente} $\begin{bmatrix}
+										\texttt{IN\_OUT, C\_SHAPE, TRANS}
+								\end{bmatrix}$;
+		\item \textbf{Esplicativa} $\begin{bmatrix}
+										\texttt{TRACK}
+								\end{bmatrix}$;
+	\end{itemize} 
+	che rivela le seguenti classi :
+	\begin{enumerate}
+		\item Classe 1;
+		\item Classe 2;
+		\item Classe 3;
+		\item Classe 4;
+	\end{enumerate}
+	\begin{figure}[H]
+		\centering
+		% Prima figura (a sinistra)
+		\begin{minipage}{0.48\textwidth}
+			\centering
+			\includegraphics[width=\textwidth]{C1_C4_R.pdf}
+			\caption{IN\_OUT VS TRACK}
+			\label{fig:reg14}
+		\end{minipage}
+		\hfill % Spazio elastico tra le due minipage
+		% Seconda figura (a destra)
+		\begin{minipage}{0.48\textwidth}
+			\centering
+			\includegraphics[width=\textwidth]{newplot2.png}
+			\caption{IN\_OUT VS C\_SHAPE VS TRACK}
+			\label{fig:reg}
+		\end{minipage}
+	\end{figure}
+	Nonostante il tentativo di ridurre al minimo l'influenza della geometria del tracciato, anche questi cluster sembrano comunque dipendere molto da quest'ultima. Le motivazioni potrebbero essere:
+	\begin{itemize}
+		\item Le variabili utilizzate non discriminano realmente i diversi stili di guida dei piloti. Si potrebbe magari pensare di utilizzare altre variabili quali punti di staccata, di corda, angolo sterzo e altre;
+		\item I piloti non hanno effettivamente uno stile di guida caratteristico, ma si adattano ai diversi circuiti seppur con le dovute differenze;
+	\end{itemize}
+	Si lascia la risposta a questi dubbi a futuri studi. 
 	\clearpage
 	\appendix
 	\title{Appendice}
@@ -626,74 +640,86 @@ citecolor=black       % Colore citazioni bibliografiche
 		table(tel.comp.labels$GP,tel.comp.labels$class)
 		
 	\end{lstlisting}
-	\section{Codice R Commentato Classificazione}
-	\label{classificazione}
+	\subsection{Media componenti principali nelle Classi}
+		\begin{table}[ht]
+		\centering
+		\begin{tabular}{|c|c|c|c|c|r|}
+			\hline
+			\textbf{Classe} & \textbf{COMP 1} & \textbf{COMP 2} & \textbf{COMP 3} & \textbf{COMP 4} & \textbf{GP}\\ 
+			\hline
+			1 & -2.3544521 & -0.4336353 & -0.3267068 & -1.04304992 & Australian, Abu Dhabi, Qatar,  Saudi, Spanish\\
+			2 & -4.6485671 & -1.9013751 & 0.3596806 & 1.50701769 & Italian \\
+			3 & -0.5809494 & -1.9670107 & 0.3270949 & -0.50006776 & Austrian, Emilia Romagna\\
+			4 & 1.9782712 & 1.0854711 & -1.4384612 & 3.35259093 & Las Vegas\\
+			5 & 3.3611817 & -0.7988630 & 0.3854497 & -0.58053173 & Mexico, Singapore\\
+			6 & 1.6093561 & -2.9926369 & 3.1763503 & 1.47207130 & Azerbaijan\\
+			7 & 0.6601369 & -1.8975598 & -1.5433976 & 0.33120784 & Canadian, Bahrain \\
+			8 & -3.5929136 & 1.8655423 & 1.9612523 & 0.21243282 & Belgian\\
+			9 & -1.7581531 & 3.1354654 & 0.7971459 & -0.15900006 & British, Japanese \\
+			10 & 1.0999736 & 1.0575898 & -1.2098464 & 0.04385535 &United States, São Paulo, Chinese, Dutch\\
+			11 & 2.5236924 & 1.0020324 & -0.4849935 & -1.88106300&  Hungarian, Dutch\\
+			12 & -0.6392196 & 0.7454101 & 0.5008869 & 1.58845641 &  Miami\\
+			13 & 5.8976535 & 0.5075088 & 1.8048374 & -0.47820303& Monaco\\
+			\hline
+		\end{tabular}
+		\caption{Media delle Componenti Principali per Classe}
+		\label{tab:pca_means}
+	\end{table}
+	\section{Codice R Commentato MEM}
+	\label{Regressione}
 	\begin{lstlisting}
-		#Classificazione
+		#Regressione
+		set.seed(12320)
+		final.vv <- stepFlexmix(cbind(IN_OUT, C_SHAPE, TRANS) ~ TRACK, 
+		data = tel.comp, 
+		k = 2:8,
+		nrep = 10, 
+		model = FLXMCmvnorm())
 		
+		par(mfrow=c(1,1))
+		plot(BIC(final.vv),type='b',ylab='BIC')
+		points(x = which.min(BIC(final.vv)),min(BIC(final.vv)),col='red',pch=20)
 		
-		center_2025 <- PCA$center
-		sd_2025 <- PCA$scale
+		plot(ICL(final.vv),type='b',ylab='ICL')
+		points(x = which.min(ICL(final.vv)),min(ICL(final.vv)),col='red',pch=20)
 		
-		tel.pca24 <- scale(tel.pca24 %>% select(where(is.numeric)),center = center_2025,scale = sd_2025)
+		fit <- getModel(final.vv)
 		
-		test_set <- as_tibble(tel.pca24 %*% PCA$loadings)[,1:4]
+		summary(fit)
+		getModel(fit)
+		KLdiv(fit)
+		fit@cluster
+		labs<-fit@cluster
 		
+		plot(fit)
 		
-		test_set$GP <- tel24$GP 
-		test_set$pilota <- tel24$pilota
-		test_set$label <- ifelse(test_set$GP == "Monaco Grand Prix", 13,
-		ifelse(test_set$GP == "Italian Grand Prix", 8, 2))
-		test_set <- test_set %>% 
-		filter(GP == "Monaco Grand Prix"| GP== "Italian Grand Prix"| GP == "Azerbaijan Grand Prix")
-		
-		listmod=c("Gaussian_pk_L_I","Gaussian_pk_Lk_I","Gaussian_pk_L_B","Gaussian_pk_Lk_B","Gaussian_pk_L_Bk",
-		"Gaussian_pk_Lk_Bk","Gaussian_pk_L_C","Gaussian_pk_Lk_C","Gaussian_pk_L_D_Ak_D","Gaussian_pk_Lk_D_Ak_D",
-		"Gaussian_pk_L_Dk_A_Dk","Gaussian_pk_Lk_Dk_A_Dk","Gaussian_pk_L_Ck","Gaussian_pk_Lk_Ck")
-		tel.data <- tel.comp
-		tel.comp.labels$class <- as.factor(tel.comp.labels$class)
-		tel.class <- unlist( tel.comp.labels[,5] )
-		str(tel.class)
-		str(tel.data)
-		
-		
-		model <- list()
-		set.seed(123)
-		f=0
-		n <- nrow(tel.data)
-		for (i in sample(1:100000,2000,replace = F)){
-			f <- f+1
-			set.seed(i)
-			for (c in c(10,15,30,40,50)){
-				test.set.labels<-sample(1:n,c)
-				res <-  mixmodLearn(tel.data[-test.set.labels,], tel.class[-test.set.labels], 
-				models=mixmodGaussianModel(listModels=listmod,equal.proportions=T),criterion= "CV")
-				model[[as.character(i)]]$Model <- res@bestResult@model
-				model[[as.character(i)]]$CV <-    res@bestResult@criterionValue
-				model[[as.character(i)]]$n <-    c
-			}
-			cat(paste("Progress ",f/200,"% \n"))
-		}
-		
-		
-		modell <- bind_rows(model)
-		
-		modell$Model <- as.factor(modell$Model)
-		
-		sort(table(modell$Model,modell$n),decreasing = T)
-		
-		res <-  mixmodLearn(tel.data[-test.set.labels,], tel.class[-test.set.labels], 
-		models=mixmodGaussianModel(listModels="Gaussian_pk_Lk_B" ,equal.proportions=T),criterion= "CV")
-		
-		
-		summary(res)
-		
-		
-		
-		pred <-  mixmodPredict(test_set %>% select(Comp.1,Comp.2,Comp.3,Comp.4), classificationRule=res@bestResult)
-		
-		test_set$class <- pred@partition
-		
-		mean(test_set$label!= test_set$class)
+		tel.comp.fit <- tel.comp
+		tel.comp.fit$class <- labs
+		tel.comp.fit$GP <- tel.pca$GP
+		tel.comp.fit$pilota <- tel.pca$pilota
+		summary <- tel.comp.fit %>%
+		group_by(class) %>%
+		summarize(
+		across(where(is.numeric),
+		list(
+		mean = ~mean(.x, na.rm=T)
+		)), .groups = "drop"
+		)
 	\end{lstlisting}
+	\subsection{Media delle variabili nelle Classi - Set 2}
+	\begin{table}[ht]
+		\centering
+		\begin{tabular}{|c|c|c|c|c|}
+			\hline
+			\textbf{Classe} & \textbf{IN\_OUT\_mean} & \textbf{C\_SHAPE\_mean} & \textbf{TRANS\_mean} & \textbf{TRACK\_mean} \\ 
+			\hline
+			1 & 1.97 & 0.913 & -0.413 & 0.173 \\
+			2 & -2.44 & 2.39 & 1.29 & -0.0621 \\
+			3 & 0.913 & -2.81 & 1.02 & 0.930 \\
+			4 & -1.18 & -1.24 & -0.303 & -0.339 \\
+			\hline
+		\end{tabular}
+		\caption{Riepilogo delle medie per le 4 classi identificate}
+		\label{tab:summary_4classes}
+	\end{table}
 \end{document}

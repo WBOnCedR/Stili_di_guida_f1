@@ -262,8 +262,7 @@ print(pp)
 
 ### PCA
 
-##!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! LA TENIAMO O NO ORA NON HA PIU SENSO!!!!!!!!!!!!!!!!!!!!!!!!!!
-#tel.summary <- tel.summary %>% mutate(across(where(is.numeric),~rescale(.,to=c(0,1))))
+tel.summary <- tel.summary %>% mutate(across(where(is.numeric),~rescale(.,to=c(0,1))))
 
 corr <- round(cor(tel.summary %>% select(where(is.numeric))),4)
 
@@ -287,8 +286,8 @@ p <- ggplot(cumulative, aes(x=Componenti,y=value))+
   geom_bar(stat="identity",aes(fill = value))+
   scale_fill_fermenter(palette = "Set2")+
   geom_label(aes(label=round(value,2)),stat="identity")+
-  labs(title= "Cumulative variance",
-       y="Proporzione")+
+  labs(y="Proporzione",
+       fill= "Perc")+
   theme_minimal()
 print(p)
 #ggsave("report/tel_pca.pdf", p, width = 7, height = 5, device = cairo_pdf)
@@ -323,6 +322,8 @@ print(p)
 
 tel.comp <- as_tibble(PCA$scores[,1:4])
 
+colnames(tel.comp) <- c("IN_OUT","C_SHAPE","TRANS","TRACK")
+
 set.seed(126)
 
 clust <- Mclust(tel.comp,G=1:15)
@@ -347,13 +348,12 @@ tel.comp.labels <- tel.comp.labels %>% arrange(GP,pilota,)
 
 colori <- c("red", "blue", "green", "orange", "purple", "cyan", "brown", "pink", "black","grey","yellow","darkblue","darkred")
 
-p <- ggplot(tel.comp.labels, aes(x = Comp.2, y = Comp.1, color = class)) +
+p <- ggplot(tel.comp.labels, aes(x = C_SHAPE, y = IN_OUT, color = class)) +
   geom_point(size = 2) +
   scale_color_manual(values = colori)+
   labs(
-    title =  "Comp1 vs Comp2",
-    x = "Componente 2",
-    y = "Componente 1",
+    x = "C_SHAPE",
+    y = "IN_OUT",
     color = "Cluster",
     shape = "Cluster"
   )+theme_minimal()
@@ -367,20 +367,18 @@ print(p)
 
 
 p_3d <- plot_ly(tel.comp.labels, 
-                x = ~Comp.2, 
-                y = ~Comp.1, 
-                z = ~Comp.4, 
+                x = ~C_SHAPE, 
+                y = ~IN_OUT, 
+                z = ~TRACK, 
                 color = ~class, 
                 colors = colori,
                 type = 'scatter3d', 
                 mode = 'markers',
                 marker = list(size = 3)) %>%
-  layout(
-    title = "Comp1 vs Comp2 vs Comp4",
-    scene = list(
-      xaxis = list(title = 'Componente 2'),
-      yaxis = list(title = 'Componente 1'),
-      zaxis = list(title = 'Componente 4')
+  layout( scene = list(
+      xaxis = list(title = 'C_SHAPE'),
+      yaxis = list(title = 'IN_OUT'),
+      zaxis = list(title = 'TRACK')
     )
   )
 
@@ -405,14 +403,13 @@ round(mean(clust$uncertainty),4)
 unique_GP <- unique(tel.comp.labels$GP)
 
 
-p <- ggplot(tel.comp.labels, aes(x = Comp.2, y = Comp.1)) +
+p <- ggplot(tel.comp.labels, aes(x = C_SHAPE, y = IN_OUT)) +
     geom_point(aes(colour = as.factor(class)), alpha = 0) + 
     geom_text(aes(label = GP, colour = as.factor(class)), 
             vjust = -1, size = 3, check_overlap = T,show.legend = F) + 
   scale_color_manual(values = colori) +
   coord_cartesian(xlim = c(-5,5), ylim = c(-7,7)) +
-  labs(title = paste("Plot Comp.2 vs Comp.1 "),
-       colour = "Classe") +
+  labs(colour = "Classe") +
   guides(colour = guide_legend(override.aes = list(alpha = 1, size = 5, shape = 19))) +
   theme_minimal()
 
@@ -434,9 +431,14 @@ table(tel.comp.labels$GP,tel.comp.labels$class)
 
 
 
+
+
+
+
+
 #Regressione
 set.seed(12320)
-final.vv <- stepFlexmix(cbind(Comp.1, Comp.2, Comp.3) ~ Comp.4, 
+final.vv <- stepFlexmix(cbind(IN_OUT, C_SHAPE, TRANS) ~ TRACK, 
                         data = tel.comp, 
                         k = 2:8,
                         nrep = 10, 
@@ -449,13 +451,10 @@ points(x = which.min(BIC(final.vv)),min(BIC(final.vv)),col='red',pch=20)
 plot(ICL(final.vv),type='b',ylab='ICL')
 points(x = which.min(ICL(final.vv)),min(ICL(final.vv)),col='red',pch=20)
 
-#Minimizza il bic con k=3
-set.seed(12320)
-fit <- flexmix(cbind(Comp.1, Comp.2, Comp.3) ~ Comp.4, 
-               data = tel.comp, 
-               k = 3, 
-               model = FLXMCmvnorm())
+fit <- getModel(final.vv)
+
 summary(fit)
+getModel(fit)
 KLdiv(fit)
 fit@cluster
 labs<-fit@cluster
@@ -468,42 +467,48 @@ tel.comp.fit$GP <- tel.pca$GP
 tel.comp.fit$pilota <- tel.pca$pilota
 
 #Analisi grafica
+colore <- c("#1f77b4", "#ff7f0e", "#2ca02c","red")
 
+p <- ggplot(data=tel.comp, mapping = aes(x=TRACK, y=C_SHAPE,color=factor(labs)))+
+  geom_point()+
+  scale_color_manual(values=colore)+
+  geom_smooth(method="lm", se=F, size=1)+
+  theme_minimal()
+#ggsave("report/C1_C4_R.pdf", p, width = 7, height = 5, device = cairo_pdf)
 
-ggplot(data=tel.comp, mapping = aes(x=Comp.4, y=Comp.2,color=factor(labs)))+
+ggplot(data=tel.comp, mapping = aes(x=TRACK, y=IN_OUT,color=factor(labs)))+
   geom_point()+ 
-  geom_smooth(method="lm", se=F, size=1)
+  geom_smooth(method="lm", se=F, size=1)+
+  theme_minimal()+
+  labs(color="Classi")
 
-ggplot(data=tel.comp, mapping = aes(x=Comp.4, y=Comp.1,color=factor(labs)))+
+ggplot(data=tel.comp, mapping = aes(x=TRACK, y=TRANS,color=factor(labs)))+
   geom_point()+ 
-  geom_smooth(method="lm", se=F, size=1)
-
-ggplot(data=tel.comp, mapping = aes(x=Comp.4, y=Comp.3,color=factor(labs)))+
-  geom_point()+ 
-  geom_smooth(method="lm", se=F, size=1)
+  geom_smooth(method="lm", se=F, size=1)+
+  theme_minimal()
 
 
 # in due dimensioni risulta molto poco interpretabile e graficamente si prova un plot in 3 
-x_range <- seq(min(tel.comp$Comp.4), max(tel.comp$Comp.4), length.out = 100)
-newdata <- data.frame(Comp.4 = x_range)
+x_range <- seq(min(tel.comp$TRACK), max(tel.comp$TRACK), length.out = 100)
+newdata <- data.frame(TRACK = x_range)
 
 
 pred_lines <- list()
 
 
-for(k in 1:3) {
+for(k in 1:4) {
 
     sub_data <- tel.comp[labs == k, ]
   
 
-    m_comp1 <- lm(Comp.1 ~ Comp.4, data = sub_data)
-    m_comp2 <- lm(Comp.2 ~ Comp.4, data = sub_data)
+    m_comp1 <- lm(IN_OUT ~ TRACK, data = sub_data)
+    m_comp2 <- lm(C_SHAPE ~ TRACK, data = sub_data)
   
 
     pred_lines[[k]] <- data.frame(
-    Comp.4 = x_range,
-    Comp.1 = predict(m_comp1, newdata = newdata),
-    Comp.2 = predict(m_comp2, newdata = newdata),
+    TRACK = x_range,
+    IN_OUT = predict(m_comp1, newdata = newdata),
+    C_SHAPE = predict(m_comp2, newdata = newdata),
     Cluster = as.factor(k)
   )
 }
@@ -516,16 +521,16 @@ tel.comp.labels$labs_factor <- as.factor(labs)
 plot_lines_df$Cluster <- as.factor(plot_lines_df$Cluster)
 
 
-colore <- c("#1f77b4", "#ff7f0e", "#2ca02c")
+colore <- c("#1f77b4", "#ff7f0e", "#2ca02c","red")
 
 
 p_3d <- plot_ly() %>%
   
   # --- TRACCIA 1: I PUNTI (Markers) ---
   add_trace(data = tel.comp.labels, 
-            x = ~Comp.4, 
-            y = ~Comp.1, 
-            z = ~Comp.2, 
+            x = ~TRACK, 
+            y = ~IN_OUT, 
+            z = ~C_SHAPE, 
             color = ~labs_factor,   
             colors = colore,          
             type = 'scatter3d', 
@@ -535,9 +540,9 @@ p_3d <- plot_ly() %>%
   
   # --- TRACCIA 2: LE LINEE DI REGRESSIONE ---
   add_trace(data = plot_lines_df,
-            x = ~Comp.4,
-            y = ~Comp.1,
-            z = ~Comp.2,
+            x = ~TRACK,
+            y = ~IN_OUT,
+            z = ~C_SHAPE,
             color = ~Cluster,         
             colors = colore,        
             type = 'scatter3d',
@@ -546,11 +551,10 @@ p_3d <- plot_ly() %>%
             showlegend = FALSE) %>% 
   
   layout(
-    title = "Comp1 vs Comp2 vs Comp4 (con regressioni)",
-    scene = list(
-      xaxis = list(title = 'Comp.4 (Predittore)'),
-      yaxis = list(title = 'Comp.1'),
-      zaxis = list(title = 'Comp.3')
+      scene = list(
+      xaxis = list(title = 'TRACK (Predittore)'),
+      yaxis = list(title = 'IN_OUT'),
+      zaxis = list(title = 'TRANS')
     )
   )
 
@@ -572,3 +576,10 @@ summary2 <- tel.comp.fit %>%
   group_by(class,pilota) %>%
   summarize(cont=n(), .groups = "drop"
   )
+
+table(tel.comp.fit$pilota,tel.comp.fit$class)
+table(tel.comp.fit$GP,tel.comp.fit$class)
+#Interpretazione Classi 
+
+#Classe 1, componente 1 negativa quindi frenate molto variabili e regolazione del gas stabile e progressiva
+#Classe 2, 
