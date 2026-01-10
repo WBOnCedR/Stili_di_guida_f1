@@ -741,28 +741,176 @@ print(summary)
 print(summary2)
 ```
 
-## Classificazione
+## Regressione con Mixture of Experts
+
+Per ridurre l'effetto della configurazione della pista (quarta componente) e concentrarsi sullo stile di guida, si applica un modello di regressione con mixture of experts utilizzando `stepFlexmix`. Questo approccio permette di condizionare i parametri della distribuzione alla variabile TRACK (Comp.4).
 
 ```{r}
-listmod <- c(
-  "Gaussian_pk_L_I", "Gaussian_pk_Lk_I", "Gaussian_pk_L_B", "Gaussian_pk_Lk_B", "Gaussian_pk_L_Bk",
-  "Gaussian_pk_Lk_Bk", "Gaussian_pk_L_C", "Gaussian_pk_Lk_C", "Gaussian_pk_L_D_Ak_D", "Gaussian_pk_Lk_D_Ak_D",
-  "Gaussian_pk_L_Dk_A_Dk", "Gaussian_pk_Lk_Dk_A_Dk", "Gaussian_pk_L_Ck", "Gaussian_pk_Lk_Ck"
+# Rinomina delle componenti per maggiore chiarezza
+colnames(tel.comp) <- c("IN_OUT", "C_SHAPE", "TRANS", "TRACK")
+
+# Mixture of Experts: regressione delle prime 3 componenti sulla quarta
+set.seed(12320)
+final.vv <- stepFlexmix(cbind(IN_OUT, C_SHAPE, TRANS) ~ TRACK,
+  data = tel.comp,
+  k = 2:8,
+  nrep = 10,
+  model = FLXMCmvnorm()
 )
-tel.data <- tel.comp[, c(1, 2)]
-tel.comp.labels$class <- as.factor(tel.comp.labels$class)
-tel.class <- unlist(tel.comp.labels[, 5])
-str(tel.class)
-str(tel.data)
+```
 
+### Selezione del modello
 
-set.seed(321)
-res <- mixmodLearn(tel.data, tel.class,
-  models = mixmodGaussianModel(listModels = listmod, equal.proportions = F), criterion = c("CV", "BIC")
-)
+```{r}
+par(mfrow = c(1, 2))
+plot(BIC(final.vv), type = "b", ylab = "BIC", main = "BIC per numero di cluster")
+points(x = which.min(BIC(final.vv)), min(BIC(final.vv)), col = "red", pch = 20)
 
+plot(ICL(final.vv), type = "b", ylab = "ICL", main = "ICL per numero di cluster")
+points(x = which.min(ICL(final.vv)), min(ICL(final.vv)), col = "red", pch = 20)
+```
 
-pred <- mixmodPredict(.., classificationRule = res@bestResult)
+```{r}
+fit <- getModel(final.vv)
+
+summary(fit)
+KLdiv(fit)
+labs <- fit@cluster
+
+plot(fit)
+```
+
+### Preparazione dati per visualizzazione
+
+```{r}
+tel.comp.fit <- tel.comp
+tel.comp.fit$class <- labs
+tel.comp.fit$GP <- tel.pca$GP
+tel.comp.fit$pilota <- tel.pca$pilota
+```
+
+### Analisi grafica delle regressioni
+
+```{r}
+colore <- c("#1f77b4", "#ff7f0e", "#2ca02c", "red")
+
+# Relazione TRACK vs C_SHAPE
+p1 <- ggplot(data = tel.comp, mapping = aes(x = TRACK, y = C_SHAPE, color = factor(labs))) +
+  geom_point() +
+  scale_color_manual(values = colore) +
+  geom_smooth(method = "lm", se = F, size = 1) +
+  labs(color = "Cluster") +
+  theme_minimal()
+print(p1)
+# ggsave("report/C1_C4_R.pdf", p1, width = 7, height = 5, device = cairo_pdf)
+
+# Relazione TRACK vs IN_OUT
+p2 <- ggplot(data = tel.comp, mapping = aes(x = TRACK, y = IN_OUT, color = factor(labs))) +
+  geom_point() +
+  geom_smooth(method = "lm", se = F, size = 1) +
+  theme_minimal() +
+  labs(color = "Cluster")
+print(p2)
+
+# Relazione TRACK vs TRANS
+p3 <- ggplot(data = tel.comp, mapping = aes(x = TRACK, y = TRANS, color = factor(labs))) +
+  geom_point() +
+  geom_smooth(method = "lm", se = F, size = 1) +
+  theme_minimal() +
+  labs(color = "Cluster")
+print(p3)
+```
+
+### Visualizzazione 3D delle rette di regressione
+
+```{r}
+# Creazione delle linee di regressione predette
+x_range <- seq(min(tel.comp$TRACK), max(tel.comp$TRACK), length.out = 100)
+newdata <- data.frame(TRACK = x_range)
+
+pred_lines <- list()
+
+for (k in 1:4) {
+  sub_data <- tel.comp[labs == k, ]
+
+  m_comp1 <- lm(IN_OUT ~ TRACK, data = sub_data)
+  m_comp2 <- lm(C_SHAPE ~ TRACK, data = sub_data)
+
+  pred_lines[[k]] <- data.frame(
+    TRACK = x_range,
+    IN_OUT = predict(m_comp1, newdata = newdata),
+    C_SHAPE = predict(m_comp2, newdata = newdata),
+    Cluster = as.factor(k)
+  )
+}
+
+plot_lines_df <- do.call(rbind, pred_lines)
+
+# Preparazione dati per plotly
+tel.comp.labels$labs_factor <- as.factor(labs)
+plot_lines_df$Cluster <- as.factor(plot_lines_df$Cluster)
+
+# Plot 3D interattivo
+p_3d <- plot_ly() %>%
+  # Punti osservati
+  add_trace(
+    data = tel.comp.labels,
+    x = ~TRACK,
+    y = ~IN_OUT,
+    z = ~C_SHAPE,
+    color = ~labs_factor,
+    colors = colore,
+    type = "scatter3d",
+    mode = "markers",
+    marker = list(size = 3, opacity = 0.6),
+    name = ~ paste("Cluster", labs)
+  ) %>%
+  # Linee di regressione
+  add_trace(
+    data = plot_lines_df,
+    x = ~TRACK,
+    y = ~IN_OUT,
+    z = ~C_SHAPE,
+    color = ~Cluster,
+    colors = colore,
+    type = "scatter3d",
+    mode = "lines",
+    line = list(width = 6),
+    showlegend = FALSE
+  ) %>%
+  layout(
+    scene = list(
+      xaxis = list(title = "TRACK (Predittore)"),
+      yaxis = list(title = "IN_OUT"),
+      zaxis = list(title = "C_SHAPE")
+    )
+  )
+
+p_3d
+```
+
+### Interpretazione dei risultati
+
+```{r}
+summary_reg <- tel.comp.fit %>%
+  group_by(class) %>%
+  summarize(
+    across(
+      where(is.numeric),
+      list(
+        mean = ~ mean(.x, na.rm = T)
+      )
+    ),
+    .groups = "drop"
+  )
+
+print(summary_reg)
+
+# Distribuzione piloti per classe
+table(tel.comp.fit$pilota, tel.comp.fit$class)
+
+# Distribuzione GP per classe
+table(tel.comp.fit$GP, tel.comp.fit$class)
 ```
 
 

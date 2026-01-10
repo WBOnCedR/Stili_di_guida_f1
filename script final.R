@@ -17,19 +17,22 @@ library(GGally)
 library(Rmixmod)
 library(flexmix)
 library(plotly)
+library(dotenv)
 
-data_path25 <-  "C:/Users/feder/Documents/datasets/Computazionale/F1/data/dataset_completo_best_tel2025.rds"
+
+load_dot_env()
+
+setwd(Sys.getenv("WORK_DIR"))
+
+data_path <- Sys.getenv("DATA")
 
 # Esplorazione del dataset
 
-tel <- readRDS(data_path25)
+tel <- readRDS(data_path)
 
 
 tel.ex <- tel %>% filter(GP == "United States Grand Prix" & (pilota == "VER" |pilota == "LEC"|pilota== "COL"|pilota=="BEA"))
 colori_team <- c("VER" = "#0600EF", "LEC" = "#EF1A2D", "COL" = "#FF8700","BEA"="#000000")
-
-
-
 tel_g <- tel.ex %>%
   select(rel_distance, pilota, acc_y, acc_x,speed,brake,throttle) %>%
   pivot_longer(cols = c(acc_y, acc_x,speed,throttle), 
@@ -63,7 +66,6 @@ pp <- ggplot(tel_g, aes(x = rel_distance, y = valore, color = pilota)) +
   )
 
 print(pp)
-
 
 #ggsave("report/el_ex1.pdf", pp, width = 7, height = 5, device = cairo_pdf)
 
@@ -202,8 +204,6 @@ tel.summary <- process(data_path25)
 
 #Eliminazione dei casi limite
 
-
-
 tel.summary %>% 
   group_by(pilota) %>% 
     select(pilota,GP,everything())%>% 
@@ -215,11 +215,11 @@ tel.summary <- tel.summary %>%
 tel.summary %>% group_by(GP) %>% select(pilota,GP,everything()) %>% filter(laptime > 1.07*min(laptime)) %>% select(-laptime)
 
 #Nel GP di Las Vegas, durante la Q1 la pista era inizialmente bagnata, ma si è progressivamente asciugata nel corso delle qualifiche. Poiché il dataset considera per ogni pilota solo il miglior tempo registrato, i piloti eliminati in Q1 possono avere tempi che non rispecchiano la condizione tipica della sessione (cioè tempi influenzati dalla pista bagnata) e, di conseguenza, non vengono esclusi dal dataset. In contrasto, nel GP di Olanda, il pilota Strole ha avuto un incidente in Q1 e il suo miglior tempo disponibile risulta quindi quello di un giro di riscaldamento, che non rappresenta le prestazioni reali in qualifica.
+
 tel.summary <- tel.summary %>% filter(!(pilota=="STR" & GP=="Dutch Grand Prix"))%>% select(-laptime)
 
 tel.ex <- tel %>% filter(GP == "Australian Grand Prix" & (pilota == "BEA" |pilota == "HAM"|pilota== "TSU"))
 colori_team <- c("BEA" = "#0600EF", "HAM" = "#EF1A2D", "TSU" = "#FDD900")
-
 
 
 tel_g <- tel.ex %>%
@@ -230,7 +230,6 @@ tel_g <- tel.ex %>%
   mutate(variabile = factor(variabile, 
                             levels = c("acc_y", "acc_x"),
                             labels = c(" Accelerazione laterale (g)", " Accelerazione longitudinale (g)")))
-
 
 pp <- ggplot(tel_g
              , aes(x = rel_distance, y = valore, color = pilota)) +
@@ -256,7 +255,6 @@ pp <- ggplot(tel_g
   )
 
 print(pp)
-
 
 #ggsave("report/tel_ex2.pdf", pp, width = 7, height = 5, device = cairo_pdf)
 
@@ -579,7 +577,5 @@ summary2 <- tel.comp.fit %>%
 
 table(tel.comp.fit$pilota,tel.comp.fit$class)
 table(tel.comp.fit$GP,tel.comp.fit$class)
-#Interpretazione Classi 
 
-#Classe 1, componente 1 negativa quindi frenate molto variabili e regolazione del gas stabile e progressiva
-#Classe 2, 
+
