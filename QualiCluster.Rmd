@@ -561,16 +561,20 @@ print(p)
 ```
 ## Clustering
 
-Si filtra per le prime cinque componenti ottenute.
+Si filtra per le prime quattro componenti ottenute e si rinominano per maggiore chiarezza interpretativa.
 ```{r}
 tel.comp <- as_tibble(PCA$scores[, 1:4])
+
+colnames(tel.comp) <- c("IN_OUT", "C_SHAPE", "TRANS", "TRACK")
 ```
 
 
 
-Si procede ora a effettuare un primo clustering
+Si procede ora a effettuare un primo clustering sulle quattro componenti principali.
 
 ```{r}
+set.seed(126)
+
 clust <- Mclust(tel.comp, G = 1:15)
 summary(clust)
 plot(clust, what = "classification")
@@ -587,26 +591,23 @@ tel.comp.labels$class <- as.factor(clust$classification)
 tel.comp.labels$pilota <- tel.pca$pilota
 tel.comp.labels$GP <- tel.pca$GP
 
-tel.comp.labels$laptime <- tel2$laptime
-
-tel.comp.labels <- tel.comp.labels %>% arrange(laptime, GP, pilota)
+tel.comp.labels <- tel.comp.labels %>% arrange(GP, pilota)
 
 colori <- c("red", "blue", "green", "orange", "purple", "cyan", "brown", "pink", "black", "grey", "yellow", "darkblue", "darkred")
 
-p <- ggplot(tel.comp.labels, aes(x = Comp.2, y = Comp.1, color = class)) +
+p <- ggplot(tel.comp.labels, aes(x = C_SHAPE, y = IN_OUT, color = class)) +
   geom_point(size = 2) +
   scale_color_manual(values = colori) +
   labs(
-    title = "Comp1 vs Comp2",
-    x = "Componente 2",
-    y = "Componente 1",
+    x = "C_SHAPE",
+    y = "IN_OUT",
     color = "Cluster",
     shape = "Cluster"
   ) +
   theme_minimal()
 
 print(p)
-ggsave("report/C1_C2.pdf", p, width = 7, height = 5, device = cairo_pdf)
+# ggsave("report/C1_C2.pdf", p, width = 7, height = 5, device = cairo_pdf)
 ```
 
 ```{r}
@@ -614,9 +615,9 @@ library(plotly)
 
 
 p_3d <- plot_ly(tel.comp.labels,
-  x = ~Comp.2,
-  y = ~Comp.1,
-  z = ~Comp.4,
+  x = ~C_SHAPE,
+  y = ~IN_OUT,
+  z = ~TRACK,
   color = ~class,
   colors = colori,
   type = "scatter3d",
@@ -624,11 +625,10 @@ p_3d <- plot_ly(tel.comp.labels,
   marker = list(size = 3)
 ) %>%
   layout(
-    title = "Comp1 vs Comp2 vs Comp4",
     scene = list(
-      xaxis = list(title = "Componente 2"),
-      yaxis = list(title = "Componente 1"),
-      zaxis = list(title = "Componente 4")
+      xaxis = list(title = "C_SHAPE"),
+      yaxis = list(title = "IN_OUT"),
+      zaxis = list(title = "TRACK")
     )
   )
 
@@ -654,28 +654,15 @@ round(mean(clust$uncertainty), 4)
 
 ### Interpretazione dei risultati
 
+L'analisi di Clustering Model-Based, condotta sulle prime quattro componenti, ha permesso di identificare un modello **VII** (*Volume variabile*, *forma sferica* e *orientamento identico*) a tredici classi.
+
+Il raggruppamento dei dati risulta già chiaramente distinguibile nella rappresentazione bidimensionale ottenuta dal confronto tra la prima e la seconda componente principale, sebbene sia ancora presente una certa sovrapposizione visiva, interpretabile come "rumore" grafico. Tale effetto è attribuibile principalmente all'informazione contenuta nelle componenti principali rimanenti. Ciò è ulteriormente evidenziato dalla visualizzazione 3D, in cui il confronto congiunto tra la quarta, la prima e la seconda componente consente di distinguere in modo più netto i cluster, migliorandone la separabilità rispetto alla rappresentazione bidimensionale.
+
 ```{r}
 unique_GP <- unique(tel.comp.labels$GP)
 
-x_lim <- range(tel.comp.labels$Comp.2, na.rm = TRUE)
-y_lim <- range(tel.comp.labels$Comp.1, na.rm = TRUE)
 
-
-for (gp in unique_GP) {
-  p <- ggplot(tel.comp.labels %>% filter(GP == gp), aes(x = Comp.2, y = Comp.1)) +
-    geom_text(aes(label = pilota, colour = as.factor(class)), vjust = -1, size = 3, check_overlap = F) +
-    scale_color_manual(values = colori) +
-    coord_cartesian(xlim = x_lim, ylim = y_lim) +
-    theme_minimal() +
-    labs(
-      title = paste0("Plot Comp.2 vs Comp.1 ", gp),
-      fill = "Classe"
-    )
-  print(p)
-}
-
-
-p <- ggplot(tel.comp.labels, aes(x = Comp.2, y = Comp.1)) +
+p <- ggplot(tel.comp.labels, aes(x = C_SHAPE, y = IN_OUT)) +
   geom_point(aes(colour = as.factor(class)), alpha = 0) +
   geom_text(aes(label = GP, colour = as.factor(class)),
     vjust = -1, size = 3, check_overlap = T, show.legend = F
@@ -683,7 +670,6 @@ p <- ggplot(tel.comp.labels, aes(x = Comp.2, y = Comp.1)) +
   scale_color_manual(values = colori) +
   coord_cartesian(xlim = c(-5, 5), ylim = c(-7, 7)) +
   labs(
-    title = paste0("Plot Comp.2 vs Comp.1 ", gp),
     colour = "Classe"
   ) +
   guides(colour = guide_legend(override.aes = list(alpha = 1, size = 5, shape = 19))) +
@@ -691,23 +677,30 @@ p <- ggplot(tel.comp.labels, aes(x = Comp.2, y = Comp.1)) +
 
 print(p)
 
-ggsave("report/Loadings.pdf", p, width = 7, height = 5, device = cairo_pdf)
+# ggsave("report/Loadings.pdf", p, width = 7, height = 5, device = cairo_pdf)
 ```
 
-La clusterizzazione tramite Model Based clustering, ha evidenziato quattro cluster: 
+**Interpretazione delle classi identificate:**
 
-- Il *primo* cluster comprende prevalentemente Gran Premi con piste caratterizzate da numerose curve a medio-bassa velocità, nei quali i piloti mostrano una gestione longitudinale relativamente costante e una maggiore variabilità della dinamica laterale.
+- **Classe 13**: Identifica il Gran Premio di Monaco. Il valore molto elevato della prima componente si può associare ad un uso del gas ritmico.
 
-- Il *secondo* cluster raccoglie Gran Premi associati a circuiti caratterizzati da curve veloci e sequenze fluide, in cui le accelerazioni e decelerazioni longitudinali risultano più graduali.
+- **Classi 5 e 11**: (Singapore, Messico, Ungheria) Raggruppano circuiti tortuosi ad alto carico. Condividono con Monaco la necessità di gestire l'acceleratore per gestire, per esempio, un'uscita da una curva netta.
 
-- Il *terzo* cluster include Gran Premi tipicamente legati a tracciati con curve a medio-bassa velocità, nei quali la variabilità longitudinale è elevata a fronte di una minore variabilità laterale.
+- **Classe 6**: (Baku) Mostra un'alta terza componente: le curve a 90° costringono a correzioni veloci dell'accelerazione laterale.
 
-- Il *quarto* cluster rappresenta una configurazione intermedia, comprendente circuiti con caratteristiche miste.
+- **Classi 4 e 12**: (Las Vegas e Miami) Mostrano un'alta quarta componente: l'asfalto scivoloso, soprattutto a Las Vegas per la pioggia, crea incertezza nel mantenere la velocità costante, costringendo a parzializzare il gas dove normalmente si andrebbe costanti.
 
-- Il *quinto* cluster comprende Gran Premi associati a circuiti stop-and-go, con molte curve lente e pochi rettilinei, nei quali si osserva una gestione più irregolare dell’accelerazione longitudinale.
+- **Classi 8 e 9**: (Spa, Silverstone, Suzuka) Rappresentano i circuiti con prima componente fortemente negativa dovuta all'assenza di frenate decise. La seconda componente positiva distingue questi circuiti: indica che la variazione è dominata dalle forze longitudinali ad alta velocità.
 
+- **Classe 10**: (Cina, USA, Brasile) Raggruppa circuiti completi dal punto di vista del tracciato, alternando tratti veloci a tratti tecnici. Non risulta esserci una componente con pesi notevoli.
 
-Esempi chiari, sono il gp di `Las Vegas` per quanto riguarda lo stile stabile sempre per le condizioni atmosferiche, invece si può osservare nella pista di `Monaco` come lo stile sia per lo più instabile e aggressivo, dovuto per l'appunto alla configurazione del tracciato.
+- **Classe 2**: (Monza) La prima componente molto negativa. È una pista caratterizzata da staccate profonde con un'uscita di trazione pulita, inoltre la quarta componente abbastanza alta, dovuta alle elevate variazioni di velocità.
+
+- **Classe 7**: (Bahrain e Canada) Sono circuiti caratterizzati da poche curve di alta velocità di percorrenza, evidenziati dal valore negativo della seconda componente.
+
+- **Classe 1**: (Australian, Abu Dhabi, Qatar, Saudi, Spanish) È il gruppo più numeroso, caratterizzato da una prima componente negativa, quindi poche variazioni longitudinali e in generale fluidità nella percorrenza.
+
+- **Classe 3**: (Austrian, Emilia Romagna) Molto simile alla classe 1, ma con curve più accentuate e maggiori variazioni longitudinali.
 
 ```{r}
 summary <- tel.comp.labels %>%
@@ -721,34 +714,22 @@ summary <- tel.comp.labels %>%
     ),
     .groups = "drop"
   )
-summary2 <- tel.comp.labels %>%
-  group_by(GP, class) %>%
-  summarize(
-    across(
-      where(is.numeric),
-      list(
-        mean = ~ mean(.x, na.rm = T)
-      )
-    ), n(),
-    .groups = "drop"
-  )
 
 table(tel.comp.labels$GP, tel.comp.labels$class)
 ```
 
+
+
+## Model Based Clustering with Covariates
+
+I risultati ottenuti dal precedente modello, sebbene chiari e definiti, non rispecchiano tuttavia l'obiettivo iniziale dell'analisi. Ciò è dato dal fatto che la quarta componente discrimina le classi per la tipologia di tracciato e non per lo stile di guida. Si prova quindi a ridurre l'effetto della pista, condizionando i parametri della distribuzione alla quarta componente.
+
+Per far ciò si applica un **MEM** (*Mixture of Experts Models*), utilizzando una regressione normale multivariata con variabili:
+
+- **Dipendenti**: IN_OUT, C_SHAPE, TRANS
+- **Esplicativa**: TRACK
+
 ```{r}
-print(summary)
-print(summary2)
-```
-
-## Regressione con Mixture of Experts
-
-Per ridurre l'effetto della configurazione della pista (quarta componente) e concentrarsi sullo stile di guida, si applica un modello di regressione con mixture of experts utilizzando `stepFlexmix`. Questo approccio permette di condizionare i parametri della distribuzione alla variabile TRACK (Comp.4).
-
-```{r}
-# Rinomina delle componenti per maggiore chiarezza
-colnames(tel.comp) <- c("IN_OUT", "C_SHAPE", "TRANS", "TRACK")
-
 # Mixture of Experts: regressione delle prime 3 componenti sulla quarta
 set.seed(12320)
 final.vv <- stepFlexmix(cbind(IN_OUT, C_SHAPE, TRANS) ~ TRACK,
@@ -834,12 +815,12 @@ for (k in 1:4) {
   sub_data <- tel.comp[labs == k, ]
 
   m_comp1 <- lm(IN_OUT ~ TRACK, data = sub_data)
-  m_comp2 <- lm(C_SHAPE ~ TRACK, data = sub_data)
+  m_comp2 <- lm(TRANS ~ TRACK, data = sub_data)
 
   pred_lines[[k]] <- data.frame(
     TRACK = x_range,
     IN_OUT = predict(m_comp1, newdata = newdata),
-    C_SHAPE = predict(m_comp2, newdata = newdata),
+    TRANS = predict(m_comp2, newdata = newdata),
     Cluster = as.factor(k)
   )
 }
@@ -857,7 +838,7 @@ p_3d <- plot_ly() %>%
     data = tel.comp.labels,
     x = ~TRACK,
     y = ~IN_OUT,
-    z = ~C_SHAPE,
+    z = ~TRANS,
     color = ~labs_factor,
     colors = colore,
     type = "scatter3d",
@@ -870,7 +851,7 @@ p_3d <- plot_ly() %>%
     data = plot_lines_df,
     x = ~TRACK,
     y = ~IN_OUT,
-    z = ~C_SHAPE,
+    z = ~TRANS,
     color = ~Cluster,
     colors = colore,
     type = "scatter3d",
@@ -882,7 +863,7 @@ p_3d <- plot_ly() %>%
     scene = list(
       xaxis = list(title = "TRACK (Predittore)"),
       yaxis = list(title = "IN_OUT"),
-      zaxis = list(title = "C_SHAPE")
+      zaxis = list(title = "TRANS")
     )
   )
 
