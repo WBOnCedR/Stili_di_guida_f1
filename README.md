@@ -16,18 +16,19 @@ L'obiettivo è analizzare le telemetrie delle qualifiche di Formula 1 per indivi
 
 Lo studio parte dall'analisi di file JSON contenenti i tempi sul giro e le telemetrie. Attraverso una pipeline di pre-processing e feature engineering, vengono estratte variabili significative (accelerazione longitudinale/laterale, uso dell'acceleratore/freno, variazioni nel tempo). Successivamente, si applica la PCA (Principal Component Analysis) per ridurre la dimensionalità e si utilizza `Mclust` per raggruppare i piloti in base al loro stile di guida.
 
-## Funzionalità
+## 🎯 Funzionalità
 
 - **Data Ingestion**: Caricamento e parsing di file JSON (laptimes e telemetry).
-- **Pre-processing**: Pulizia dei dati, gestione dei valori mancanti e filtraggio dei giri non validi.
+- **Pre-processing**: Pulizia dei dati, gestione dei valori mancanti e filtraggio dei giri non validi (regola 107% FIA).
 - **Feature Engineering**: 
   - Separazione dell'accelerazione longitudinale in `acc_x` (valori positivi) e `dec_x` (valori negativi in modulo)
   - Trasformazione di `acc_y` in valore assoluto per catturare l'intensità delle forze laterali
-  - Calcolo di variazioni percentuali lag (breve/medio periodo) e Coefficienti di Variazione (CV)
-- **Analisi Esplorativa**: Visualizzazione delle telemetrie e correlazioni.
-- **PCA**: Riduzione delle variabili correlate in 4 componenti principali interpretabili.
-- **Clustering**: Identificazione di cluster di stili di guida tramite Gaussian Mixture Models (Model-Based Clustering).
-- **Classificazione**: Modelli per predire l'appartenenza di nuove osservazioni.
+  - Calcolo di variazioni percentuali lag1 e lag5 (breve/medio periodo)
+  - Calcolo di Coefficienti di Variazione (CV) per normalizzare rispetto al setup della vettura
+- **Analisi Esplorativa**: Visualizzazione delle telemetrie e analisi delle correlazioni.
+- **PCA**: Riduzione dimensionale a 4 componenti principali interpretabili (IN_OUT, C_SHAPE, TRANS, TRACK).
+- **Model-Based Clustering**: Identificazione di 13 cluster basati sulla configurazione del tracciato.
+- **MEM (Mixture of Experts Models)**: Clustering con covariate per ridurre l'effetto della pista e identificare 4 stili di guida puri.
 
 ## 📁 Struttura del Progetto
 
@@ -106,7 +107,13 @@ Questo documento contiene l'intero flusso di analisi:
 - Caricamento del dataset processato (variabile `DATA` nel .env).
 - Data Cleaning e Feature Engineering avanzato.
 - Visualizzazione dei dati (ggplot).
-- Calcolo PCA e Clustering (Mclust).
+- PCA: Riduzione a 4 componenti (IN_OUT, C_SHAPE, TRANS, TRACK).
+- **Model-Based Clustering**: Identificazione di 13 cluster basati sulla configurazione del tracciato (Mclust).
+- **MEM (Mixture of Experts)**: Regressione con covariate per identificare 4 stili di guida puri, controllando per l'effetto della pista.
+
+L'analisi si articola in due fasi:
+1. **Prima fase**: Clustering standard che identifica principalmente le caratteristiche dei tracciati
+2. **Seconda fase**: MEM che condiziona le prime 3 componenti (IN_OUT, C_SHAPE, TRANS) sulla quarta (TRACK) per isolare gli stili di guida
 
 Puoi eseguire i chunk singolarmente o generare il report finale cliccando su **Knit**.
 

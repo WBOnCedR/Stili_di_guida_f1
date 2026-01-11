@@ -137,7 +137,7 @@ citecolor=black       % Colore citazioni bibliografiche
 	Poiché lo stile di guida non è riconducibile a variabili di tipo posizionale, le coordinate spaziali e le misure di distanza, sia assolute che relative, vengono escluse dall'analisi.
 	
 	
-	In questa fase preliminare, lo stile di guida viene descritto attraverso variabili dinamiche, quali l'utilizzo dell'acceleratore, del freno, la velocità e le seguenti accelerazioni longitudinali e laterali, che consentono, per esempio, di valutare rispettivamente le modalità di decelerazione in ingresso curva, l'intensità con cui la curva viene affrontata tutte caratteristiche che fanno riferimento allo stile di guida.
+	In questa fase preliminare, lo stile di guida viene descritto attraverso variabili dinamiche, quali l'utilizzo dell'acceleratore, del freno, la velocità e le seguenti accelerazioni longitudinali e laterali, che consentono, per esempio, di valutare rispettivamente le modalità di decelerazione in ingresso curva o anche l'intensità con cui la curva viene affrontata, tutte caratteristiche che fanno riferimento allo stile di guida.
 	A sostegno delle ipotesi sopra citate, si riporta la Figura \ref{fig:confronto} che confronta nel Gran Premio degli USA le accelerazioni e velocità per i piloti: Charles Leclerc, Lando Norris, Max Verstappen e Franco Colapinto.
 	\begin{figure}[H]
 		\centering
@@ -220,7 +220,7 @@ citecolor=black       % Colore citazioni bibliografiche
 	Nonostante tale riduzione, una dimensionalità pari a 26 risulta ancora essere impegnativa sia ai fini di interpretabilità che per costo computazionale per un Model Base Clustering.
 	
 	
-	Si effettua dunque un analisi delle componenti principali (PCA) con l'obiettivo di ottenere un'ulteriore riduzione dimensionale.
+	Si effettua dunque un'analisi delle componenti principali (PCA) con l'obiettivo di ottenere un'ulteriore riduzione dimensionale.
 	I risultati ottenuti tramite PCA\footnote{Estratto del codice R consultabile nell'appendice \ref{PCA}} mostrano come le prime 4 componenti spieghino più del $60\%$ della varianza, come illustrato in figura \ref{fig:pca}.
 	
 	\begin{figure}[H]
@@ -234,11 +234,11 @@ citecolor=black       % Colore citazioni bibliografiche
 	\subsubsection{Interpretazione delle componenti}
 	Attraverso l'analisi dei pesi associati alle componenti (Figura \ref{fig:pesi}) le si interpretano:
 	\begin{enumerate}
-		\item \textbf{Prima componente} (IN\_OUT)  : Separa stili stili di guida che hanno un'alta variabilità (molte correzioni) nell'erogazione della potenza da quelli che hanno un'alta variabilità nella fase di decelerazione. A valori elevati corrisponde a uno stile di guida caratterizzato da una trazione più "sporca" o reattiva, con continue correzioni sul pedale dell'acceleratore che si contrappone uno stile caratterizzato da una frenata molto modulata e dinamica, mantenendo però un'uscita di curva molto composta e lineare nell'erogazione del gas.
+		\item \textbf{Prima componente} (IN\_OUT)  : Separa stili di guida che hanno un'alta variabilità (molte correzioni) nell'erogazione della potenza da quelli che hanno un'alta variabilità nella fase di decelerazione. A valori elevati corrisponde uno stile di guida caratterizzato da una trazione più "sporca" o reattiva, con continue correzioni sul pedale dell'acceleratore. A questo si contrappone uno stile caratterizzato da una frenata molto modulata e dinamica, mantenendo però un'uscita di curva molto composta e lineare nell'erogazione del gas.
 		
-		\item \textbf{Seconda componente} (C\_SHAPE) : distungue stili di guida che lavorano di più in termini di velocità pura (avanti/dietro) contro chi ha maggiore di percorrenza (destra/sinistra). A valorio elevati corrisponde uno stile di guida a "V", dove il pilota punta tutto sulla frenata profonda e sulla ripartenza rapida, variando molto l'accelerazione longitudinale. Invece, per valori bassi contrappone uno stile di guida basato sulla velocità di percorrenza, che predilige la gestione del carico laterale.
+		\item \textbf{Seconda componente} (C\_SHAPE) : distingue stili di guida che lavorano di più in termini di velocità pura (avanti/dietro) contro chi ha maggiore velocità di percorrenza (destra/sinistra). A valori elevati corrisponde uno stile di guida a "V", dove il pilota punta tutto sulla frenata profonda e sulla ripartenza rapida, variando molto l'accelerazione longitudinale. Invece, per valori bassi si contrappone uno stile di guida basato sulla velocità di percorrenza, che predilige la gestione del carico laterale.
 		
-		\item \textbf{Terza componente} (TRANS) : questa componente entra nel dettaglio delle fasi della curva. Discrimina stili di guida con bassa componente laterale in fase di percorrenza e alta componente di accellerazioni longitudinali e viceversa. In particolare, a valori alti corrisponde uno stile di guida caratterizzato forti staccate, forti accellerazioni in uscita curva e bassa velocità di percorrenza. Mentre a valori bassi corrisponde uno stile caratterizzato alte velocità di percorrenza, e poca variazione longitudinale.
+		\item \textbf{Terza componente} (TRANS) : questa componente entra nel dettaglio delle fasi della curva. Discrimina stili di guida con bassa componente laterale in fase di percorrenza e alta componente di accelerazioni longitudinali e viceversa. In particolare, a valori alti corrisponde uno stile di guida caratterizzato da forti staccate, forti accelerazioni in uscita curva e bassa velocità di percorrenza. Mentre a valori bassi corrisponde uno stile caratterizzato da alte velocità di percorrenza e poca variazione longitudinale.
 		
 		\item \textbf{Quarta componente} (TRACK) :  questa componente caratterizza la configurazione della pista. A valori elevati corrisponde una maggiore variabilità complessiva della velocità, mentre valori bassi indicano un'andamento più regolare e uniforme.
 		
@@ -292,7 +292,7 @@ citecolor=black       % Colore citazioni bibliografiche
 		
 		\item Classe 7 : (Bahrain e Canada):  Sono circuiti caratterizzati da poche curve di alta velocità di percorrenza, evidenziati dal valore negativo della seconda componente.
 		
-		\item Classe 1 : (Australian, Abu Dhabi, Qatar,  Saudi, Spanish) È il gruppo più numeroso, caratteizzato da una prima componente negativa, quindi poche variazioni longitudinali e in generale fluidità nella percorrenza.
+		\item Classe 1 : (Australian, Abu Dhabi, Qatar,  Saudi, Spanish) È il gruppo più numeroso, caratterizzato da una prima componente negativa, quindi poche variazioni longitudinali e in generale fluidità nella percorrenza.
 		
 		\item Classe 3 : (Austrian, Emilia Romagna) Molto simile alla classe 1, ma con curve più accentuate e maggiori variazioni longitudinali.
 	\end{itemize}
@@ -304,7 +304,7 @@ citecolor=black       % Colore citazioni bibliografiche
 		\label{fig:c_shape_in_out_gp}
 	\end{figure}
 
-	\section{Model Based Clusering with Covariates}
+	\section{Model Based Clustering with Covariates}
 	I risultati ottenuti dal precedente modello, sebbene chiari e definiti, non rispecchiano tuttavia l'obiettivo iniziale dell'analisi. Ciò è dato dal fatto che la quarta componente discrimina le classi per la tipologia di tracciato e non per lo stile di guida. Si prova quindi a ridurre l'effetto della pista, condizionando i parametri della distribuzione alla quarta componente.
 
 	Per far ciò si applica un $MEM$ (\texttt{Mixture of Experts Models})\footnote{Estratto del codice R consultabile nell'appendice \ref{Regressione}.}, utilizzando una regressione normale multivariata con variabili :
