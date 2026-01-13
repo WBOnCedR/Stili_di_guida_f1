@@ -256,7 +256,7 @@ pp <- ggplot(tel_g
 
 print(pp)
 
-ggsave("report/tel_ex2.pdf", pp, width = 7, height = 5, device = cairo_pdf)
+#ggsave("report/tel_ex2.pdf", pp, width = 7, height = 5, device = cairo_pdf)
 
 ### PCA
 

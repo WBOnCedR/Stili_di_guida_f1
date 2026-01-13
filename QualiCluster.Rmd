@@ -239,9 +239,11 @@ tel
 Si procede con la verifica che i dati siano coerenti con il regolamento *FIA* che prevede l'esclusione del pilota se il suo tempo supera il 107% del tempo minimo.
 
 ```{r}
-tel %>%
+tell<- tel %>%
   group_by(GP) %>%
-  filter(lap_time > 1.07 * min(lap_time))
+  filter(lap_time > 1.07 * min(lap_time)) %>% ungroup() %>% group_by(GP,pilota) %>% summarize(max(lap_time))
+
+
 ```
 
 Nel GP di Las Vegas, durante la Q1 la pista era inizialmente bagnata, ma si è progressivamente asciugata nel corso delle qualifiche. Poiché il dataset considera per ogni pilota solo il miglior tempo registrato, i piloti eliminati in Q1 possono avere tempi che non rispecchiano la condizione tipica della sessione (cioè tempi influenzati dalla pista bagnata) e, di conseguenza, non vengono esclusi dal dataset. In contrasto, nel GP di Olanda, il pilota Strole ha avuto un incidente in Q1 e il suo miglior tempo disponibile risulta quindi quello di un giro di riscaldamento, che non rappresenta le prestazioni reali in qualifica.
