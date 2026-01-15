@@ -34,15 +34,21 @@ Lo studio parte dall'analisi di file JSON contenenti i tempi sul giro e le telem
 
 ```
 .
-├── .env                # File di configurazione (NON committare)
-├── .env.example        # Template per il file .env
-├── README.md           # Documentazione del progetto
-├── pre-processing.R    # Script per unire e pulire i dati grezzi JSON
-├── QualiCluster.Rmd    # R Markdown per analisi, PCA e Clustering
-├── data/               # Cartella contenente i dati (input/output)
-│   └── dataset_completo_best_tel.rds  # Dataset processato
-├── findcorrelation     # File ausiliari (se presenti)
-└── report.pdf          # Report finale (output del Rmd)
+├── .env.example.example        # Template per il file .env
+├── README.md                   # Documentazione del progetto
+├── pre-processing.R            # Script per unire e pulire i dati grezzi JSON (2025)
+├── pre-processing2024.R        # Script per unire e pulire i dati grezzi JSON (2024)
+├── script_final.R              # Script R finale per analisi
+├── QualiCluster.Rmd            # R Markdown principale per analisi, PCA e Clustering
+├── Codice.Rmd                  # R Markdown aggiuntivo
+├── data/                       # Cartella contenente i dati
+│   ├── dataset_completo_best_tel2024.rds  # Dataset processato 2024
+│   └── dataset_completo_best_tel2025.rds  # Dataset processato 2025
+└── report/                     # Cartella contenente report e grafici
+    ├── report.tex              # Sorgente LaTeX del report finale 
+    ├── reportStatComp.tex      # Sorgente LaTeX del report finale a due colonne 
+    ├── report.pdf              # Report finale in PDF
+    └── reportStatComp.pdf      # Report finale a due colonne in PDF
 ```
 
 ## 🚀 Requisiti
