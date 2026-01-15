@@ -48,7 +48,8 @@ Lo studio parte dall'analisi di file JSON contenenti i tempi sul giro e le telem
     ├── report.tex              # Sorgente LaTeX del report finale 
     ├── reportStatComp.tex      # Sorgente LaTeX del report finale a due colonne 
     ├── report.pdf              # Report finale in PDF
-    └── reportStatComp.pdf      # Report finale a due colonne in PDF
+    ├── reportStatComp.pdf      # Report finale a due colonne in PDF
+    └── grafici...              # Grafici inseriti nel report derivanti dagli script Rmd e R
 ```
 
 ## 🚀 Requisiti
