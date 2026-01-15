@@ -296,6 +296,8 @@ citecolor=black       % Colore citazioni bibliografiche
 		
 		\item Classe 3 : (Austrian, Emilia Romagna) Molto simile alla classe 1, ma con curve più accentuate e maggiori variazioni longitudinali.
 	\end{itemize}
+	
+	Come illustrato nella Figura \ref{fig:c_shape_in_out_gp}, la distribuzione dei Gran Premi nelle prime due componenti principali evidenzia chiaramente la separazione tra le diverse classi identificate.
 
 	\begin{figure}[H]
 		\centering
@@ -315,7 +317,8 @@ citecolor=black       % Colore citazioni bibliografiche
 		\item \textbf{Esplicativa} $\begin{bmatrix}
 								\texttt{TRACK}
 						\end{bmatrix}$;
-	\end{itemize} 
+	\end{itemize}
+	La Figura \ref{fig:reg14} mostra la relazione tra la componente TRACK e IN\_OUT per ciascun cluster, evidenziando come il modello di regressione catturi l'influenza del tracciato sullo stile di guida. 
 	che rivela le seguenti classi\footnote{Media delle variabili nelle classi consultabile nell'appendice \ref{tab_mem}.} :
 	\begin{enumerate}
 		\item \textbf{Cluster 1}: Rappresenta uno stile di guida reattivo, caratterizzato da frequenti correzioni sull'acceleratore (alto IN\_OUT). Sebbene tenda a un approccio a "V" (C\_SHAPE positivo), mantiene elevate velocità di percorrenza in curva (TRANS negativo);
@@ -326,6 +329,9 @@ citecolor=black       % Colore citazioni bibliografiche
 		
 		\item \textbf{Cluster 4}: È lo stile più fluido e composto, orientato alla massima percorrenza e stabilità laterale (bassi C\_SHAPE e TRANS). L'erogazione del gas è lineare e la frenata molto modulata (basso IN\_OUT), minimizzando le variazioni longitudinali a favore di una conduzione pulita e costante.
 	\end{enumerate}
+	
+	Nella Figura \ref{fig:reg14} la divisione in classi sembra comunque molto sovrapposta, cosa che non si verifica invece nella visualizzazione tridimensionale in Figura \ref{fig:reg} mostra le rette di regressione per ciascun cluster nello spazio delle componenti principali, permettendo di apprezzare la separazione tra i diversi stili di guida condizionati alla tipologia di tracciato.
+	
 	\begin{figure}[H]
 		\centering
 		\includegraphics[width=\columnwidth]{C1_C4_R.pdf}
@@ -744,7 +750,7 @@ citecolor=black       % Colore citazioni bibliografiche
 		\caption{Riepilogo delle medie per le 4 classi identificate}
 		\label{tab:summary_4classes}
 	\end{table}
-	\subsection{Media delle variabili nelle Classi - Set 2}
+	\subsection{Frequenza dei piloti nelle classi - Set 2}
 	\label{tab_mem_piloti}
 	\begin{table}[ht]
 		\centering

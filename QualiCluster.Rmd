@@ -239,11 +239,12 @@ tel
 Si procede con la verifica che i dati siano coerenti con il regolamento *FIA* che prevede l'esclusione del pilota se il suo tempo supera il 107% del tempo minimo.
 
 ```{r}
-tell<- tel %>%
+tell <- tel %>%
   group_by(GP) %>%
-  filter(lap_time > 1.07 * min(lap_time)) %>% ungroup() %>% group_by(GP,pilota) %>% summarize(max(lap_time))
-
-
+  filter(lap_time > 1.07 * min(lap_time)) %>%
+  ungroup() %>%
+  group_by(GP, pilota) %>%
+  summarize(max(lap_time))
 ```
 
 Nel GP di Las Vegas, durante la Q1 la pista era inizialmente bagnata, ma si è progressivamente asciugata nel corso delle qualifiche. Poiché il dataset considera per ogni pilota solo il miglior tempo registrato, i piloti eliminati in Q1 possono avere tempi che non rispecchiano la condizione tipica della sessione (cioè tempi influenzati dalla pista bagnata) e, di conseguenza, non vengono esclusi dal dataset. In contrasto, nel GP di Olanda, il pilota Strole ha avuto un incidente in Q1 e il suo miglior tempo disponibile risulta quindi quello di un giro di riscaldamento, che non rappresenta le prestazioni reali in qualifica.
@@ -365,7 +366,7 @@ tel.guida_summary <- tel.guida %>%
 
 tel2 <- tel %>%
   group_by(GP, pilota) %>%
-  summarize(laptime = max(lap_time), strategy = (max(strategy)), gomma = (max(gomma)), .groups = "drop")
+  summarize(laptime = max(lap_time), .groups = "drop")
 
 tel.guida_summary$laptime <- as.numeric(tel2$laptime)
 ```
@@ -817,12 +818,12 @@ for (k in 1:4) {
   sub_data <- tel.comp[labs == k, ]
 
   m_comp1 <- lm(IN_OUT ~ TRACK, data = sub_data)
-  m_comp2 <- lm(TRANS ~ TRACK, data = sub_data)
+  m_comp2 <- lm(C_SHAPE ~ TRACK, data = sub_data)
 
   pred_lines[[k]] <- data.frame(
     TRACK = x_range,
     IN_OUT = predict(m_comp1, newdata = newdata),
-    TRANS = predict(m_comp2, newdata = newdata),
+    C_SHAPE = predict(m_comp2, newdata = newdata),
     Cluster = as.factor(k)
   )
 }
