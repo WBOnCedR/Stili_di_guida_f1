@@ -3,7 +3,9 @@ library(tidyverse)
 library(dotenv)
 
 rm(list=ls())
+load_dot_env()
 
+setwd(Sys.getenv("WORK_DIR"))
 json_path <- Sys.getenv("JSON_PATH")
 cartella <- json_path
 
@@ -40,11 +42,7 @@ for(i in 1:length(files_qualifiche_lap)) {
       
       json_data$pilota <- parti_cartella[n-1]
       json_data$GP <- parti_cartella[n-3]
-      json_data$gomma <- rep(laptimes_data$compound[giro],nrow(json_data))
       json_data$lap_time <- rep(laptimes_data$time[giro],nrow(json_data))
-      json_data$strategy <- rep(laptimes_data$status[giro],nrow(json_data))
-      json_data$life <- rep(laptimes_data$life[giro],nrow(json_data))
-      json_data$life <- as.numeric(json_data$life)
       lista_dati[[i]] <- json_data
     }
 
@@ -54,7 +52,6 @@ dataset_completo <- dataset_completo %>%
   select(-dataKey)
 
 
-# setwd("C:/Users/feder/Documents/datasets/Computazionale/F1/data")
 saveRDS(dataset_completo, file = Sys.getenv("DATA"))
 
 
