@@ -6,7 +6,7 @@ output: html_document
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(echo = TRUE, fig.path = "static/")
 ```
 
 Working set up
@@ -148,7 +148,7 @@ pp <- ggplot(tel_g, aes(x = rel_distance, y = valore, color = pilota)) +
 print(pp)
 
 
-ggsave("report/el_ex1.pdf", pp, width = 7, height = 5, device = cairo_pdf)
+ggsave("static/el_ex1.pdf", pp, width = 7, height = 5, device = cairo_pdf)
 ```
 
 ### Data cleaning
@@ -222,7 +222,7 @@ pp <- ggplot(
 print(pp)
 
 
-ggsave("report/tel_ex2.pdf", pp, width = 7, height = 5, device = cairo_pdf)
+ggsave("static/tel_ex2.pdf", pp, width = 7, height = 5, device = cairo_pdf)
 ```
 
 ```{r}

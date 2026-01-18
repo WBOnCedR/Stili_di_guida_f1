@@ -1,128 +1,141 @@
-# F1 Telemetry Analysis & Clustering
+# Formula 1 - Analisi Stili di Guida
 
-Questo progetto è stato sviluppato per il corso di **Statistica Computazionale** (A.A. 2025-2026).
-L'obiettivo è analizzare le telemetrie delle qualifiche di Formula 1 per individuare e classificare diversi stili di guida ("Driving Styles") utilizzando tecniche di Model-Based Clustering.
+L'obiettivo di questo progetto è analizzare le telemetrie delle qualifiche di Formula 1 per individuare e classificare diversi stili di guida utilizzando tecniche di Model-Based Clustering.
 
-## 📋 Indice
+## Indice
 
-- [Panoramica](#panoramica)
-- [Funzionalità](#funzionalità)
-- [Struttura del Progetto](#struttura-del-progetto)
-- [Requisiti](#requisiti)
-- [Installazione e Configurazione](#installazione-e-configurazione)
-- [Utilizzo](#utilizzo)
+- [Panoramica](#-panoramica)
+- [Funzionalità](#-funzionalità)
+- [Struttura del Progetto](#-struttura-del-progetto)
+- [Requisiti](#-requisiti)
+- [Installazione e Configurazione](#️-installazione-e-configurazione)
+- [Utilizzo](#-utilizzo)
+- [Risultati](#-risultati)
 
-## 🎯 Panoramica
+## Panoramica
 
-Lo studio parte dall'analisi di file JSON contenenti i tempi sul giro e le telemetrie. Attraverso una pipeline di pre-processing e feature engineering, vengono estratte variabili significative (accelerazione longitudinale/laterale, uso dell'acceleratore/freno, variazioni nel tempo). Successivamente, si applica la PCA (Principal Component Analysis) per ridurre la dimensionalità e si utilizza `Mclust` per raggruppare i piloti in base al loro stile di guida.
+Lo studio parte dall'analisi di file JSON contenenti i tempi sul giro e le telemetrie delle qualifiche della stagione 2025 di Formula 1. Attraverso una pipeline di pre-processing e feature engineering, vengono estratte variabili significative (accelerazione longitudinale/laterale, uso dell'acceleratore/freno, variazioni nel tempo). Successivamente, si applica la PCA (Principal Component Analysis) per ridurre la dimensionalità e si utilizza un model based clustering per raggruppare i piloti in base al loro stile di guida.
 
-## 🎯 Funzionalità
+## Funzionalità
 
-- **Data Ingestion**: Caricamento e parsing di file JSON (laptimes e telemetry).
-- **Pre-processing**: Pulizia dei dati, gestione dei valori mancanti e filtraggio dei giri non validi (regola 107% FIA).
+- **Data Ingestion**: Caricamento e parsing di file JSON (laptimes e telemetry)
+- **Pre-processing**: Pulizia dei dati, gestione dei valori mancanti e filtraggio dei giri non validi (regola 107% FIA)
 - **Feature Engineering**: 
   - Separazione dell'accelerazione longitudinale in `acc_x` (valori positivi) e `dec_x` (valori negativi in modulo)
   - Trasformazione di `acc_y` in valore assoluto per catturare l'intensità delle forze laterali
   - Calcolo di variazioni percentuali lag1 e lag5 (breve/medio periodo)
   - Calcolo di Coefficienti di Variazione (CV) per normalizzare rispetto al setup della vettura
-- **Analisi Esplorativa**: Visualizzazione delle telemetrie e analisi delle correlazioni.
-- **PCA**: Riduzione dimensionale a 4 componenti principali interpretabili (IN_OUT, C_SHAPE, TRANS, TRACK).
-- **Model-Based Clustering**: Identificazione di 13 cluster basati sulla configurazione del tracciato.
-- **MEM (Mixture of Experts Models)**: Clustering con covariate per ridurre l'effetto della pista e identificare 4 stili di guida puri.
+- **Analisi Esplorativa**: Visualizzazione delle telemetrie e analisi delle correlazioni
+- **PCA**: Riduzione dimensionale a 4 componenti principali interpretabili (IN_OUT, C_SHAPE, TRANS, TRACK)
+- **Model-Based Clustering**: Identificazione di 13 cluster basati sulla configurazione del tracciato
+- **MEM (Mixture of Experts Models)**: Clustering con covariate per ridurre l'effetto della pista e identificare 4 stili di guida puri
 
-## 📁 Struttura del Progetto
+## Struttura del Progetto
 
 ```
 .
-├── .env.example.example        # Template per il file .env
-├── README.md                   # Documentazione del progetto
-├── pre-processing.R            # Script per unire e pulire i dati grezzi JSON (2025)
-├── pre-processing2024.R        # Script per unire e pulire i dati grezzi JSON (2024)
-├── script_final.R              # Script R finale per analisi
-├── QualiCluster.Rmd            # R Markdown principale per analisi, PCA e Clustering
-├── Codice.Rmd                  # R Markdown aggiuntivo
-├── data/                       # Cartella contenente i dati
-│   ├── dataset_completo_best_tel2024.rds  # Dataset processato 2024
-│   └── dataset_completo_best_tel2025.rds  # Dataset processato 2025
-└── report/                     # Cartella contenente report e grafici
-    ├── report.tex              # Sorgente LaTeX del report finale 
-    ├── reportStatComp.tex      # Sorgente LaTeX del report finale a due colonne 
-    ├── report.pdf              # Report finale in PDF
-    ├── reportStatComp.pdf      # Report finale a due colonne in PDF
-    └── grafici...              # Grafici inseriti nel report derivanti dagli script Rmd e R
+├── .env.example              # Template per il file .env
+├── README.md                 # Documentazione del progetto (questo file)
+├── Risultati.md              # Report dei risultati in formato Markdown
+├── pre-processing.R          # Script per unire e pulire i dati grezzi JSON
+├── script_final.R            # Script R completo per l'analisi
+├── QualiCluster.Rmd          # R Markdown principale per analisi, PCA e Clustering
+├── static/                   # Cartella contenente grafici e immagini generati
+└── data/                     # Cartella contenente i dataset 
 ```
 
-## 🚀 Requisiti
+
+## Requisiti
 
 - **R** (versione 4.0 o superiore)
 - **RStudio** (consigliato per eseguire i file .Rmd)
 - Librerie R richieste:
   - `jsonlite`, `tidyverse`, `dotenv`
   - `ggplot2`, `RColorBrewer`, `scales`, `ggcorrplot`, `GGally`
-  - `mclust`, `caret`, `factoextra`, `Rmixmod`
+  - `mclust`, `caret`, `factoextra`, `Rmixmod`, `flexmix`, `plotly`
 
 Puoi installarle eseguendo in R:
 ```r
 install.packages(c("jsonlite", "tidyverse", "dotenv", "ggplot2", "RColorBrewer", 
                    "scales", "ggcorrplot", "mclust", "caret", "factoextra", 
-                   "GGally", "Rmixmod"))
+                   "GGally", "Rmixmod", "flexmix", "plotly"))
 ```
 
-## 🛠️ Installazione e Configurazione
+## Installazione e Configurazione
 
-1. **Clona il repository**:
-   ```bash
-   git clone https://github.com/WBOnCedR/Statistica_Computazionale_Progetto.git
-   cd Statistica_Computazionale_Progetto
-   ```
+### 1. Clona il repository
+```bash
+git clone https://github.com/WBOnCedR/Statistica_Computazionale_Progetto.git
+cd Statistica_Computazionale_Progetto
+```
 
-2. **Configura le variabili d'ambiente**:
-   Copia il file `.env.example` in un nuovo file `.env`:
-   ```bash
-   cp .env.example .env
-   # Oppure su Windows copia e rinomina manualmente
-   ```
+### 2. Scarica i dati
+I dati di telemetria sono disponibili nel repository [TracingInsights/2025](https://github.com/TracingInsights/2025):
 
-   Apri il file `.env` e imposta i percorsi corretti:
-   ```properties
-   # Percorso della cartella contenente i file JSON (laptimes e telemetry)
-   JSON_PATH="C:/percorso/ai/tuoi/dati/json"
+```bash
+git clone https://github.com/TracingInsights/2025.git
+```
 
-   # Directory di lavoro del progetto (la cartella dove si trova questo README)
-   WORK_DIR="C:/Users/TuoUtente/.../formula1"
+Assicurati di essere sul branch `main`.
 
-   # Percorso dove salvare/leggere il file .rds processato
-   DATA="C:/Users/TuoUtente/.../formula1/data/dataset_completo_best_tel.rds"
-   ```
+### 3. Configura le variabili d'ambiente
+Copia il file `.env.example` in un nuovo file `.env`:
+```bash
+cp .env.example .env
+# Oppure su Windows copia e rinomina manualmente
+```
 
-## 💻 Utilizzo
+Apri il file `.env` e imposta i percorsi corretti:
+```properties
+# Percorso della directory di lavoro del progetto
+WORK_DIR="C:/percorso/alla/cartella/formula1"
+
+# Percorso dove salvare/leggere il file .rds processato
+DATA="C:/percorso/alla/cartella/formula1/data/dataset_completo_best_tel.rds"
+
+# Percorso della cartella contenente i dati JSON clonati (TracingInsights)
+JSON_PATH="C:/percorso/ai/dati/TracingInsights/2025"
+```
+
+## Utilizzo
 
 Il workflow dell'analisi si divide in due step principali:
 
 ### 1. Pre-processing
 Esegui lo script `pre-processing.R`. Questo script:
-- Legge i file JSON specificati in `JSON_PATH`.
-- Estrae il miglior giro di qualifica per ogni pilota.
-- Unisce i dati di telemetria.
-- Salva il risultato in un file `.rds` (specificato nello script/env).
+- Legge i file JSON specificati in `JSON_PATH`
+- Estrae il miglior giro di qualifica per ogni pilota
+- Unisce i dati di telemetria
+- Salva il risultato in un file `.rds` nel percorso specificato da `DATA`
 
-**Nota**: Assicurati che le cartelle di output esistano o verifica i percorsi nello script.
+```r
+source("pre-processing.R")
+```
 
 ### 2. Analisi e Clustering
-Apri il file `QualiCluster.Rmd` in RStudio.
-Questo documento contiene l'intero flusso di analisi:
-- Caricamento del dataset processato (variabile `DATA` nel .env).
-- Data Cleaning e Feature Engineering avanzato.
-- Visualizzazione dei dati (ggplot).
-- PCA: Riduzione a 4 componenti (IN_OUT, C_SHAPE, TRANS, TRACK).
-- **Model-Based Clustering**: Identificazione di 13 cluster basati sulla configurazione del tracciato (Mclust).
-- **MEM (Mixture of Experts)**: Regressione con covariate per identificare 4 stili di guida puri, controllando per l'effetto della pista.
+Apri il file `QualiCluster.Rmd` in RStudio. Questo documento contiene l'intero flusso di analisi:
+- Caricamento del dataset processato (variabile `DATA` nel .env)
+- Data Cleaning e Feature Engineering avanzato
+- Visualizzazione dei dati (ggplot)
+- PCA: Riduzione a 4 componenti (IN_OUT, C_SHAPE, TRANS, TRACK)
+- **Model-Based Clustering**: Identificazione di 13 cluster basati sulla configurazione del tracciato (Mclust)
+- **MEM (Mixture of Experts)**: Regressione con covariate per identificare 4 stili di guida puri, controllando per l'effetto della pista
 
 L'analisi si articola in due fasi:
 1. **Prima fase**: Clustering standard che identifica principalmente le caratteristiche dei tracciati
 2. **Seconda fase**: MEM che condiziona le prime 3 componenti (IN_OUT, C_SHAPE, TRANS) sulla quarta (TRACK) per isolare gli stili di guida
 
-Puoi eseguire i chunk singolarmente o generare il report finale cliccando su **Knit**.
+Puoi eseguire i chunk singolarmente o generare il report completo cliccando su **Knit** in RStudio.
+
+## Risultati
+
+I risultati completi dell'analisi sono disponibili nel file [`Risultati.md`](Risultati.md), che include:
+- Analisi esplorativa del dataset
+- Interpretazione delle componenti principali
+- Descrizione dei cluster identificati
+- Visualizzazioni e grafici (salvati in `static/`)
 
 ---
-**Autori**: Pietro Riva, Federico Maccianti, Nicola Rapacioli
+
+**Autori**: Pietro Riva, Federico Maccianti, Nicola Rapacioli 
+

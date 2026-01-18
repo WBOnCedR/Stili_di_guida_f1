@@ -53,8 +53,10 @@ dataset_completo <- bind_rows(lista_dati)
 dataset_completo <- dataset_completo %>%
   select(-dataKey)
 
-setwd("C:/Users/feder/Documents/datasets/Computazionale/F1/data")
-saveRDS(dataset_completo, file = "dataset_completo_best_tel.rds")
+
+# setwd("C:/Users/feder/Documents/datasets/Computazionale/F1/data")
+saveRDS(dataset_completo, file = Sys.getenv("DATA"))
+
 
 
 
