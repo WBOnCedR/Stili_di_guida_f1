@@ -1,0 +1,901 @@
+---
+title: "QualiCluster"
+author: "Pietro Riva, Federico Maccianti, Nicola Rapacioli"
+date: "2026-01-10"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, fig.path = "static/")
+```
+
+Working set up
+
+```{r}
+rm(list = ls())
+
+library(tidyverse)
+library(ggplot2)
+library(dplyr)
+library(RColorBrewer)
+library(scales)
+library(ggcorrplot)
+library(mclust)
+library(caret)
+library(factoextra)
+library(GGally)
+library(Rmixmod)
+library(dotenv)
+library(flexmix)
+
+options(warn = -1)
+
+load_dot_env()
+setwd(Sys.getenv("WORK_DIR"))
+
+data_path <- Sys.getenv("DATA")
+```
+
+# F1 : Telemetrie qualifiche
+
+Il seguente studio si pone l'obiettivo di individuare dei possibili stili di guida attraverso il clustering model based.
+
+## Esplorazione del dataset
+
+Si va ora ad esplorare il dataset per :
+
+-   Effettuare operazioni di data cleaning;
+-   Capire quali variabili possano essere indicative per individuare uno **stile di guida** per ciascun pilota;
+
+### Analisi logica variabili
+
+```{r}
+tel <- readRDS(data_path)
+head(tel)
+tel <- as_tibble(tel)
+
+
+tel %>%
+  group_by(GP, pilota) %>%
+  summarize(n())
+```
+
+```{r}
+str(tel)
+```
+
+```{r}
+tel$lap_time <- as.numeric(tel$lap_time)
+```
+
+Le variabili presenti per ciascuna telemetria sono :
+
+-   GP, pilota : Identificativi gara e pilota
+-   time : Tempo dal via [s]
+-   distance : Distanza percorsa [m]
+-   rel_distance : Distanza normalizzata [0-1]
+-   rpm : Giri motore [rpm]
+-   speed : Velocità [km/h]
+-   gear : Marcia [1-8]
+-   throttle : Acceleratore [0-100%]
+-   brake : Freno [0/1]
+-   drs : DRS attivo [0/1]
+-   acc_x : G longitudinale (+ accel, - freno)
+-   acc_y : G laterale (+ destra, - sinistra)/
+-   acc_z : G verticale
+-   x, y, z : Coordinate spaziali [m]
+
+Anzi tutto per ricercare un potenziale stile di guida bisogna individuare, a partire da queste variabili grezze, quelle che sono in primo luogo concettualmente legate al concetto di stile di guida. Con questo si fa riferimento a variabili quali:
+
+-   throttle : utilizzo dell'accelleratore (brusco,graduale,intervallato, ...)
+-   brake : utilizzo del freno
+-   acc_x : tipologie di frenate (prevalentemente brusche/secche, più gestite, ...)
+-   acc_y : tipologia di guida (accellerazioni in generale molto polarizzate potrebbero indicare una guida molto nervosa per esempio ...)
+-   brake  ( variazione dell'utilizzo del freno nel tempo)
+-   speed   (gestione della velocità nel tracciato, preferenza di aumenti progressivi oppure di aumenti                     repentini)
+
+
+Le variabili posizionali
+
+-   time
+-   rel_distance
+-   x, y, z
+
+possono tornare utili per dare un riferimento alle rilevazioni.
+
+Di seguito alcune analisi grafiche per verificare che queste variabili siano distinte, almeno in parte, da pilota a pilota.
+
+```{r}
+tel.ex <- tel %>% filter(GP == "United States Grand Prix" & (pilota == "VER" | pilota == "LEC" | pilota == "COL" | pilota == "BEA"))
+colori_team <- c("VER" = "#0600EF", "LEC" = "#EF1A2D", "COL" = "#FF8700", "BEA" = "#000000")
+
+
+tel_g <- tel.ex %>%
+  select(rel_distance, pilota, acc_y, acc_x, speed, brake, throttle) %>%
+  pivot_longer(
+    cols = c(acc_y, acc_x, speed, throttle),
+    names_to = "variabile",
+    values_to = "valore"
+  ) %>%
+  mutate(variabile = factor(variabile,
+    levels = c("acc_y", "acc_x", "speed", "throttle"),
+    labels = c(" Acc. lat. ", " Acc. long. ", "Velocità", "Acceleratore")
+  ))
+
+
+pp <- ggplot(tel_g, aes(x = rel_distance, y = valore, color = pilota)) +
+  geom_hline(yintercept = 0, linetype = "dashed", color = "gray70", linewidth = 0.4) +
+  geom_line(size = 0.6, alpha = 0.8) +
+  facet_grid(variabile ~ ., scales = "free_y", switch = "y") +
+  scale_color_manual(values = colori_team) +
+  theme_minimal(base_size = 12) +
+  labs(
+    x = "Distanza relativa",
+    y = NULL,
+    color = "Pilota"
+  ) +
+  theme(
+    strip.placement = "outside",
+    strip.text.y = element_text(face = "bold", size = 7),
+    strip.background = element_rect(fill = "gray96", color = NA),
+    legend.position = "top",
+    panel.spacing = unit(1.2, "lines"),
+    panel.grid.minor = element_blank(),
+    plot.title = element_text(face = "bold", size = 16, margin = margin(b = 5)),
+    plot.subtitle = element_text(size = 11, color = "gray30", margin = margin(b = 15))
+  )
+
+print(pp)
+
+
+ggsave("static/el_ex1.pdf", pp, width = 7, height = 5, device = cairo_pdf)
+```
+
+### Data cleaning
+
+```{r}
+summary(tel)
+```
+
+Notando che il massimo che assume la variabile *throttle* è 104 si riporta tutto sulla scala originaria tenendo come massimo 100
+
+```{r}
+tel$throttle <- ifelse(tel$throttle > 100, 100, tel$throttle)
+```
+
+Inoltre sono presenti alcune osservazioni `NA`. Analizzando il dataset originale in corrisondenza degli `NA` si nota come siano costanti le distanze e molti record pari a zero di conseguenza si presuppone che i sensori di telemetria abbiano avuto un'avaria si decide quindi di eliminare i dati relativi al GP di Miami di Russell.
+
+```{r}
+tel[which(is.na(tel$rel_distance)), ]
+
+
+tel <- tel %>% filter(!(pilota == "RUS" & GP == "Miami Grand Prix"))
+```
+
+Un ultimo accorgimento riguarda la variabile *laptime*. Essa infatti è pari a `None` per i piloti Tsunoda, Bearman e Hadjar rispettivamente nei GP Emilia Romagna, Australian e Usa a causa del fatto che non hanno terminato il giro di qualifica quindi non c'è un tempo del giro, ma comunque si è registrata la telemetria. Al fine di eliminare rumore nell'analisi si rimuovono queste osservazioni.
+
+Di seguito una rappresentazione visiva di quanto è stato appena osservato.
+
+```{r}
+tel.ex <- tel %>% filter(GP == "Australian Grand Prix" & (pilota == "BEA" | pilota == "HAM" | pilota == "TSU"))
+colori_team <- c("BEA" = "#0600EF", "HAM" = "#EF1A2D", "TSU" = "#FDD900")
+
+
+tel_g <- tel.ex %>%
+  select(rel_distance, pilota, acc_y, acc_x) %>%
+  pivot_longer(
+    cols = c(acc_y, acc_x),
+    names_to = "variabile",
+    values_to = "valore"
+  ) %>%
+  mutate(variabile = factor(variabile,
+    levels = c("acc_y", "acc_x"),
+    labels = c(" Accelerazione laterale (g)", " Accelerazione longitudinale (g)")
+  ))
+
+
+pp <- ggplot(
+  tel_g,
+  aes(x = rel_distance, y = valore, color = pilota)
+) +
+  geom_hline(yintercept = 0, linetype = "dashed", color = "gray70", linewidth = 0.4) +
+  geom_line(size = 0.6, alpha = 0.8) +
+  facet_grid(variabile ~ ., scales = "free_y", switch = "y") +
+  scale_color_manual(values = colori_team) +
+  theme_minimal(base_size = 12) +
+  labs(
+    x = "Distanza relativa",
+    y = NULL,
+    color = "Pilota"
+  ) +
+  theme(
+    strip.placement = "outside",
+    strip.text.y = element_text(face = "bold", size = 7),
+    strip.background = element_rect(fill = "gray96", color = NA),
+    legend.position = "top",
+    panel.spacing = unit(1.2, "lines"),
+    panel.grid.minor = element_blank(),
+    plot.title = element_text(face = "bold", size = 16, margin = margin(b = 5)),
+    plot.subtitle = element_text(size = 11, color = "gray30", margin = margin(b = 15))
+  )
+
+print(pp)
+
+
+ggsave("static/tel_ex2.pdf", pp, width = 7, height = 5, device = cairo_pdf)
+```
+
+```{r}
+tel %>%
+  group_by(GP, pilota) %>%
+  filter(is.na(lap_time)) %>%
+  summarize(n = n(), .groups = "drop")
+
+tel <- tel %>% filter(!is.na(lap_time))
+
+tel
+```
+
+Si procede con la verifica che i dati siano coerenti con il regolamento *FIA* che prevede l'esclusione del pilota se il suo tempo supera il 107% del tempo minimo.
+
+```{r}
+tell <- tel %>%
+  group_by(GP) %>%
+  filter(lap_time > 1.07 * min(lap_time)) %>%
+  ungroup() %>%
+  group_by(GP, pilota) %>%
+  summarize(max(lap_time))
+```
+
+Nel GP di Las Vegas, durante la Q1 la pista era inizialmente bagnata, ma si è progressivamente asciugata nel corso delle qualifiche. Poiché il dataset considera per ogni pilota solo il miglior tempo registrato, i piloti eliminati in Q1 possono avere tempi che non rispecchiano la condizione tipica della sessione (cioè tempi influenzati dalla pista bagnata) e, di conseguenza, non vengono esclusi dal dataset. In contrasto, nel GP di Olanda, il pilota Strole ha avuto un incidente in Q1 e il suo miglior tempo disponibile risulta quindi quello di un giro di riscaldamento, che non rappresenta le prestazioni reali in qualifica.
+
+```{r}
+tel <- tel %>% filter(!(pilota == "STR" & GP == "Dutch Grand Prix"))
+```
+
+## Feature engineering
+
+Si modificano/creano le seguenti variabili :
+
+-   *acc_x* : accellerazioni longitudinali positive;
+-   *dec_x* : accellerazioni longitudinali negative (in modulo);
+-   *acc_y* : accellerazioni laterali in modulo. In questo modo si evitano distorsioni nelle statistiche causate dal segno, permettendo di analizzare l’intensità complessiva delle forze laterali indipendentemente dalla direzione della curva (destra o sinistra);
+
+```{r}
+tel.guida <- tel %>%
+  group_by(GP, pilota) %>%
+  mutate(
+    dec_x = if_else(acc_x < 0, abs(acc_x), 0),
+    acc_x = if_else(acc_x > 0, acc_x, 0),
+    acc_y = abs(acc_y)
+  ) %>%
+  ungroup()
+```
+
+Per calcolare la variazione percentuale delle variabili *throttle*,*acc_x*,*acc_y*,*dec_x* e *speed* e ottenere un indicazione della magnitudo delle variazioni durante il giro, si calcolano le seguenti variabili :
+
+-   \*\*\_lag1\*\* : breve periodo;
+-   \*\*\_lag5\*\* : medio perodo;
+
+```{r}
+tel.guida <- tel.guida %>%
+  select(GP, pilota, throttle, acc_x, acc_y, dec_x, brake, speed, rel_distance) %>%
+  arrange(GP, pilota, rel_distance) %>%
+  group_by(GP, pilota) %>%
+  mutate(
+    across(
+      c(throttle, acc_x, acc_y, dec_x, speed),
+      list(
+        lag1 = ~ round(
+          ifelse(
+            lag(.x, 1) == 0 & .x == 0,
+            0,
+            ifelse(
+              lag(.x, 1) == 0,
+              (.x - 0.01) / 0.01,
+              (.x - lag(.x, 1)) / lag(.x, 1)
+            )
+          ),
+          4
+        ),
+        lag5 = ~ round(
+          ifelse(
+            lag(.x, 5) == 0 & .x == 0,
+            0,
+            ifelse(
+              lag(.x, 5) == 0,
+              (.x - 0.01) / 0.01,
+              (.x - lag(.x, 5)) / lag(.x, 5)
+            )
+          ),
+          4
+        )
+      ),
+      .names = "{.col}_{.fn}"
+    )
+  ) %>%
+  ungroup() %>%
+  select(-rel_distance)
+```
+
+Si calcolano ora le prime statistiche riassuntive delle variabili per valutare in che modo si possano definire delle variabili associate a un potenziale stile di guida, in particolare :
+
+Per le variabili *throttle* ,*acc_x*, *dec_x*, *acc_y* ,*speed*,*brake* e \*\_lag\* (distintamente per variazioni positive e negative):
+
+-   Media;
+-   Deviazione standard;
+
+```{r}
+tel.guida_summary <- tel.guida %>%
+  group_by(GP, pilota) %>%
+  {
+    lag_cols <- names(.) %>% .[str_detect(., "lag")]
+
+    summarise(.,
+      across(
+        c(throttle, acc_x, acc_y, dec_x, brake, speed),
+        list(
+          mean = ~ round(mean(.x, na.rm = TRUE), 4),
+          sd = ~ round(sd(.x, na.rm = TRUE), 4)
+        ),
+        .names = "{.col}_{.fn}"
+      ),
+      across(
+        all_of(lag_cols),
+        ~ round(mean(.x[.x > 0], na.rm = TRUE), 4),
+        .names = "{.col}_mean_pos"
+      ),
+      across(
+        all_of(lag_cols),
+        ~ round(mean(.x[.x <= 0], na.rm = TRUE), 4),
+        .names = "{.col}_mean_neg"
+      ),
+      across(
+        all_of(lag_cols),
+        ~ round(sd(.x[.x > 0], na.rm = TRUE), 4),
+        .names = "{.col}_sd_pos"
+      ),
+      across(
+        all_of(lag_cols),
+        ~ round(sd(.x[.x <= 0], na.rm = TRUE), 4),
+        .names = "{.col}_sd_neg"
+      ),
+      .groups = "drop"
+    )
+  }
+
+tel2 <- tel %>%
+  group_by(GP, pilota) %>%
+  summarize(laptime = max(lap_time), .groups = "drop")
+
+tel.guida_summary$laptime <- as.numeric(tel2$laptime)
+```
+
+Il calcolo di queste statistiche ha l’obiettivo di ottenere degli indicatori che descrivano lo stile di guida dei piloti. Una volta calcolate la media e la deviazione standard delle variabili, è possibile combinare questi valori per ottenere il **coefficiente di variazione** (CV):
+
+$$
+\text{CV} =\dfrac{sd(x)}{mean(x)}
+$$
+
+che misura la variabilità relativa di una variabile rispetto alla sua media.
+
+```{r}
+sd_cols <- tel.guida_summary %>%
+  names(.) %>%
+  .[str_detect(., "sd")]
+mean_cols <- tel.guida_summary %>%
+  names(.) %>%
+  .[str_detect(., "mean")]
+
+tel.guida_summary.idx <- tel.guida_summary[sd_cols] / tel.guida_summary[mean_cols]
+
+names(tel.guida_summary.idx) <- str_replace(names(tel.guida_summary.idx), "sd", "CV")
+
+tel.guida_summary.idx$GP <- tel.guida_summary$GP
+
+tel.guida_summary.idx$pilota <- tel.guida_summary$pilota
+```
+
+### PCA
+
+Per poter confrontare diversi circuiti (e.g forte presenza di rettilinei e curve veloci vs nervosi e tortuosi) si riscala per ciascun circuito il coefficiente di variazione in $[0,1]$.
+
+```{r}
+tel.guida_summary.idx <- tel.guida_summary.idx %>% mutate(across(where(is.numeric), ~ rescale(., to = c(0, 1))))
+```
+
+Si procede ora a valutare le correlazioni tra le variabili per evitare problemi di multicollinearità.
+
+```{r}
+corr <- round(cor(tel.guida_summary.idx %>% select(where(is.numeric))), 4)
+
+variabili_dipendenti <- findCorrelation(corr, cutoff = 0.9, names = TRUE, exact = T, verbose = T)
+
+print(variabili_dipendenti)
+```
+
+Si filtra infine il dataset, andando ad utilizzare solamente le variabili non fortemente correlate.
+
+```{r}
+tel.pca <- tel.guida_summary.idx %>% select(-all_of(variabili_dipendenti))
+```
+
+Di seguito un'interpretazione delle variabili che verranno utilizzate per la PCA :
+
+-   `throttle_CV` : rappresenta un indicatore normalizzato della variabilità dell’input del pilota sul pedale dell’acceleratore. Valori più elevati sono associati a una maggiore modulazione del gas, mentre valori più bassi indicano un uso più stabile e costante.
+
+-   `acc_x_CV` : rappresenta un indicatore normalizzato della variabilità dell’accelerazione longitudinale positiva. Valori elevati indicano una modulazione più marcata della trazione in uscita di curva, mentre valori bassi suggeriscono una spinta più uniforme e progressiva.
+
+-   `acc_y_CV` : rappresenta un indicatore normalizzato della variabilità della decelerazione in fase di frenata. Valori più elevati riflettono una maggiore modulazione del freno, mentre valori più bassi sono associati a frenate più stabili e regolari.
+
+-   `dec_x_CV` : rappresenta un indicatore normalizzato della variabilità dell’accelerazione laterale in curva. Valori più elevati descrivono una percorrenza curva più dinamica e variabile, mentre valori più bassi indicano forze laterali più uniformi e costanti.
+
+-   `brake_CV`: rappresenta un indicatore normalizzato della variabilità dell’attivazione del freno. Valori elevati indicano un utilizzo del freno più intermittente o modulato, mentre valori bassi indicano un uso più stabile.
+
+-   `speed_CV`: rappresenta un indicatore normalizzato della variabilità della velocità. Valori elevati indicano variazioni di velocità più marcate, mentre valori bassi indicano velocità più costante lungo il giro.
+
+-   `throttle_lag1_CV_pos` : rappresenta un indicatore normalizzato della variabilità delle variazioni positive dell’input dell’acceleratore al lag di 1 istante temporale. Valori più elevati indicano aumenti del gas meno uniformi e maggiormente modulati, mentre valori più bassi suggeriscono incrementi più progressivi e regolari.
+
+-   `throttle_lag5_CV_pos` : rappresenta un indicatore normalizzato della variabilità delle variazioni positive dell’input dell’acceleratore osservate a un lag di 5 istanti temporali. Valori più elevati riflettono una modulazione del gas più dinamica nel medio periodo, mentre valori più bassi indicano aumenti dell’acceleratore più stabili e costanti.
+
+-   `acc_x_lag1_CV_pos` : rappresenta un indicatore normalizzato della variabilità delle variazioni positive dell’accelerazione longitudinale (trazione) al lag di 1 istante. Valori elevati descrivono una spinta in accelerazione meno uniforme, mentre valori bassi indicano una trazione più progressiva e lineare.
+
+-   `acc_x_lag5_CV_pos` : rappresenta un indicatore normalizzato della variabilità delle variazioni positive dell’accelerazione longitudinale al lag di 5 istanti. Valori elevati sono associati a una dinamica di accelerazione più variabile nel medio periodo, mentre valori bassi indicano una spinta più costante.
+
+-   `acc_y_lag1_CV_pos` :rappresenta un indicatore normalizzato della variabilità delle variazioni positive dell’accelerazione laterale al lag di 1 istante. Valori più elevati indicano cambiamenti laterali più dinamici in curva, mentre valori più bassi descrivono una percorrenza laterale più uniforme.
+
+-   `acc_y_lag5_CV_pos` : rappresenta un indicatore normalizzato della variabilità delle variazioni positive dell’accelerazione laterale al lag di 5 istanti. Valori elevati riflettono una maggiore eterogeneità delle forze laterali nel medio periodo, mentre valori bassi indicano una dinamica laterale più stabile.
+
+-   `dec_x_lag1_CV_pos` : rappresenta un indicatore normalizzato della variabilità delle variazioni positive della decelerazione (fase di frenata) al lag di 1 istante. Valori elevati indicano una modulazione del freno più irregolare, mentre valori bassi sono associati a frenate più uniformi e controllate.
+
+-   `dec_x_lag5_CV_pos` : rappresenta un indicatore normalizzato della variabilità delle variazioni positive della decelerazione al lag di 5 istanti. Valori più elevati suggeriscono una gestione del freno più dinamica nel medio periodo, mentre valori più bassi descrivono frenate più stabili e ripetibili.
+
+-   `throttle_lag1_CV_neg` : rappresenta un indicatore normalizzato della variabilità delle variazioni negative dell’input dell’acceleratore al lag di 1 istante. Valori più elevati descrivono rilasci del gas più irregolari e discontinui, mentre valori più bassi indicano riduzioni dell’acceleratore più progressive.
+
+-    `speed_lag1_CV_pos`: rappresenta un indicatore normalizzato della variabilità delle variazioni positive della velocità al lag di 1. Valori elevati indicano accelerazioni più irregolari, valori bassi accelerazioni più lineari.
+
+-    `speed_lag5_CV_pos`: rappresenta un indicatore normalizzato della variabilità delle variazioni positive della velocità al lag di 5. Valori elevati indicano accelerazioni più dinamiche nel medio periodo, valori bassi velocità più costante.
+
+-   `acc_x_lag1_CV_neg` : rappresenta un indicatore normalizzato della variabilità delle variazioni negative dell’accelerazione longitudinale al lag di 1 istante. Valori elevati suggeriscono riduzioni della spinta più variabili nel tempo, mentre valori bassi indicano una diminuzione più uniforme.
+
+-   `acc_x_lag5_CV_neg` : rappresenta un indicatore normalizzato della variabilità delle variazioni negative dell’accelerazione longitudinale al lag di 5 istanti. Valori elevati riflettono una riduzione della trazione più dinamica nel medio periodo, mentre valori bassi descrivono un calo di accelerazione più costante.
+
+-   `acc_y_lag1_CV_neg` : rappresenta un indicatore normalizzato della variabilità delle variazioni negative dell’accelerazione laterale al lag di 1 istante. Valori elevati descrivono cambiamenti laterali verso la riduzione della forza in curva più irregolari, mentre valori bassi indicano una dinamica laterale più graduale.
+
+-   `acc_y_lag5_CV_neg` : rappresenta un indicatore normalizzato della variabilità delle variazioni negative dell’accelerazione laterale al lag di 5 istanti. Valori elevati sono associati a una maggiore variabilità della riduzione delle forze laterali nel medio periodo, mentre valori bassi indicano variazioni più uniformi.
+
+-   `dec_x_lag1_CV_neg` : rappresenta un indicatore normalizzato della variabilità delle variazioni negative della decelerazione al lag di 1 istante. Valori più elevati indicano una riduzione meno uniforme dell’intensità frenante, mentre valori più bassi suggeriscono una modulazione del freno più stabile.
+
+-    `speed_lag1_CV_neg` : rappresenta un indicatore normalizzato della variabilità delle variazioni negative della velocità al lag di 1. Valori elevati indicano decelerazioni più irregolari, valori bassi più lineari.
+
+-    `speed_lag5_CV_neg` : rappresenta un indicatore normalizzato della variabilità delle variazioni negative della velocità al lag di 5. Valori elevati indicano decelerazioni più dinamiche nel medio periodo, valori bassi decelerazioni più costanti.
+
+Nota metodologica:
+
+> L’impiego del coefficiente di variazione riduce l’influenza del setup della vettura, rendendo confrontabili tra loro variabili che, in valore assoluto, dipendono dalle regolazioni meccaniche e aerodinamiche.
+
+```{r}
+PCA <- princomp(tel.pca %>%
+  select(where(is.numeric)), cor = T)
+
+
+cumulative <- as_tibble(get_eigenvalue(PCA)$cumulative.variance.percent)
+
+cumulative$Componenti <- 1:24
+
+p <- ggplot(cumulative, aes(x = Componenti, y = value)) +
+  geom_bar(stat = "identity", aes(fill = value)) +
+  scale_fill_fermenter(palette = "Set2") +
+  geom_label(aes(label = round(value, 2)), stat = "identity") +
+  labs(
+    title = "Cumulative variance",
+    y = "Proporzione"
+  ) +
+  theme_minimal()
+print(p)
+# ggsave("report/tel_pca.pdf", p, width = 7, height = 5, device = cairo_pdf)
+
+
+summary(PCA)
+print(PCA$loadings, cutoff = 0)
+```
+
+```{r}
+for (i in 1:5) {
+  p <- fviz_contrib(PCA, choice = "var", axes = i, top = 15)
+  print(p)
+}
+```
+
+
+Dai precedenti risultati si possono definire le componenti nel seguente modo :
+
+-   `Comp.1` : **Prima componente** - Separa stili di guida che hanno un'alta variabilità (molte correzioni) nell'erogazione della potenza da quelli che hanno un'alta variabilità nella fase di decelerazione.
+
+    -   **Score elevati**: indicano uno stile di guida caratterizzato da una trazione più "sporca" o reattiva, con continue correzioni sul pedale dell'acceleratore.
+
+    -   **Score bassi**: si contrappone uno stile caratterizzato da una frenata molto modulata e dinamica, mantenendo però un'uscita di curva molto composta e lineare nell'erogazione del gas.
+
+-   `Comp.2` : **Seconda componente** - Distingue stili di guida che lavorano di più in termini di velocità pura (avanti/dietro) contro chi ha maggiore velocità di percorrenza (destra/sinistra).
+
+    -   **Score elevati**: indicano uno stile di guida a "V", dove il pilota punta tutto sulla frenata profonda e sulla ripartenza rapida, variando molto l'accelerazione longitudinale.
+
+    -   **Score bassi**: contrappone uno stile di guida basato sulla velocità di percorrenza, che predilige la gestione del carico laterale.
+
+-   `Comp.3` : **Terza componente** - Entra nel dettaglio delle fasi della curva. Discrimina stili di guida con bassa componente laterale in fase di percorrenza e alta componente di accelerazioni longitudinali e viceversa.
+
+    -   **Score elevati**: indicano uno stile di guida caratterizzato da forti staccate, forti accelerazioni in uscita curva e bassa velocità di percorrenza.
+
+    -   **Score bassi**: indicano uno stile caratterizzato da alte velocità di percorrenza e poca variazione longitudinale.
+
+-   `Comp.4` : **Quarta componente** - Caratterizza la configurazione della pista.
+
+    -   **Score elevati**: corrispondono a una maggiore variabilità complessiva della velocità.
+
+    -   **Score bassi**: indicano un andamento più regolare e uniforme.
+
+**N.B.** Il circuito vincola il pilota a modificare il proprio stile di guida alla configurazione del tracciato, alternando fluidità e aggressività in base alle specifiche richieste aerodinamiche o meccaniche. Tale adattamento serve quindi esclusivamente a ottimizzare lo sfruttamento della massima aderenza disponibile in ogni circuito.
+
+```{r}
+loadings <- as.data.frame(PCA$loadings[, 1:4])
+
+
+loadings$Variable <- rownames(loadings)
+loadings_g <- loadings %>%
+  pivot_longer(
+    cols = starts_with("Comp"),
+    names_to = "component",
+    values_to = "peso"
+  )
+
+p <- ggplot(loadings_g, aes(x = component, y = Variable, fill = peso)) +
+  geom_tile(color = "white") +
+  geom_text(aes(label = round(peso, 2)), size = 2.5, color = "black") +
+  scale_fill_gradient2(low = "blue", mid = "white", high = "#E10600", name = "Pesi") +
+  theme_minimal() +
+  labs(
+    x = "Componenti",
+    y = "Variabili"
+  )
+
+print(p)
+
+# ggsave("report/Loadings.pdf", p, width = 7, height = 5, device = cairo_pdf)
+```
+## Clustering
+
+Si filtra per le prime quattro componenti ottenute e si rinominano per maggiore chiarezza interpretativa.
+```{r}
+tel.comp <- as_tibble(PCA$scores[, 1:4])
+
+colnames(tel.comp) <- c("IN_OUT", "C_SHAPE", "TRANS", "TRACK")
+```
+
+
+
+Si procede ora a effettuare un primo clustering sulle quattro componenti principali.
+
+```{r}
+set.seed(126)
+
+clust <- Mclust(tel.comp, G = 1:15)
+summary(clust)
+plot(clust, what = "classification")
+plot(clust, what = "uncertainty")
+plot(clust, what = "BIC", legendArgs = list(x = "bottomleft"))
+clust$BIC
+```
+
+
+
+```{r}
+tel.comp.labels <- tel.comp
+tel.comp.labels$class <- as.factor(clust$classification)
+tel.comp.labels$pilota <- tel.pca$pilota
+tel.comp.labels$GP <- tel.pca$GP
+
+tel.comp.labels <- tel.comp.labels %>% arrange(GP, pilota)
+
+colori <- c("red", "blue", "green", "orange", "purple", "cyan", "brown", "pink", "black", "grey", "yellow", "darkblue", "darkred")
+
+p <- ggplot(tel.comp.labels, aes(x = C_SHAPE, y = IN_OUT, color = class)) +
+  geom_point(size = 2) +
+  scale_color_manual(values = colori) +
+  labs(
+    x = "C_SHAPE",
+    y = "IN_OUT",
+    color = "Cluster",
+    shape = "Cluster"
+  ) +
+  theme_minimal()
+
+print(p)
+# ggsave("report/C1_C2.pdf", p, width = 7, height = 5, device = cairo_pdf)
+```
+
+```{r}
+library(plotly)
+
+
+p_3d <- plot_ly(tel.comp.labels,
+  x = ~C_SHAPE,
+  y = ~IN_OUT,
+  z = ~TRACK,
+  color = ~class,
+  colors = colori,
+  type = "scatter3d",
+  mode = "markers",
+  marker = list(size = 3)
+) %>%
+  layout(
+    scene = list(
+      xaxis = list(title = "C_SHAPE"),
+      yaxis = list(title = "IN_OUT"),
+      zaxis = list(title = "TRACK")
+    )
+  )
+
+
+p_3d
+```
+
+
+
+Metriche di valutazione
+
+```{r}
+cat("KL distance \n")
+KL <- round(abs(clust$icl - clust$bic), 3)
+KL
+
+cat("Incertezza attesa \n")
+round(mean(clust$uncertainty), 4)
+```
+
+------------------------------------------------------------------------
+
+
+### Interpretazione dei risultati
+
+L'analisi di Clustering Model-Based, condotta sulle prime quattro componenti, ha permesso di identificare un modello **VII** (*Volume variabile*, *forma sferica* e *orientamento identico*) a tredici classi.
+
+Il raggruppamento dei dati risulta già chiaramente distinguibile nella rappresentazione bidimensionale ottenuta dal confronto tra la prima e la seconda componente principale, sebbene sia ancora presente una certa sovrapposizione visiva, interpretabile come "rumore" grafico. Tale effetto è attribuibile principalmente all'informazione contenuta nelle componenti principali rimanenti. Ciò è ulteriormente evidenziato dalla visualizzazione 3D, in cui il confronto congiunto tra la quarta, la prima e la seconda componente consente di distinguere in modo più netto i cluster, migliorandone la separabilità rispetto alla rappresentazione bidimensionale.
+
+```{r}
+unique_GP <- unique(tel.comp.labels$GP)
+
+
+p <- ggplot(tel.comp.labels, aes(x = C_SHAPE, y = IN_OUT)) +
+  geom_point(aes(colour = as.factor(class)), alpha = 0) +
+  geom_text(aes(label = GP, colour = as.factor(class)),
+    vjust = -1, size = 3, check_overlap = T, show.legend = F
+  ) +
+  scale_color_manual(values = colori) +
+  coord_cartesian(xlim = c(-5, 5), ylim = c(-7, 7)) +
+  labs(
+    colour = "Classe"
+  ) +
+  guides(colour = guide_legend(override.aes = list(alpha = 1, size = 5, shape = 19))) +
+  theme_minimal()
+
+print(p)
+
+# ggsave("report/Loadings.pdf", p, width = 7, height = 5, device = cairo_pdf)
+```
+
+**Interpretazione delle classi identificate:**
+
+- **Classe 13**: Identifica il Gran Premio di Monaco. Il valore molto elevato della prima componente si può associare ad un uso del gas ritmico.
+
+- **Classi 5 e 11**: (Singapore, Messico, Ungheria) Raggruppano circuiti tortuosi ad alto carico. Condividono con Monaco la necessità di gestire l'acceleratore per gestire, per esempio, un'uscita da una curva netta.
+
+- **Classe 6**: (Baku) Mostra un'alta terza componente: le curve a 90° costringono a correzioni veloci dell'accelerazione laterale.
+
+- **Classi 4 e 12**: (Las Vegas e Miami) Mostrano un'alta quarta componente: l'asfalto scivoloso, soprattutto a Las Vegas per la pioggia, crea incertezza nel mantenere la velocità costante, costringendo a parzializzare il gas dove normalmente si andrebbe costanti.
+
+- **Classi 8 e 9**: (Spa, Silverstone, Suzuka) Rappresentano i circuiti con prima componente fortemente negativa dovuta all'assenza di frenate decise. La seconda componente positiva distingue questi circuiti: indica che la variazione è dominata dalle forze longitudinali ad alta velocità.
+
+- **Classe 10**: (Cina, USA, Brasile) Raggruppa circuiti completi dal punto di vista del tracciato, alternando tratti veloci a tratti tecnici. Non risulta esserci una componente con pesi notevoli.
+
+- **Classe 2**: (Monza) La prima componente molto negativa. È una pista caratterizzata da staccate profonde con un'uscita di trazione pulita, inoltre la quarta componente abbastanza alta, dovuta alle elevate variazioni di velocità.
+
+- **Classe 7**: (Bahrain e Canada) Sono circuiti caratterizzati da poche curve di alta velocità di percorrenza, evidenziati dal valore negativo della seconda componente.
+
+- **Classe 1**: (Australian, Abu Dhabi, Qatar, Saudi, Spanish) È il gruppo più numeroso, caratterizzato da una prima componente negativa, quindi poche variazioni longitudinali e in generale fluidità nella percorrenza.
+
+- **Classe 3**: (Austrian, Emilia Romagna) Molto simile alla classe 1, ma con curve più accentuate e maggiori variazioni longitudinali.
+
+```{r}
+summary <- tel.comp.labels %>%
+  group_by(class) %>%
+  summarize(
+    across(
+      where(is.numeric),
+      list(
+        mean = ~ mean(.x, na.rm = T)
+      )
+    ),
+    .groups = "drop"
+  )
+
+table(tel.comp.labels$GP, tel.comp.labels$class)
+```
+
+
+
+## Model Based Clustering with Covariates
+
+I risultati ottenuti dal precedente modello, sebbene chiari e definiti, non rispecchiano tuttavia l'obiettivo iniziale dell'analisi. Ciò è dato dal fatto che la quarta componente discrimina le classi per la tipologia di tracciato e non per lo stile di guida. Si prova quindi a ridurre l'effetto della pista, condizionando i parametri della distribuzione alla quarta componente.
+
+Per far ciò si applica un **MEM** (*Mixture of Experts Models*), utilizzando una regressione normale multivariata con variabili:
+
+- **Dipendenti**: IN_OUT, C_SHAPE, TRANS
+- **Esplicativa**: TRACK
+
+```{r}
+# Mixture of Experts: regressione delle prime 3 componenti sulla quarta
+set.seed(12320)
+final.vv <- stepFlexmix(cbind(IN_OUT, C_SHAPE, TRANS) ~ TRACK,
+  data = tel.comp,
+  k = 2:8,
+  nrep = 10,
+  model = FLXMCmvnorm()
+)
+```
+
+### Selezione del modello
+
+```{r}
+par(mfrow = c(1, 2))
+plot(BIC(final.vv), type = "b", ylab = "BIC", main = "BIC per numero di cluster")
+points(x = which.min(BIC(final.vv)), min(BIC(final.vv)), col = "red", pch = 20)
+
+plot(ICL(final.vv), type = "b", ylab = "ICL", main = "ICL per numero di cluster")
+points(x = which.min(ICL(final.vv)), min(ICL(final.vv)), col = "red", pch = 20)
+```
+
+```{r}
+fit <- getModel(final.vv)
+
+summary(fit)
+KLdiv(fit)
+labs <- fit@cluster
+
+plot(fit)
+```
+
+### Preparazione dati per visualizzazione
+
+```{r}
+tel.comp.fit <- tel.comp
+tel.comp.fit$class <- labs
+tel.comp.fit$GP <- tel.pca$GP
+tel.comp.fit$pilota <- tel.pca$pilota
+```
+
+### Analisi grafica delle regressioni
+
+```{r}
+colore <- c("#1f77b4", "#ff7f0e", "#2ca02c", "red")
+
+# Relazione TRACK vs C_SHAPE
+p1 <- ggplot(data = tel.comp, mapping = aes(x = TRACK, y = C_SHAPE, color = factor(labs))) +
+  geom_point() +
+  scale_color_manual(values = colore) +
+  geom_smooth(method = "lm", se = F, size = 1) +
+  labs(color = "Cluster") +
+  theme_minimal()
+print(p1)
+# ggsave("report/C1_C4_R.pdf", p1, width = 7, height = 5, device = cairo_pdf)
+
+# Relazione TRACK vs IN_OUT
+p2 <- ggplot(data = tel.comp, mapping = aes(x = TRACK, y = IN_OUT, color = factor(labs))) +
+  geom_point() +
+  geom_smooth(method = "lm", se = F, size = 1) +
+  theme_minimal() +
+  labs(color = "Cluster")
+print(p2)
+
+# Relazione TRACK vs TRANS
+p3 <- ggplot(data = tel.comp, mapping = aes(x = TRACK, y = TRANS, color = factor(labs))) +
+  geom_point() +
+  geom_smooth(method = "lm", se = F, size = 1) +
+  theme_minimal() +
+  labs(color = "Cluster")
+print(p3)
+```
+
+### Visualizzazione 3D delle rette di regressione
+
+```{r}
+# Creazione delle linee di regressione predette
+x_range <- seq(min(tel.comp$TRACK), max(tel.comp$TRACK), length.out = 100)
+newdata <- data.frame(TRACK = x_range)
+
+pred_lines <- list()
+
+for (k in 1:4) {
+  sub_data <- tel.comp[labs == k, ]
+
+  m_comp1 <- lm(IN_OUT ~ TRACK, data = sub_data)
+  m_comp2 <- lm(C_SHAPE ~ TRACK, data = sub_data)
+
+  pred_lines[[k]] <- data.frame(
+    TRACK = x_range,
+    IN_OUT = predict(m_comp1, newdata = newdata),
+    C_SHAPE = predict(m_comp2, newdata = newdata),
+    Cluster = as.factor(k)
+  )
+}
+
+plot_lines_df <- do.call(rbind, pred_lines)
+
+# Preparazione dati per plotly
+tel.comp.labels$labs_factor <- as.factor(labs)
+plot_lines_df$Cluster <- as.factor(plot_lines_df$Cluster)
+
+# Plot 3D interattivo
+p_3d <- plot_ly() %>%
+  # Punti osservati
+  add_trace(
+    data = tel.comp.labels,
+    x = ~TRACK,
+    y = ~IN_OUT,
+    z = ~C_SHAPE,
+    color = ~labs_factor,
+    colors = colore,
+    type = "scatter3d",
+    mode = "markers",
+    marker = list(size = 3, opacity = 0.6),
+    name = ~ paste("Cluster", labs)
+  ) %>%
+  # Linee di regressione
+  add_trace(
+    data = plot_lines_df,
+    x = ~TRACK,
+    y = ~IN_OUT,
+    z = ~C_SHAPE,
+    color = ~Cluster,
+    colors = colore,
+    type = "scatter3d",
+    mode = "lines",
+    line = list(width = 6),
+    showlegend = FALSE
+  ) %>%
+  layout(
+    scene = list(
+      xaxis = list(title = "TRACK (Predittore)"),
+      yaxis = list(title = "IN_OUT"),
+      zaxis = list(title = "C_SHAPE")
+    )
+  )
+
+p_3d
+```
+
+### Interpretazione dei risultati
+
+```{r}
+summary_reg <- tel.comp.fit %>%
+  group_by(class) %>%
+  summarize(
+    across(
+      where(is.numeric),
+      list(
+        mean = ~ mean(.x, na.rm = T)
+      )
+    ),
+    .groups = "drop"
+  )
+
+print(summary_reg)
+
+# Distribuzione piloti per classe
+table(tel.comp.fit$pilota, tel.comp.fit$class)
+
+# Distribuzione GP per classe
+table(tel.comp.fit$GP, tel.comp.fit$class)
+```
+
+
+

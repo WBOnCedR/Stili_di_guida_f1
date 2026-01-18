@@ -1,267 +1,141 @@
-# Project Name
+# Formula 1 - Analisi Stili di Guida
 
-<!-- Replace with your project name and add a brief description -->
+L'obiettivo di questo progetto è analizzare le telemetrie delle qualifiche di Formula 1 per individuare e classificare diversi stili di guida utilizzando tecniche di Model-Based Clustering.
 
-A brief description of what this project does and its purpose.
+## Indice
 
-## 📋 Table of Contents
+- [Panoramica](#-panoramica)
+- [Funzionalità](#-funzionalità)
+- [Struttura del Progetto](#-struttura-del-progetto)
+- [Requisiti](#-requisiti)
+- [Installazione e Configurazione](#️-installazione-e-configurazione)
+- [Utilizzo](#-utilizzo)
+- [Risultati](#-risultati)
 
-- [Overview](#overview)
-- [Features](#features)
-- [Getting Started](#getting-started)
-  - [Prerequisites](#prerequisites)
-  - [Installation](#installation)
-- [Usage](#usage)
-- [Project Structure](#project-structure)
-- [Development](#development)
-- [Contributing](#contributing)
-- [License](#license)
+## Panoramica
 
-## 🎯 Overview
+Lo studio parte dall'analisi di file JSON contenenti i tempi sul giro e le telemetrie delle qualifiche della stagione 2025 di Formula 1. Attraverso una pipeline di pre-processing e feature engineering, vengono estratte variabili significative (accelerazione longitudinale/laterale, uso dell'acceleratore/freno, variazioni nel tempo). Successivamente, si applica la PCA (Principal Component Analysis) per ridurre la dimensionalità e si utilizza un model based clustering per raggruppare i piloti in base al loro stile di guida.
 
-This folder contains the work done for the Statistica Computazionale course in Università Milano-Bicocca.
+## Funzionalità
 
-## ✨ Features
+- **Data Ingestion**: Caricamento e parsing di file JSON (laptimes e telemetry)
+- **Pre-processing**: Pulizia dei dati, gestione dei valori mancanti e filtraggio dei giri non validi (regola 107% FIA)
+- **Feature Engineering**: 
+  - Separazione dell'accelerazione longitudinale in `acc_x` (valori positivi) e `dec_x` (valori negativi in modulo)
+  - Trasformazione di `acc_y` in valore assoluto per catturare l'intensità delle forze laterali
+  - Calcolo di variazioni percentuali lag1 e lag5 (breve/medio periodo)
+  - Calcolo di Coefficienti di Variazione (CV) per normalizzare rispetto al setup della vettura
+- **Analisi Esplorativa**: Visualizzazione delle telemetrie e analisi delle correlazioni
+- **PCA**: Riduzione dimensionale a 4 componenti principali interpretabili (IN_OUT, C_SHAPE, TRANS, TRACK)
+- **Model-Based Clustering**: Identificazione di 13 cluster basati sulla configurazione del tracciato
+- **MEM (Mixture of Experts Models)**: Clustering con covariate per ridurre l'effetto della pista e identificare 4 stili di guida puri
 
-_Complete this section_
+## Struttura del Progetto
 
-## 🚀 Getting Started
+```
+.
+├── .env.example              # Template per il file .env
+├── README.md                 # Documentazione del progetto (questo file)
+├── Risultati.md              # Report dei risultati in formato Markdown
+├── pre-processing.R          # Script per unire e pulire i dati grezzi JSON
+├── script_final.R            # Script R completo per l'analisi
+├── QualiCluster.Rmd          # R Markdown principale per analisi, PCA e Clustering
+├── static/                   # Cartella contenente grafici e immagini generati
+└── data/                     # Cartella contenente i dataset 
+```
 
-### Prerequisites
 
-**Python Projects:**
+## Requisiti
 
-- Python 3.8+ (or specify your version)
-- pip or conda for package management
+- **R** (versione 4.0 o superiore)
+- **RStudio** (consigliato per eseguire i file .Rmd)
+- Librerie R richieste:
+  - `jsonlite`, `tidyverse`, `dotenv`
+  - `ggplot2`, `RColorBrewer`, `scales`, `ggcorrplot`, `GGally`
+  - `mclust`, `caret`, `factoextra`, `Rmixmod`, `flexmix`, `plotly`
 
-**R Projects:**
+Puoi installarle eseguendo in R:
+```r
+install.packages(c("jsonlite", "tidyverse", "dotenv", "ggplot2", "RColorBrewer", 
+                   "scales", "ggcorrplot", "mclust", "caret", "factoextra", 
+                   "GGally", "Rmixmod", "flexmix", "plotly"))
+```
 
-- R 4.0+ (or specify your version)
-- RStudio (recommended)
+## Installazione e Configurazione
 
-**General:**
-
-- Git
-
-### Installation
-
-#### Clone the repository
-
+### 1. Clona il repository
 ```bash
 git clone https://github.com/WBOnCedR/Statistica_Computazionale_Progetto.git
 cd Statistica_Computazionale_Progetto
 ```
 
-#### Checkout the develop branch (if working on development)
+### 2. Scarica i dati
+I dati di telemetria sono disponibili nel repository [TracingInsights/2025](https://github.com/TracingInsights/2025):
 
 ```bash
-git checkout develop
+git clone https://github.com/TracingInsights/2025.git
 ```
 
-#### Python Setup
+Assicurati di essere sul branch `main`.
 
-1. **Create and activate a virtual environment**
-
-   Using venv:
-
-   ```bash
-   python -m venv venv
-
-   # On Windows
-   venv\Scripts\activate
-
-   # On macOS/Linux
-   source venv/bin/activate
-   ```
-
-   Using conda:
-
-   ```bash
-   conda create -n project-env python=3.10
-   conda activate project-env
-   ```
-
-2. **Install Python dependencies**
-
-   ```bash
-   pip install -r requirements.txt
-   ```
-
-   Or if using conda:
-
-   ```bash
-   conda env create -f environment.yml
-   ```
-
-#### R Setup
-
-1. **Install R packages**
-
-   Open R or RStudio and run:
-
-   ```r
-   # Install renv for reproducible environments (recommended)
-   install.packages("renv")
-
-   # Restore project dependencies
-   renv::restore()
-   ```
-
-   Or manually install required packages:
-
-   ```r
-   install.packages(c("tidyverse", "caret", "data.table"))
-   # Add other packages as needed
-   ```
-
-## 💻 Usage
-
-<!-- Provide examples of how to use your project -->
-
-### Python Example
-
-```python
-# Add Python code examples here
-```
-
-### R Example
-
-```r
-# Add R code examples here
-```
-
-For more detailed examples, see the `examples/` or `notebooks/` directory.
-
-## 📁 Project Structure
-
-```
-.
-├── data/                  # Data files (not tracked by git)
-│   ├── raw/              # Raw, immutable data
-│   ├── processed/        # Cleaned, processed data
-│   └── external/         # External data sources
-├── notebooks/            # Jupyter notebooks and R Markdown files
-├── src/                  # Source code
-│   ├── python/          # Python modules
-│   │   ├── __init__.py
-│   │   ├── data/        # Data loading and processing
-│   │   ├── features/    # Feature engineering
-│   │   ├── models/      # Model definitions
-│   │   └── utils/       # Utility functions
-│   └── R/               # R scripts and functions
-├── tests/               # Unit tests
-├── models/              # Trained models (not tracked by git)
-├── outputs/             # Model outputs, figures, reports
-├── docs/                # Documentation
-├── requirements.txt     # Python dependencies
-├── environment.yml      # Conda environment (optional)
-├── renv.lock           # R dependencies (if using renv)
-├── .Rprofile           # R environment configuration
-├── .gitignore
-└── README.md
-```
-
-## 🛠️ Development
-
-### Branching Strategy
-
-This project uses the following branching strategy:
-
-- `main` - Production-ready code
-- `develop` - Development branch for integration
-- `feature/*` - Feature branches (branch off from develop)
-- `hotfix/*` - Hotfix branches (branch off from main)
-
-### Workflow
-
-1. **Create a new branch from develop:**
-
-   ```bash
-   git checkout develop
-   git pull origin develop
-   git checkout -b feature/your-feature-name
-   ```
-
-2. **Make your changes and commit:**
-
-   ```bash
-   git add .
-   git commit -m "Description of changes"
-   ```
-
-3. **Push to your branch:**
-
-   ```bash
-   git push origin feature/your-feature-name
-   ```
-
-4. **Create a Pull Request** to merge into `develop`
-
-### Running Tests
-
-**Python:**
-
+### 3. Configura le variabili d'ambiente
+Copia il file `.env.example` in un nuovo file `.env`:
 ```bash
-pytest tests/
+cp .env.example .env
+# Oppure su Windows copia e rinomina manualmente
 ```
 
-**R:**
+Apri il file `.env` e imposta i percorsi corretti:
+```properties
+# Percorso della directory di lavoro del progetto
+WORK_DIR="C:/percorso/alla/cartella/formula1"
+
+# Percorso dove salvare/leggere il file .rds processato
+DATA="C:/percorso/alla/cartella/formula1/data/dataset_completo_best_tel.rds"
+
+# Percorso della cartella contenente i dati JSON clonati (TracingInsights)
+JSON_PATH="C:/percorso/ai/dati/TracingInsights/2025"
+```
+
+## Utilizzo
+
+Il workflow dell'analisi si divide in due step principali:
+
+### 1. Pre-processing
+Esegui lo script `pre-processing.R`. Questo script:
+- Legge i file JSON specificati in `JSON_PATH`
+- Estrae il miglior giro di qualifica per ogni pilota
+- Unisce i dati di telemetria
+- Salva il risultato in un file `.rds` nel percorso specificato da `DATA`
 
 ```r
-# Using testthat
-devtools::test()
-
-# Or run specific test file
-testthat::test_file("tests/test_file.R")
+source("pre-processing.R")
 ```
 
-### Code Style
+### 2. Analisi e Clustering
+Apri il file `QualiCluster.Rmd` in RStudio. Questo documento contiene l'intero flusso di analisi:
+- Caricamento del dataset processato (variabile `DATA` nel .env)
+- Data Cleaning e Feature Engineering avanzato
+- Visualizzazione dei dati (ggplot)
+- PCA: Riduzione a 4 componenti (IN_OUT, C_SHAPE, TRANS, TRACK)
+- **Model-Based Clustering**: Identificazione di 13 cluster basati sulla configurazione del tracciato (Mclust)
+- **MEM (Mixture of Experts)**: Regressione con covariate per identificare 4 stili di guida puri, controllando per l'effetto della pista
 
-**Python:** This project follows PEP 8 style guidelines.
+L'analisi si articola in due fasi:
+1. **Prima fase**: Clustering standard che identifica principalmente le caratteristiche dei tracciati
+2. **Seconda fase**: MEM che condiziona le prime 3 componenti (IN_OUT, C_SHAPE, TRANS) sulla quarta (TRACK) per isolare gli stili di guida
 
-```bash
-# Using black
-black src/python/
+Puoi eseguire i chunk singolarmente o generare il report completo cliccando su **Knit** in RStudio.
 
-# Using flake8 for linting
-flake8 src/python/
-```
+## Risultati
 
-**R:** This project follows tidyverse style guide.
-
-```r
-# Using styler
-styler::style_dir("src/R")
-
-# Using lintr
-lintr::lint_dir("src/R")
-```
-
-## 🤝 Contributing
-
-1. Fork the repository
-2. Create your feature branch (`git checkout -b feature/AmazingFeature`)
-3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
-4. Push to the branch (`git push origin feature/AmazingFeature`)
-5. Open a Pull Request
-
-## 📝 License
-
-<!-- Specify your license here -->
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
-## 📧 Contact
-
-Your Name - email@example.com
-
-Project Link: [https://github.com/yourusername/repository-name](https://github.com/yourusername/repository-name)
-
-## 🙏 Acknowledgments
-
-- List any resources, libraries, or people you'd like to thank
-- Include links to papers, datasets, or tools used
+I risultati completi dell'analisi sono disponibili nel file [`Risultati.md`](Risultati.md), che include:
+- Analisi esplorativa del dataset
+- Interpretazione delle componenti principali
+- Descrizione dei cluster identificati
+- Visualizzazioni e grafici (salvati in `static/`)
 
 ---
 
-**Note**: This README is a template. Update it with specific details about your project.
+**Autori**: Pietro Riva, Federico Maccianti, Nicola Rapacioli 
+
