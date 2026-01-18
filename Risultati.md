@@ -45,9 +45,9 @@ Poiché lo stile di guida non è riconducibile a variabili di tipo posizionale, 
 
 In questa fase preliminare, lo stile di guida viene descritto attraverso variabili dinamiche, quali l'utilizzo dell'acceleratore, del freno, la velocità e le seguenti accelerazioni longitudinali e laterali, che consentono, per esempio, di valutare rispettivamente le modalità di decelerazione in ingresso curva o anche l'intensità con cui la curva viene affrontata, tutte caratteristiche che fanno riferimento allo stile di guida.
 
-A sostegno delle ipotesi sopra citate, si riporta la figura seguente che confronta nel Gran Premio degli USA le accelerazioni e velocità per i piloti: Charles Leclerc, Lando Norris, Max Verstappen e Franco Colapinto.
+A sostegno delle ipotesi sopra citate, si riporta la figura seguente che confronta nel Gran Premio degli USA le accelerazioni e velocità per i piloti: Charles Leclerc, Oliver Bearman, Max Verstappen e Franco Colapinto.
 
-![Accelerazioni VER, LEC, NOR, COL](static/el_ex1.png)
+![Accelerazioni VER, LEC, BEA, COL](static/el_ex1.png)
 
 Si nota infatti come nelle variazioni repentine si possano già individuare differenze significative tra piloti.
 

@@ -148,7 +148,7 @@ pp <- ggplot(tel_g, aes(x = rel_distance, y = valore, color = pilota)) +
 print(pp)
 
 
-ggsave("static/el_ex1.pdf", pp, width = 7, height = 5, device = cairo_pdf)
+ggsave("static/el_ex1.png", pp, width = 7, height = 5)
 ```
 
 ### Data cleaning
@@ -222,7 +222,7 @@ pp <- ggplot(
 print(pp)
 
 
-ggsave("static/tel_ex2.pdf", pp, width = 7, height = 5, device = cairo_pdf)
+ggsave("static/tel_ex2.png", pp, width = 7, height = 5)
 ```
 
 ```{r}
@@ -493,7 +493,7 @@ p <- ggplot(cumulative, aes(x = Componenti, y = value)) +
   ) +
   theme_minimal()
 print(p)
-# ggsave("report/tel_pca.pdf", p, width = 7, height = 5, device = cairo_pdf)
+ggsave("static/tel_pca.png", p, width = 7, height = 5)
 
 
 summary(PCA)
@@ -560,7 +560,7 @@ p <- ggplot(loadings_g, aes(x = component, y = Variable, fill = peso)) +
 
 print(p)
 
-# ggsave("report/Loadings.pdf", p, width = 7, height = 5, device = cairo_pdf)
+ggsave("static/Loadings.png", p, width = 7, height = 5)
 ```
 ## Clustering
 
@@ -610,7 +610,7 @@ p <- ggplot(tel.comp.labels, aes(x = C_SHAPE, y = IN_OUT, color = class)) +
   theme_minimal()
 
 print(p)
-# ggsave("report/C1_C2.pdf", p, width = 7, height = 5, device = cairo_pdf)
+ggsave("static/C1_C2.png", p, width = 7, height = 5)
 ```
 
 ```{r}
@@ -680,7 +680,7 @@ p <- ggplot(tel.comp.labels, aes(x = C_SHAPE, y = IN_OUT)) +
 
 print(p)
 
-# ggsave("report/Loadings.pdf", p, width = 7, height = 5, device = cairo_pdf)
+ggsave("static/C_SHAPE__IN_OUT__GP.png", p, width = 7, height = 5)
 ```
 
 **Interpretazione delle classi identificate:**
@@ -786,7 +786,7 @@ p1 <- ggplot(data = tel.comp, mapping = aes(x = TRACK, y = C_SHAPE, color = fact
   labs(color = "Cluster") +
   theme_minimal()
 print(p1)
-# ggsave("report/C1_C4_R.pdf", p1, width = 7, height = 5, device = cairo_pdf)
+ggsave("static/C1_C4_R.png", p1, width = 7, height = 5)
 
 # Relazione TRACK vs IN_OUT
 p2 <- ggplot(data = tel.comp, mapping = aes(x = TRACK, y = IN_OUT, color = factor(labs))) +
