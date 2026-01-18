@@ -841,7 +841,7 @@ p_3d <- plot_ly() %>%
     data = tel.comp.labels,
     x = ~TRACK,
     y = ~IN_OUT,
-    z = ~TRANS,
+    z = ~C_SHAPE,
     color = ~labs_factor,
     colors = colore,
     type = "scatter3d",
@@ -854,7 +854,7 @@ p_3d <- plot_ly() %>%
     data = plot_lines_df,
     x = ~TRACK,
     y = ~IN_OUT,
-    z = ~TRANS,
+    z = ~C_SHAPE,
     color = ~Cluster,
     colors = colore,
     type = "scatter3d",
@@ -866,7 +866,7 @@ p_3d <- plot_ly() %>%
     scene = list(
       xaxis = list(title = "TRACK (Predittore)"),
       yaxis = list(title = "IN_OUT"),
-      zaxis = list(title = "TRANS")
+      zaxis = list(title = "C_SHAPE")
     )
   )
 
