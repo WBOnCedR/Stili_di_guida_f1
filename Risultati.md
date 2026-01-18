@@ -4,9 +4,9 @@
 *Statistica Computazionale - Report Finale*
 
 **Membri:**  
-- Maccianti Federico (909656)
-- Rapacioli Nicola (915439)
-- Riva Pietro (908813)
+- Maccianti Federico 
+- Rapacioli Nicola 
+- Riva Pietro 
 
 ---
 
@@ -47,13 +47,13 @@ In questa fase preliminare, lo stile di guida viene descritto attraverso variabi
 
 A sostegno delle ipotesi sopra citate, si riporta la figura seguente che confronta nel Gran Premio degli USA le accelerazioni e velocità per i piloti: Charles Leclerc, Lando Norris, Max Verstappen e Franco Colapinto.
 
-![Accelerazioni VER, LEC, NOR, COL](static/el_ex1.pdf)
+![Accelerazioni VER, LEC, NOR, COL](static/el_ex1.png)
 
 Si nota infatti come nelle variazioni repentine si possano già individuare differenze significative tra piloti.
 
 Dalle prime analisi descrittive sul dataset, viene osservato come per il pilota Russell al Gran Premio di Miami siano presenti degli `NA` nella variabile distanza relativa. Osservando i dati grezzi si può notare come ciò sia riconducibile al malfunzionamento dei sensori telemetrici - presenza di molti zeri in molte variabili e accelerazioni costanti durante l'intero giro. Per i motivi elencati sopra, si procede dunque ad eliminare i record.
 
-![Confronto Australia Bearman](static/tel_ex2.pdf)
+![Confronto Australia Bearman](static/tel_ex2.png)
 
 Inoltre, osservando la variabile tempo giro, alcuni piloti riportano alcuni valori `NA`. Osservando i dati, ciò si verifica per i piloti Tsunoda, Bearman e Hadjar rispettivamente nei Gran premi di Emilia Romagna, Australia e Stati Uniti.
 
@@ -114,7 +114,7 @@ Nonostante tale riduzione, una dimensionalità pari a 26 risulta ancora essere i
 
 Si effettua dunque un'analisi delle componenti principali (PCA) con l'obiettivo di ottenere un'ulteriore riduzione dimensionale. I risultati ottenuti tramite PCA mostrano come le prime 4 componenti spieghino più del 60% della varianza, come illustrato nella figura seguente.
 
-![Varianza Spiegata Cumulata](static/tel_pca.pdf)
+![Varianza Spiegata Cumulata](static/tel_pca.png)
 
 #### Interpretazione delle componenti
 
@@ -130,7 +130,7 @@ Attraverso l'analisi dei pesi associati alle componenti (figura seguente) le si 
 
 **N.B.** Il circuito vincola il pilota a modificare il proprio stile di guida alla configurazione del tracciato, alternando fluidità e aggressività in base alle specifiche richieste aerodinamiche o meccaniche. Tale adattamento serve quindi esclusivamente a ottimizzare lo sfruttamento della massima aderenza disponibile in ogni circuito.
 
-![Pesi componenti](static/Loadings.pdf)
+![Pesi componenti](static/Loadings.png)
 
 ## Model Based Clustering
 
@@ -138,7 +138,7 @@ L'analisi di Clustering Model-Based, condotta sulle prime quattro componenti, ha
 
 Il raggruppamento dei dati risulta già chiaramente distinguibile nella rappresentazione bidimensionale ottenuta dal confronto tra la prima e la seconda componente principale (figura seguente), sebbene sia ancora presente una certa sovrapposizione visiva, interpretabile come "rumore" grafico. Tale effetto è attribuibile principalmente all'informazione contenuta nelle componenti principali rimanenti. Ciò è ulteriormente evidenziato dalla visualizzazione 3D, in cui il confronto congiunto tra la quarta, la prima e la seconda componente consente di distinguere in modo più netto i cluster, migliorandone la separabilità rispetto alla rappresentazione bidimensionale.
 
-![Componente 1 VS Componente 2](static/C1_C2.pdf)
+![Componente 1 VS Componente 2](static/C1_C2.png)
 
 ![Componente 1 VS Componente 2 VS Componente 4](static/newplot.png)
 
@@ -168,7 +168,7 @@ In particolare, i gruppi sembrano descrivere le seguenti situazioni:
 
 Come illustrato nella figura seguente, la distribuzione dei Gran Premi nelle prime due componenti principali evidenzia chiaramente la separazione tra le diverse classi identificate.
 
-![Distribuzione gran premi nelle componenti](static/C_SHAPE__IN_OUT__GP.pdf)
+![Distribuzione gran premi nelle componenti](static/C_SHAPE__IN_OUT__GP.png)
 
 ## Model Based Clustering with Covariates
 
@@ -192,7 +192,7 @@ Che rivela le seguenti classi:
 
 Nella figura seguente la divisione in classi sembra comunque molto sovrapposta, cosa che non si verifica invece nella visualizzazione tridimensionale che mostra le rette di regressione per ciascun cluster nello spazio delle componenti principali, permettendo di apprezzare la separazione tra i diversi stili di guida condizionati alla tipologia di tracciato.
 
-![IN_OUT VS TRACK](static/C1_C4_R.pdf)
+![IN_OUT VS TRACK](static/C1_C4_R.png)
 
 ![IN_OUT VS C_SHAPE VS TRACK](static/newplot2.png)
 
